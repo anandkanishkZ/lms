@@ -1,0 +1,543 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum NoticeCategory {
+  EXAM
+  EVENT
+  HOLIDAY
+  GENERAL
+}
+
+enum ExamType {
+  MIDTERM
+  FINAL
+  QUIZ
+  ASSIGNMENT
+  PROJECT
+}
+
+enum ExamStatus {
+  UPCOMING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum LiveClassStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum MaterialType {
+  PDF
+  DOCX
+  PPT
+  VIDEO
+  LINK
+  IMAGE
+}
+
+enum NotificationType {
+  LIVE_CLASS
+  EXAM
+  NOTICE
+  RESULT
+  MATERIAL
+  MESSAGE
+  GENERAL
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum Grade {
+  A_PLUS
+  A
+  B_PLUS
+  B
+  C_PLUS
+  C
+  D
+  F
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  phone        String?  @unique
+  symbolNo     String?  @unique // Student Symbol Number
+  role         Role     @default(STUDENT)
+  password     String
+  profileImage String?
+  verified     Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  lastLogin    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  profile              Profile?
+  teacherClasses       TeacherClass[]
+  studentClasses       StudentClass[]
+  liveClassesCreated   LiveClass[]           @relation("TeacherLiveClasses")
+  attendances          Attendance[]
+  materialsUploaded    Material[]            @relation("TeacherMaterials")
+  materialAccessLogs   MaterialAccessLog[]
+  noticesPublished     Notice[]              @relation("PublishedByUser")
+  examsCreated         Exam[]                @relation("ExamCreatedBy")
+  examSubmissions      ExamSubmission[]
+  results              Result[]
+  certificatesReceived Certificate[]
+  notificationsSent    Notification[]        @relation("NotificationSender")
+  notificationsReceived Notification[]       @relation("NotificationReceiver")
+  messagesSent         Message[]             @relation("MessageSender")
+  messagesReceived     Message[]             @relation("MessageReceiver")
+  routinesCreated      Routine[]             @relation("RoutineCreatedBy")
+  teacherRoutines      Routine[]             @relation("TeacherRoutines")
+
+  @@map("users")
+}
+
+model Profile {
+  id           String    @id @default(cuid())
+  userId       String    @unique
+  address      String?
+  dateOfBirth  DateTime?
+  guardianName String?
+  guardianPhone String?
+  emergencyContact String?
+  bloodGroup   String?
+  admissionDate DateTime?
+  rollNumber   String?
+  classSection String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Class {
+  id          String @id @default(cuid())
+  name        String @unique // e.g., "Class 10", "Grade 12"
+  section     String? // e.g., "A", "B", "Science"
+  description String?
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  teachers      TeacherClass[]
+  students      StudentClass[]
+  liveClasses   LiveClass[]
+  routines      Routine[]
+  notices       Notice[]
+  exams         Exam[]
+  messages      Message[]
+
+  @@unique([name, section])
+  @@map("classes")
+}
+
+model Subject {
+  id          String @id @default(cuid())
+  name        String @unique
+  code        String? @unique
+  description String?
+  color       String? // For UI color coding
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  teachers    TeacherClass[]
+  liveClasses LiveClass[]
+  materials   Material[]
+  routines    Routine[]
+  exams       Exam[]
+  results     Result[]
+
+  @@map("subjects")
+}
+
+model TeacherClass {
+  id        String @id @default(cuid())
+  teacherId String
+  classId   String
+  subjectId String
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  teacher User    @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, classId, subjectId])
+  @@map("teacher_classes")
+}
+
+model StudentClass {
+  id        String @id @default(cuid())
+  studentId String
+  classId   String
+  isActive  Boolean @default(true)
+  enrolledAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  student User  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classId])
+  @@map("student_classes")
+}
+
+model LiveClass {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  subjectId   String
+  teacherId   String
+  classId     String
+  youtubeUrl  String?
+  meetingLink String?
+  startTime   DateTime
+  endTime     DateTime
+  status      LiveClassStatus @default(SCHEDULED)
+  isRecorded  Boolean         @default(false)
+  recordingUrl String?
+  maxStudents Int?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  subject     Subject      @relation(fields: [subjectId], references: [id])
+  teacher     User         @relation("TeacherLiveClasses", fields: [teacherId], references: [id])
+  class       Class        @relation(fields: [classId], references: [id])
+  attendances Attendance[]
+
+  @@map("live_classes")
+}
+
+model Attendance {
+  id          String    @id @default(cuid())
+  studentId   String
+  liveClassId String
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  duration    Int?      // in minutes
+  isPresent   Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  student   User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  liveClass LiveClass @relation(fields: [liveClassId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, liveClassId])
+  @@map("attendances")
+}
+
+model Material {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  subjectId   String
+  type        MaterialType
+  fileUrl     String?
+  fileName    String?
+  fileSize    Int?
+  chapter     String?
+  teacherId   String
+  isPublic    Boolean      @default(true)
+  downloadCount Int        @default(0)
+  uploadedAt  DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  subject    Subject             @relation(fields: [subjectId], references: [id])
+  teacher    User                @relation("TeacherMaterials", fields: [teacherId], references: [id])
+  accessLogs MaterialAccessLog[]
+
+  @@map("materials")
+}
+
+model MaterialAccessLog {
+  id          String    @id @default(cuid())
+  studentId   String
+  materialId  String
+  viewedAt    DateTime?
+  downloadedAt DateTime?
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@map("material_access_logs")
+}
+
+model Routine {
+  id          String    @id @default(cuid())
+  classId     String
+  subjectId   String
+  teacherId   String
+  dayOfWeek   DayOfWeek
+  startTime   String    // Format: "09:00"
+  endTime     String    // Format: "10:00"
+  room        String?
+  isActive    Boolean   @default(true)
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  class     Class   @relation(fields: [classId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+  teacher   User    @relation("TeacherRoutines", fields: [teacherId], references: [id])
+  createdByUser User @relation("RoutineCreatedBy", fields: [createdBy], references: [id])
+
+  @@unique([classId, subjectId, dayOfWeek, startTime])
+  @@map("routines")
+}
+
+model Notice {
+  id            String         @id @default(cuid())
+  title         String
+  content       String
+  category      NoticeCategory @default(GENERAL)
+  priority      Priority       @default(MEDIUM)
+  attachmentUrl String?
+  classId       String?        // null = global notice
+  publishedBy   String
+  isPublished   Boolean        @default(false)
+  publishedAt   DateTime?
+  expiresAt     DateTime?
+  viewCount     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  class         Class? @relation(fields: [classId], references: [id])
+  publishedByUser User @relation("PublishedByUser", fields: [publishedBy], references: [id])
+
+  @@map("notices")
+}
+
+model Exam {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  subjectId   String
+  classId     String?
+  type        ExamType   @default(QUIZ)
+  status      ExamStatus @default(UPCOMING)
+  examLink    String?    // Google Form or internal exam link
+  startTime   DateTime
+  endTime     DateTime
+  duration    Int?       // in minutes
+  totalMarks  Int?
+  passingMarks Int?
+  instructions String?
+  createdBy   String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  // Relations
+  subject     Subject          @relation(fields: [subjectId], references: [id])
+  class       Class?           @relation(fields: [classId], references: [id])
+  createdByUser User           @relation("ExamCreatedBy", fields: [createdBy], references: [id])
+  submissions ExamSubmission[]
+  results     Result[]
+  certificates Certificate[]
+
+  @@map("exams")
+}
+
+model ExamSubmission {
+  id          String    @id @default(cuid())
+  studentId   String
+  examId      String
+  submittedAt DateTime  @default(now())
+  answers     Json?     // Store answers as JSON
+  ipAddress   String?
+  userAgent   String?
+  isLate      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  exam    Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, examId])
+  @@map("exam_submissions")
+}
+
+model Result {
+  id          String  @id @default(cuid())
+  studentId   String
+  examId      String
+  subjectId   String
+  marks       Float
+  totalMarks  Float
+  percentage  Float
+  grade       Grade?
+  remarks     String?
+  isPublished Boolean @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  exam    Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([studentId, examId, subjectId])
+  @@map("results")
+}
+
+model Certificate {
+  id          String    @id @default(cuid())
+  studentId   String
+  examId      String?
+  title       String
+  description String?
+  pdfUrl      String
+  templateId  String?
+  serialNumber String   @unique
+  issuedDate  DateTime  @default(now())
+  isValid     Boolean   @default(true)
+  generatedAt DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  exam    Exam? @relation(fields: [examId], references: [id])
+
+  @@map("certificates")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  senderId    String?          // null for system notifications
+  receiverId  String
+  title       String
+  message     String
+  type        NotificationType @default(GENERAL)
+  data        Json?            // Additional notification data
+  isRead      Boolean          @default(false)
+  readAt      DateTime?
+  sentAt      DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+
+  // Relations
+  sender   User? @relation("NotificationSender", fields: [senderId], references: [id])
+  receiver User  @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  senderId    String
+  receiverId  String?   // null for class/group messages
+  classId     String?   // for class-wide messages
+  content     String
+  attachmentUrl String?
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  replyToId   String?   // for threaded conversations
+  isDeleted   Boolean   @default(false)
+  timestamp   DateTime  @default(now())
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  sender    User     @relation("MessageSender", fields: [senderId], references: [id])
+  receiver  User?    @relation("MessageReceiver", fields: [receiverId], references: [id])
+  class     Class?   @relation(fields: [classId], references: [id])
+  replyTo   Message? @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies   Message[] @relation("MessageReplies")
+
+  @@map("messages")
+}
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String   // e.g., "LOGIN", "UPLOAD_MATERIAL", "JOIN_CLASS"
+  entity    String?  // e.g., "LiveClass", "Material"
+  entityId  String?
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  timestamp DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+model SystemSettings {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+model FileUpload {
+  id          String   @id @default(cuid())
+  originalName String
+  fileName    String   @unique
+  mimeType    String
+  size        Int
+  path        String
+  uploadedBy  String
+  entityType  String?  // e.g., "Material", "Notice", "Profile"
+  entityId    String?
+  isPublic    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@map("file_uploads")
+}
