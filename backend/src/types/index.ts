@@ -1,5 +1,6 @@
 import { Request } from 'express';
-import { Role } from '@prisma/client';
+
+export type Role = 'ADMIN' | 'TEACHER' | 'STUDENT';
 
 export interface AuthUser {
   id: string;

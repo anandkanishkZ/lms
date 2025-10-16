@@ -1,6 +1,6 @@
 import express from 'express';
-import { register, login, logout, forgotPassword, resetPassword, verifyEmail } from '@/controllers/authController';
-import { optionalAuth } from '@/middlewares/auth';
+import { register, login, logout, forgotPassword, resetPassword, verifyEmail } from '../controllers/authController';
+import { optionalAuth } from '../middlewares/auth';
 
 const router = express.Router();
 

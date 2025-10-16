@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-import { Prisma } from '@prisma/client';
 
 interface CustomError extends Error {
   statusCode?: number;
@@ -8,6 +7,7 @@ interface CustomError extends Error {
   path?: string;
   value?: any;
   errors?: any;
+  meta?: any;
 }
 
 export const errorHandler = (
@@ -23,13 +23,13 @@ export const errorHandler = (
   console.error('Error:', err);
 
   // Prisma validation error
-  if (err instanceof Prisma.PrismaClientValidationError) {
+  if (err.name === 'PrismaClientValidationError') {
     const message = 'Invalid data provided';
     error = { ...error, statusCode: 400, message };
   }
 
   // Prisma known request error
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  if (err.code && typeof err.code === 'string') {
     if (err.code === 'P2002') {
       // Unique constraint violation
       const target = (err.meta?.target as string[]) || [];

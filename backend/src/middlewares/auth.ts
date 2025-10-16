@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient, Role } from '@prisma/client';
-import { AuthRequest, AuthUser, JWTPayload } from '@/types';
+import { PrismaClient } from '@prisma/client';
+import { AuthRequest, AuthUser, JWTPayload } from '../types';
+
+type Role = 'ADMIN' | 'TEACHER' | 'STUDENT';
 
 const prisma = new PrismaClient();
 

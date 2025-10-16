@@ -1,6 +1,6 @@
 import express from 'express';
-import { getProfile, updateProfile, getUserById, getAllUsers } from '@/controllers/userController';
-import { authorizeRoles } from '@/middlewares/auth';
+import { getProfile, updateProfile, getUserById, getAllUsers, toggleUserStatus } from '../controllers/userController';
+import { authorizeRoles } from '../middlewares/auth';
 
 const router = express.Router();
 
@@ -15,5 +15,8 @@ router.get('/:id', authorizeRoles('ADMIN'), getUserById);
 
 // Get all users (Admin only)
 router.get('/', authorizeRoles('ADMIN'), getAllUsers);
+
+// Toggle user status (Admin only)
+router.patch('/:id/toggle-status', authorizeRoles('ADMIN'), toggleUserStatus);
 
 export default router;

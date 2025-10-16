@@ -2,8 +2,8 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
-import { AuthRequest, LoginCredentials, RegisterData } from '@/types';
-import { asyncHandler } from '@/middlewares/errorHandler';
+import { AuthRequest, LoginCredentials, RegisterData } from '../types';
+import { asyncHandler } from '../middlewares/errorHandler';
 
 const prisma = new PrismaClient();
 
@@ -56,10 +56,14 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Generate JWT token
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+  
   const token = jwt.sign(
     { userId: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    jwtSecret
   );
 
   res.status(201).json({
@@ -124,10 +128,14 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Generate JWT token
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+  
   const token = jwt.sign(
     { userId: user.id, email: user.email, role: user.role },
-    process.env.JWT_SECRET!,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    jwtSecret
   );
 
   const { password: _, ...userWithoutPassword } = user;
