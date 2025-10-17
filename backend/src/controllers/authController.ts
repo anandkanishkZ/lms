@@ -80,29 +80,40 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 // @route   POST /api/auth/login
 // @access  Public
 export const login = asyncHandler(async (req: Request, res: Response) => {
-  const { emailOrPhone, password }: LoginCredentials = req.body;
+  // Support both 'identifier' (student portal) and 'emailOrPhone' (admin/legacy)
+  const identifier = req.body.identifier || req.body.emailOrPhone;
+  const { password } = req.body;
 
-  if (!emailOrPhone || !password) {
+  if (!identifier || !password) {
     res.status(400).json({
       success: false,
-      message: 'Please provide email/phone and password',
+      message: 'Please provide email/phone/symbol number and password',
     });
     return;
   }
 
-  // Find user by email or phone
+  // Find user by email, phone, or symbol number
   const user = await prisma.user.findFirst({
     where: {
       OR: [
-        { email: emailOrPhone },
-        { phone: emailOrPhone },
-        { symbolNo: emailOrPhone },
+        { email: identifier },
+        { phone: identifier },
+        { symbolNo: identifier },
       ],
       isActive: true,
     },
   });
 
   if (!user) {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid credentials',
+    });
+    return;
+  }
+
+  // Check if user has password
+  if (!user.password) {
     res.status(401).json({
       success: false,
       message: 'Invalid credentials',
@@ -212,5 +223,215 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   res.json({
     success: true,
     message: 'Email verified successfully',
+  });
+});
+
+// @desc    Get current user profile
+// @route   GET /api/auth/profile
+// @access  Private
+export const getProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'Not authenticated',
+    });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+    select: {
+      id: true,
+      symbolNo: true,
+      name: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+      role: true,
+      school: true,
+      department: true,
+      profileImage: true,
+      verified: true,
+      lastLogin: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+    return;
+  }
+
+  res.json({
+    success: true,
+    data: user,
+  });
+});
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'Not authenticated',
+    });
+    return;
+  }
+
+  const { firstName, middleName, lastName, email, phone, school } = req.body;
+
+  // Check if email is being changed and if it's already taken
+  if (email) {
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email,
+        id: { not: req.user.userId },
+      },
+    });
+
+    if (existingUser) {
+      res.status(400).json({
+        success: false,
+        message: 'Email is already taken',
+      });
+      return;
+    }
+  }
+
+  // Check if phone is being changed and if it's already taken
+  if (phone) {
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        phone,
+        id: { not: req.user.userId },
+      },
+    });
+
+    if (existingUser) {
+      res.status(400).json({
+        success: false,
+        message: 'Phone number is already taken',
+      });
+      return;
+    }
+  }
+
+  // Build the name field from firstName, middleName, lastName
+  const nameParts = [firstName, middleName, lastName].filter(Boolean);
+  const name = nameParts.join(' ') || undefined;
+
+  // Update user
+  const updatedUser = await prisma.user.update({
+    where: { id: req.user.userId },
+    data: {
+      ...(firstName && { firstName }),
+      ...(middleName !== undefined && { middleName: middleName || null }),
+      ...(lastName && { lastName }),
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(phone && { phone }),
+      ...(school && { school }),
+    },
+    select: {
+      id: true,
+      symbolNo: true,
+      name: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+      email: true,
+      phone: true,
+      role: true,
+      school: true,
+      department: true,
+      profileImage: true,
+      verified: true,
+      lastLogin: true,
+      createdAt: true,
+    },
+  });
+
+  res.json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: updatedUser,
+  });
+});
+
+// @desc    Change password
+// @route   POST /api/auth/change-password
+// @access  Private
+export const changePassword = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'Not authenticated',
+    });
+    return;
+  }
+
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    res.status(400).json({
+      success: false,
+      message: 'Please provide current and new password',
+    });
+    return;
+  }
+
+  // Get user with password
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+  });
+
+  if (!user) {
+    res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+    return;
+  }
+
+  // Check if user has password
+  if (!user.password) {
+    res.status(400).json({
+      success: false,
+      message: 'User does not have a password set',
+    });
+    return;
+  }
+
+  // Verify current password
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+
+  if (!isPasswordValid) {
+    res.status(401).json({
+      success: false,
+      message: 'Current password is incorrect',
+    });
+    return;
+  }
+
+  // Hash new password
+  const salt = await bcrypt.genSalt(12);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  // Update password
+  await prisma.user.update({
+    where: { id: req.user.userId },
+    data: { password: hashedPassword },
+  });
+
+  res.json({
+    success: true,
+    message: 'Password changed successfully',
   });
 });

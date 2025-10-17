@@ -8,12 +8,16 @@ import {
   Calendar,
 } from 'lucide-react';
 
-// Components
-import AdminLayout from '@/components/admin/AdminLayout';
-import StatsCard from '@/components/admin/StatsCard';
-import { EnrollmentChart, CourseDistributionChart, ActivityChart } from '@/components/admin/Charts';
-import ActivityFeed from '@/components/admin/ActivityFeed';
-import QuickActions from '@/components/admin/QuickActions';
+// Components from Admin Feature Module
+import {
+  AdminLayout,
+  StatsCard,
+  EnrollmentChart,
+  CourseDistributionChart,
+  ActivityChart,
+  ActivityFeed,
+  QuickActions,
+} from '@/src/features/admin';
 
 export default function AdminDashboard() {
   return (

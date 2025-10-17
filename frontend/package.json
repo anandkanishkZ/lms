@@ -15,8 +15,11 @@
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
     "@next/font": "^14.0.0",
+    "@reduxjs/toolkit": "^2.9.1",
+    "@tanstack/react-query": "^5.90.5",
+    "@tanstack/react-query-devtools": "^5.90.2",
     "@types/react-toastify": "^4.0.2",
-    "axios": "^1.6.0",
+    "axios": "^1.12.2",
     "chart.js": "^4.5.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -29,12 +32,13 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.47.0",
     "react-hot-toast": "^2.4.1",
+    "react-redux": "^9.2.0",
     "react-toastify": "^11.0.5",
     "recharts": "^2.15.4",
+    "redux-persist": "^6.0.0",
     "tailwind-merge": "^2.0.0",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.22.4",
-    "zustand": "^4.4.7"
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/node": "^20.8.0",

@@ -1,0 +1,35 @@
+export const ROUTES = {
+  home: '/',
+  auth: {
+    login: '/admin/login',
+  },
+  admin: {
+    dashboard: '/admin/dashboard',
+    users: '/admin/users',
+    courses: '/admin/courses',
+    classes: '/admin/classes',
+    schedule: '/admin/schedule',
+    assignments: '/admin/assignments',
+    certificates: '/admin/certificates',
+    analytics: '/admin/analytics',
+    messages: '/admin/messages',
+    notifications: '/admin/notifications',
+    billing: '/admin/billing',
+    security: '/admin/security',
+    backup: '/admin/backup',
+    integration: '/admin/integration',
+    mobile: '/admin/mobile',
+    monitor: '/admin/monitor',
+    storage: '/admin/storage',
+    email: '/admin/email',
+    support: '/admin/support',
+    help: '/admin/help',
+    settings: '/admin/settings',
+  },
+  student: {
+    dashboard: '/student/dashboard',
+  },
+  teacher: {
+    dashboard: '/teacher/dashboard',
+  },
+} as const;

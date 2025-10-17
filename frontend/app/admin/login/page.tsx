@@ -1,15 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { showSuccessToast, showErrorToast } from '@/lib/toast';
+import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react';
+import { adminApiService } from '@/src/features/admin';
+import { ROUTES } from '@/src/config/routes.config';
+import { DEMO_CREDENTIALS } from '@/src/constants/demo.constants';
+import { useAppSelector } from '@/src/store/hooks';
 
-// Validation schema
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -33,47 +36,51 @@ export default function AdminLogin() {
   });
 
   const fillDemoCredentials = () => {
-    setValue('email', 'admin@lms.com');
-    setValue('password', 'admin123');
+    setValue('email', DEMO_CREDENTIALS.admin.email);
+    setValue('password', DEMO_CREDENTIALS.admin.password);
     showSuccessToast('Demo credentials filled!');
   };
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
-    
+
     try {
-      // Import the API service dynamically to avoid SSR issues
-      const { default: adminApi } = await import('@/lib/adminApi');
+      console.log('🔐 Login attempt:', { email: data.email });
       
-      const response = await adminApi.login({
+      const response = await adminApiService.login({
         email: data.email,
         password: data.password,
         rememberMe: data.rememberMe || false,
       });
 
-      if (response.success) {
-                showSuccessToast('Login successful!');
-        router.push('/admin/dashboard');
+      console.log('🔐 Login response:', response);
+
+      if (response.success && response.data) {
+        console.log('✅ Login successful, tokens:', {
+          hasAccessToken: !!response.data.accessToken,
+          hasRefreshToken: !!response.data.refreshToken,
+          hasUser: !!response.data.user
+        });
+        
+        showSuccessToast('Login successful!');
+        
+        console.log('✅ Redirecting to dashboard...');
+        router.push(ROUTES.admin.dashboard);
       } else {
-              showErrorToast(response.message || 'Login failed');
+        console.error('❌ Login failed:', response.message);
+        showErrorToast(response.message || 'Login failed');
       }
-    } catch (error) {
-      console.error('Login error:', error);
-            showErrorToast('Connection error. Please try again.');
+    } catch (error: any) {
+      console.error('❌ Login error:', error);
+      showErrorToast(error?.message || 'Connection error. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4 relative">
-      {/* Background Pattern */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-gray-900 flex items-center justify-center p-4 relative">
       <div className="absolute inset-0 bg-black/20"></div>
-      <div className="absolute inset-0 opacity-20">
-        <div className="w-full h-full" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-        }}></div>
-      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -81,13 +88,12 @@ export default function AdminLogin() {
         transition={{ duration: 0.6 }}
         className="relative z-10 w-full max-w-md"
       >
-        {/* Header */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
+            className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-slate-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg"
           >
             <Lock className="w-8 h-8 text-white" />
           </motion.div>
@@ -95,7 +101,6 @@ export default function AdminLogin() {
           <p className="text-blue-200/80">Sign in to access the admin dashboard</p>
         </div>
 
-        {/* Login Form */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -103,7 +108,6 @@ export default function AdminLogin() {
           className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-white/20"
         >
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-white mb-2">
                 Email Address
@@ -132,7 +136,6 @@ export default function AdminLogin() {
               )}
             </div>
 
-            {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-white mb-2">
                 Password
@@ -168,7 +171,6 @@ export default function AdminLogin() {
               )}
             </div>
 
-            {/* Demo Credentials Note */}
             <div className="bg-blue-500/20 border border-blue-400/30 rounded-lg p-4">
               <div className="flex items-center justify-between mb-2">
                 <h4 className="text-sm font-medium text-blue-200">Demo Credentials:</h4>
@@ -183,18 +185,17 @@ export default function AdminLogin() {
                 </motion.button>
               </div>
               <p className="text-xs text-blue-300">
-                Email: <span className="font-mono bg-blue-900/50 px-1 rounded">admin@lms.com</span><br />
-                Password: <span className="font-mono bg-blue-900/50 px-1 rounded">admin123</span>
+                Email: <span className="font-mono bg-blue-900/50 px-1 rounded">{DEMO_CREDENTIALS.admin.email}</span><br />
+                Password: <span className="font-mono bg-blue-900/50 px-1 rounded">{DEMO_CREDENTIALS.admin.password}</span>
               </p>
             </div>
 
-            {/* Submit Button */}
             <motion.button
               type="submit"
               disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-blue-500 to-slate-600 text-white py-3 px-4 rounded-lg font-semibold shadow-lg hover:from-blue-600 hover:to-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -207,7 +208,6 @@ export default function AdminLogin() {
             </motion.button>
           </form>
 
-          {/* Footer */}
           <div className="mt-6 text-center">
             <p className="text-sm text-blue-200/60">
               Secure admin access for LMS management

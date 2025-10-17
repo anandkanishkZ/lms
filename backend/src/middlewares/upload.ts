@@ -16,8 +16,8 @@ const storage = multer.diskStorage({
     let subDir = 'general';
     
     // Organize files by type
-    if (file.fieldname === 'profileImage') {
-      subDir = 'profiles';
+    if (file.fieldname === 'avatar' || file.fieldname === 'profileImage') {
+      subDir = 'avatars';
     } else if (file.fieldname === 'material') {
       subDir = 'materials';
     } else if (file.fieldname === 'notice') {
@@ -44,7 +44,8 @@ const storage = multer.diskStorage({
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   // Define allowed file types
   const allowedTypes: { [key: string]: RegExp } = {
-    profileImage: /jpeg|jpg|png|gif/,
+    avatar: /jpeg|jpg|png|gif|webp/,
+    profileImage: /jpeg|jpg|png|gif|webp/,
     material: /pdf|doc|docx|ppt|pptx|txt|mp4|avi|mkv/,
     notice: /pdf|doc|docx|jpg|jpeg|png/,
     certificate: /pdf/,

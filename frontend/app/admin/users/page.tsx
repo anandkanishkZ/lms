@@ -31,9 +31,12 @@ import {
   History,
   Globe
 } from 'lucide-react';
-import { showSuccessToast, showErrorToast } from '@/lib/toast';
-import AdminLayout from '@/components/admin/AdminLayout';
-import adminApi from '@/lib/adminApi';
+import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
+import { AdminLayout, adminApiService } from '@/src/features/admin';
+import CredentialsModal from '@/src/features/admin/components/CredentialsModal';
+
+// Use the service from the feature module
+const adminApi = adminApiService;
 
 // Validation schemas
 const studentSchema = z.object({
@@ -121,6 +124,8 @@ export default function UsersPage() {
 
   // New state for enhanced functionality
   const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
+  const [isActionsModalOpen, setIsActionsModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isBlockModalOpen, setIsBlockModalOpen] = useState(false);
   const [isUnblockModalOpen, setIsUnblockModalOpen] = useState(false);
@@ -139,6 +144,10 @@ export default function UsersPage() {
     hasNext: false,
     hasPrev: false
   });
+  
+  // Credentials modal state
+  const [showCredentials, setShowCredentials] = useState(false);
+  const [userCredentials, setUserCredentials] = useState<any>(null);
   
   const studentForm = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -205,8 +214,42 @@ export default function UsersPage() {
   const currentUsers = activeTab === 'students' ? students : activeTab === 'teachers' ? teachers : admins;
   
   // Enhanced action handlers
+  const handleOpenActionsModal = (user: ApiUser) => {
+    setSelectedUser(user);
+    setIsActionsModalOpen(true);
+  };
+
+  const handleViewUser = (user: ApiUser) => {
+    setSelectedUser(user);
+    setIsViewModalOpen(true);
+  };
+
   const handleEditUser = (user: ApiUser) => {
     setSelectedUser(user);
+    setIsActionsModalOpen(false);
+    
+    // Populate form based on user role
+    if (user.role === 'STUDENT') {
+      studentForm.reset({
+        firstName: user.firstName || '',
+        middleName: user.middleName || '',
+        lastName: user.lastName || '',
+        school: user.school || '',
+        phone: user.phone || '',
+        email: user.email || '',
+      });
+    } else if (user.role === 'TEACHER') {
+      teacherForm.reset({
+        firstName: user.firstName || '',
+        middleName: user.middleName || '',
+        lastName: user.lastName || '',
+        department: user.department || '',
+        phone: user.phone || '',
+        email: user.email || '',
+        experience: user.experience || '',
+      });
+    }
+    
     setIsEditModalOpen(true);
   };
 
@@ -214,23 +257,27 @@ export default function UsersPage() {
     setSelectedUser(user);
     setBlockReason('');
     setBlockNotes('');
+    setIsActionsModalOpen(false);
     setIsBlockModalOpen(true);
   };
 
   const handleUnblockUser = (user: ApiUser) => {
     setSelectedUser(user);
     setUnblockNotes('');
+    setIsActionsModalOpen(false);
     setIsUnblockModalOpen(true);
   };
 
   const handleDeleteUser = (user: ApiUser) => {
     setSelectedUser(user);
     setDeleteNotes('');
+    setIsActionsModalOpen(false);
     setIsDeleteModalOpen(true);
   };
 
   const handleViewAuditTrail = async (user: ApiUser) => {
     setSelectedUser(user);
+    setIsActionsModalOpen(false);
     setIsAuditModalOpen(true);
     await fetchAuditTrail(user.id);
   };
@@ -398,7 +445,19 @@ export default function UsersPage() {
       const response = await adminApi.createStudent(data);
       
       if (response.success && response.data) {
-        showSuccessToast(`Student ${response.data.name} created successfully with ID: ${response.data.symbolNo}`);
+        // Set credentials and show modal
+        setUserCredentials({
+          id: response.data.id,
+          name: response.data.name,
+          symbolNo: response.data.symbolNo,
+          email: response.data.email,
+          phone: response.data.phone,
+          tempPassword: response.data.tempPassword,
+          role: 'STUDENT' as const,
+          school: response.data.school,
+        });
+        setShowCredentials(true);
+        
         handleCloseModal();
         // Refresh the users list
         fetchUsers('STUDENT');
@@ -416,7 +475,19 @@ export default function UsersPage() {
       const response = await adminApi.createTeacher(data);
       
       if (response.success && response.data) {
-        showSuccessToast(`Teacher ${response.data.name} created successfully with ID: ${response.data.symbolNo}`);
+        // Set credentials and show modal
+        setUserCredentials({
+          id: response.data.id,
+          name: response.data.name,
+          symbolNo: response.data.symbolNo,
+          email: response.data.email,
+          phone: response.data.phone,
+          tempPassword: response.data.tempPassword,
+          role: 'TEACHER' as const,
+          department: response.data.department,
+        });
+        setShowCredentials(true);
+        
         handleCloseModal();
         // Refresh the users list
         fetchUsers('TEACHER');
@@ -619,13 +690,25 @@ export default function UsersPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {activeTab === 'students' ? (
                         <div className="text-sm">
-                          <div className="font-medium text-gray-900">{user.school}</div>
+                          <div 
+                            className="font-medium text-gray-900 truncate max-w-[200px]" 
+                            title={user.school || 'N/A'}
+                          >
+                            {user.school || 'N/A'}
+                          </div>
                           <div className="text-gray-500">ID: {user.symbolNo}</div>
                         </div>
                       ) : activeTab === 'teachers' ? (
                         <div className="text-sm">
-                          <div className="font-medium text-gray-900">{user.department}</div>
-                          <div className="text-gray-500">{user.experience}</div>
+                          <div 
+                            className="font-medium text-gray-900 truncate max-w-[200px]"
+                            title={user.department || 'N/A'}
+                          >
+                            {user.department || 'N/A'}
+                          </div>
+                          <div className="text-gray-500 truncate max-w-[200px]" title={user.experience || 'N/A'}>
+                            {user.experience || 'N/A'}
+                          </div>
                         </div>
                       ) : (
                         <div className="text-sm">
@@ -663,82 +746,27 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
-                        {/* Status Badge */}
-                        <div className="flex items-center space-x-2 mr-2">
-                          {user.isBlocked ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              <Ban className="w-3 h-3 mr-1" />
-                              Blocked
-                            </span>
-                          ) : user.isActive ? (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              Active
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              <AlertCircle className="w-3 h-3 mr-1" />
-                              Inactive
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Action Buttons */}
+                        {/* View Button - Primary Action */}
                         <motion.button
-                          onClick={() => handleEditUser(user)}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Edit User"
+                          onClick={() => handleViewUser(user)}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
+                          title="View Details"
                         >
-                          <Edit className="w-4 h-4" />
+                          <Eye className="w-4 h-4" />
+                          <span className="text-xs font-medium">View</span>
                         </motion.button>
 
-                        {/* Block/Unblock Button */}
-                        {user.isBlocked ? (
-                          <motion.button
-                            onClick={() => handleUnblockUser(user)}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                            title="Unblock User"
-                          >
-                            <ShieldOff className="w-4 h-4" />
-                          </motion.button>
-                        ) : (
-                          <motion.button
-                            onClick={() => handleBlockUser(user)}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                            title="Block User"
-                            disabled={user.role === 'ADMIN'}
-                          >
-                            <Shield className="w-4 h-4" />
-                          </motion.button>
-                        )}
-
-                        {/* Audit Trail Button */}
+                        {/* More Actions Button - Opens Modal */}
                         <motion.button
-                          onClick={() => handleViewAuditTrail(user)}
+                          onClick={() => handleOpenActionsModal(user)}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                          title="View Audit Trail"
+                          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                          title="More Actions"
                         >
-                          <History className="w-4 h-4" />
-                        </motion.button>
-
-                        {/* Delete Button */}
-                        <motion.button
-                          onClick={() => handleDeleteUser(user)}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Delete User"
-                          disabled={user.role === 'ADMIN'}
-                        >
-                          <Trash2 className="w-4 h-4" />
+                          <MoreVertical className="w-4 h-4" />
                         </motion.button>
                       </div>
                     </td>
@@ -1599,6 +1627,818 @@ export default function UsersPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Credentials Modal */}
+      
+      {/* Actions Modal */}
+      <AnimatePresence>
+        {isActionsModalOpen && selectedUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            onClick={() => setIsActionsModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <MoreVertical className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">User Actions</h2>
+                    <p className="text-sm text-gray-300">{selectedUser.name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsActionsModalOpen(false)}
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <div className="space-y-2">
+                  {/* Edit User */}
+                  <motion.button
+                    onClick={() => handleEditUser(selectedUser)}
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-blue-50 hover:bg-blue-100 border-2 border-blue-200 transition-all group"
+                  >
+                    <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Edit className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">Edit User</p>
+                      <p className="text-sm text-gray-600">Modify user information</p>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.button>
+
+                  {/* Block/Unblock User */}
+                  {selectedUser.isBlocked ? (
+                    <motion.button
+                      onClick={() => handleUnblockUser(selectedUser)}
+                      whileHover={{ scale: 1.02, x: 4 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full flex items-center space-x-4 p-4 rounded-xl bg-green-50 hover:bg-green-100 border-2 border-green-200 transition-all group"
+                    >
+                      <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <ShieldOff className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-gray-900">Unblock User</p>
+                        <p className="text-sm text-gray-600">Restore user access</p>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400 group-hover:text-green-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </motion.button>
+                  ) : (
+                    <motion.button
+                      onClick={() => handleBlockUser(selectedUser)}
+                      whileHover={{ scale: 1.02, x: 4 }}
+                      whileTap={{ scale: 0.98 }}
+                      disabled={selectedUser.role === 'ADMIN'}
+                      className="w-full flex items-center space-x-4 p-4 rounded-xl bg-orange-50 hover:bg-orange-100 border-2 border-orange-200 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Shield className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-gray-900">Block User</p>
+                        <p className="text-sm text-gray-600">Restrict user access</p>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400 group-hover:text-orange-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </motion.button>
+                  )}
+
+                  {/* View Audit Trail */}
+                  <motion.button
+                    onClick={() => handleViewAuditTrail(selectedUser)}
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-purple-50 hover:bg-purple-100 border-2 border-purple-200 transition-all group"
+                  >
+                    <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <History className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">View History</p>
+                      <p className="text-sm text-gray-600">Check activity logs</p>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-purple-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.button>
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200 my-4"></div>
+
+                  {/* Delete User */}
+                  <motion.button
+                    onClick={() => handleDeleteUser(selectedUser)}
+                    whileHover={{ scale: 1.02, x: 4 }}
+                    whileTap={{ scale: 0.98 }}
+                    disabled={selectedUser.role === 'ADMIN'}
+                    className="w-full flex items-center space-x-4 p-4 rounded-xl bg-red-50 hover:bg-red-100 border-2 border-red-200 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Trash2 className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-gray-900">Delete User</p>
+                      <p className="text-sm text-gray-600">Permanently remove user</p>
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 group-hover:text-red-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </motion.button>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-6 py-4 flex justify-end rounded-b-2xl border-t">
+                <button
+                  onClick={() => setIsActionsModalOpen(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* View User Details Modal */}
+      <AnimatePresence>
+        {isViewModalOpen && selectedUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            onClick={() => setIsViewModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between border-b border-blue-500 rounded-t-2xl">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">User Details</h2>
+                    <p className="text-sm text-blue-100">{selectedUser.role} Information</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-6">
+                {/* Status Banner */}
+                <div className={`p-4 rounded-xl border-2 ${
+                  selectedUser.isBlocked
+                    ? 'bg-red-50 border-red-200'
+                    : selectedUser.isActive
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-gray-50 border-gray-200'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      {selectedUser.isBlocked ? (
+                        <>
+                          <Ban className="w-6 h-6 text-red-600" />
+                          <div>
+                            <p className="font-semibold text-red-900">Account Blocked</p>
+                            <p className="text-sm text-red-700">{selectedUser.blockReason || 'No reason provided'}</p>
+                          </div>
+                        </>
+                      ) : selectedUser.isActive ? (
+                        <>
+                          <CheckCircle className="w-6 h-6 text-green-600" />
+                          <div>
+                            <p className="font-semibold text-green-900">Account Active</p>
+                            <p className="text-sm text-green-700">User has full access to the system</p>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-6 h-6 text-gray-600" />
+                          <div>
+                            <p className="font-semibold text-gray-900">Account Inactive</p>
+                            <p className="text-sm text-gray-700">User account is not active</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Personal Information */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <User className="w-5 h-5 mr-2 text-blue-600" />
+                    Personal Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Full Name</label>
+                      <p className="text-gray-900 font-medium">{selectedUser.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Symbol Number</label>
+                      <p className="text-gray-900 font-medium">{selectedUser.symbolNo || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">First Name</label>
+                      <p className="text-gray-900">{selectedUser.firstName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Middle Name</label>
+                      <p className="text-gray-900">{selectedUser.middleName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Last Name</label>
+                      <p className="text-gray-900">{selectedUser.lastName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Role</label>
+                      <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${roleColors[selectedUser.role]}`}>
+                        {selectedUser.role}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Information */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Mail className="w-5 h-5 mr-2 text-blue-600" />
+                    Contact Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Email Address</label>
+                      <p className="text-gray-900 break-all">{selectedUser.email || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Phone Number</label>
+                      <p className="text-gray-900">{selectedUser.phone || 'N/A'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Academic/Professional Information */}
+                {selectedUser.role === 'STUDENT' ? (
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <GraduationCap className="w-5 h-5 mr-2 text-blue-600" />
+                      Academic Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">School</label>
+                        <p className="text-gray-900">{selectedUser.school || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : selectedUser.role === 'TEACHER' ? (
+                  <div className="bg-gray-50 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
+                      Professional Information
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Department</label>
+                        <p className="text-gray-900">{selectedUser.department || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Experience</label>
+                        <p className="text-gray-900">{selectedUser.experience || 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Account Status */}
+                <div className="bg-gray-50 rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Shield className="w-5 h-5 mr-2 text-blue-600" />
+                    Account Status
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Verified</label>
+                      <p className="text-gray-900">{selectedUser.verified ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Active</label>
+                      <p className="text-gray-900">{selectedUser.isActive ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Blocked</label>
+                      <p className="text-gray-900">{selectedUser.isBlocked ? 'Yes' : 'No'}</p>
+                    </div>
+                    {selectedUser.isBlocked && selectedUser.blockedAt && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Blocked At</label>
+                        <p className="text-gray-900">{new Date(selectedUser.blockedAt).toLocaleString()}</p>
+                      </div>
+                    )}
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Last Login</label>
+                      <p className="text-gray-900">
+                        {selectedUser.lastLogin
+                          ? new Date(selectedUser.lastLogin).toLocaleString()
+                          : 'Never'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500">Account Created</label>
+                      <p className="text-gray-900">{new Date(selectedUser.createdAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Block Information (if blocked) */}
+                {selectedUser.isBlocked && (
+                  <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-red-900 mb-4 flex items-center">
+                      <Ban className="w-5 h-5 mr-2" />
+                      Block Information
+                    </h3>
+                    <div className="space-y-3">
+                      {selectedUser.blockReason && (
+                        <div>
+                          <label className="text-sm font-medium text-red-700">Reason</label>
+                          <p className="text-red-900">{selectedUser.blockReason}</p>
+                        </div>
+                      )}
+                      {selectedUser.blockedBy && (
+                        <div>
+                          <label className="text-sm font-medium text-red-700">Blocked By</label>
+                          <p className="text-red-900">{selectedUser.blockedBy}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer Actions */}
+              <div className="sticky bottom-0 bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3 border-t rounded-b-2xl">
+                <button
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    handleEditUser(selectedUser);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  <span>Edit User</span>
+                </button>
+                <button
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit User Modal */}
+      <AnimatePresence>
+        {isEditModalOpen && selectedUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            onClick={() => setIsEditModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between border-b border-blue-500 rounded-t-2xl z-10">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                    <Edit className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Edit User</h2>
+                    <p className="text-sm text-blue-100">Update {selectedUser.role.toLowerCase()} information</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <div className="p-6">
+                {selectedUser.role === 'STUDENT' ? (
+                  <form onSubmit={studentForm.handleSubmit(handleUpdateUser)} className="space-y-6">
+                    {/* Personal Information */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <User className="w-5 h-5 mr-2 text-blue-600" />
+                        Personal Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* First Name */}
+                        <div>
+                          <label htmlFor="edit-firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                            First Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="edit-firstName"
+                            type="text"
+                            {...studentForm.register('firstName')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter first name"
+                          />
+                          {studentForm.formState.errors.firstName && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {studentForm.formState.errors.firstName.message}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Middle Name */}
+                        <div>
+                          <label htmlFor="edit-middleName" className="block text-sm font-medium text-gray-700 mb-2">
+                            Middle Name
+                          </label>
+                          <input
+                            id="edit-middleName"
+                            type="text"
+                            {...studentForm.register('middleName')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter middle name"
+                          />
+                        </div>
+
+                        {/* Last Name */}
+                        <div>
+                          <label htmlFor="edit-lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                            Last Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="edit-lastName"
+                            type="text"
+                            {...studentForm.register('lastName')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Enter last name"
+                          />
+                          {studentForm.formState.errors.lastName && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {studentForm.formState.errors.lastName.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Academic Information */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <GraduationCap className="w-5 h-5 mr-2 text-blue-600" />
+                        Academic Information
+                      </h3>
+                      <div>
+                        <label htmlFor="edit-school" className="block text-sm font-medium text-gray-700 mb-2">
+                          School Name <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="edit-school"
+                          type="text"
+                          {...studentForm.register('school')}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Enter school name"
+                        />
+                        {studentForm.formState.errors.school && (
+                          <p className="mt-1 text-sm text-red-600">
+                            {studentForm.formState.errors.school.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Contact Information */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <Mail className="w-5 h-5 mr-2 text-blue-600" />
+                        Contact Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Email */}
+                        <div>
+                          <label htmlFor="edit-email" className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address
+                          </label>
+                          <input
+                            id="edit-email"
+                            type="email"
+                            {...studentForm.register('email')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="student@example.com"
+                          />
+                          {studentForm.formState.errors.email && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {studentForm.formState.errors.email.message}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Phone */}
+                        <div>
+                          <label htmlFor="edit-phone" className="block text-sm font-medium text-gray-700 mb-2">
+                            Phone Number
+                          </label>
+                          <input
+                            id="edit-phone"
+                            type="tel"
+                            {...studentForm.register('phone')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="+977 9800000000"
+                          />
+                          {studentForm.formState.errors.phone && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {studentForm.formState.errors.phone.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditModalOpen(false)}
+                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                        disabled={actionLoading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={actionLoading}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {actionLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Updating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Update Student</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                ) : selectedUser.role === 'TEACHER' ? (
+                  <form onSubmit={teacherForm.handleSubmit(handleUpdateUser)} className="space-y-6">
+                    {/* Personal Information */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <User className="w-5 h-5 mr-2 text-blue-600" />
+                        Personal Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* First Name */}
+                        <div>
+                          <label htmlFor="edit-teacher-firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                            First Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="edit-teacher-firstName"
+                            type="text"
+                            {...teacherForm.register('firstName')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="Enter first name"
+                          />
+                          {teacherForm.formState.errors.firstName && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {teacherForm.formState.errors.firstName.message}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Middle Name */}
+                        <div>
+                          <label htmlFor="edit-teacher-middleName" className="block text-sm font-medium text-gray-700 mb-2">
+                            Middle Name
+                          </label>
+                          <input
+                            id="edit-teacher-middleName"
+                            type="text"
+                            {...teacherForm.register('middleName')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="Enter middle name"
+                          />
+                        </div>
+
+                        {/* Last Name */}
+                        <div>
+                          <label htmlFor="edit-teacher-lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                            Last Name <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="edit-teacher-lastName"
+                            type="text"
+                            {...teacherForm.register('lastName')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="Enter last name"
+                          />
+                          {teacherForm.formState.errors.lastName && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {teacherForm.formState.errors.lastName.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Professional Information */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
+                        Professional Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Department */}
+                        <div>
+                          <label htmlFor="edit-department" className="block text-sm font-medium text-gray-700 mb-2">
+                            Department <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="edit-department"
+                            type="text"
+                            {...teacherForm.register('department')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="Enter department"
+                          />
+                          {teacherForm.formState.errors.department && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {teacherForm.formState.errors.department.message}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Experience */}
+                        <div>
+                          <label htmlFor="edit-experience" className="block text-sm font-medium text-gray-700 mb-2">
+                            Experience
+                          </label>
+                          <input
+                            id="edit-experience"
+                            type="text"
+                            {...teacherForm.register('experience')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="e.g., 5 years"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Contact Information */}
+                    <div className="bg-gray-50 rounded-xl p-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <Mail className="w-5 h-5 mr-2 text-blue-600" />
+                        Contact Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Email */}
+                        <div>
+                          <label htmlFor="edit-teacher-email" className="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="edit-teacher-email"
+                            type="email"
+                            {...teacherForm.register('email')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="teacher@example.com"
+                          />
+                          {teacherForm.formState.errors.email && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {teacherForm.formState.errors.email.message}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Phone */}
+                        <div>
+                          <label htmlFor="edit-teacher-phone" className="block text-sm font-medium text-gray-700 mb-2">
+                            Phone Number <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            id="edit-teacher-phone"
+                            type="tel"
+                            {...teacherForm.register('phone')}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                            placeholder="+977 9800000000"
+                          />
+                          {teacherForm.formState.errors.phone && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {teacherForm.formState.errors.phone.message}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-end space-x-3 pt-4 border-t">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditModalOpen(false)}
+                        className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                        disabled={actionLoading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={actionLoading}
+                        className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {actionLoading ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            <span>Updating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Update Teacher</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="text-center py-8">
+                    <AlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">Admin users cannot be edited from this interface.</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <CredentialsModal
+        isOpen={showCredentials}
+        onClose={() => setShowCredentials(false)}
+        credentials={userCredentials}
+      />
     </AdminLayout>
   );
 }

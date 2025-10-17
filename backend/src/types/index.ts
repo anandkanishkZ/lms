@@ -4,13 +4,13 @@ export type Role = 'ADMIN' | 'TEACHER' | 'STUDENT';
 
 export interface AuthUser {
   id: string;
+  userId: string; // Same as id, for backward compatibility
   name: string;
   email: string;
   phone?: string;
   role: Role;
   verified: boolean;
   isActive: boolean;
-  userId?: string;
   sessionId?: string;
 }
 
@@ -109,7 +109,8 @@ export interface UpdateUserData {
 }
 
 export interface LoginCredentials {
-  emailOrPhone: string;
+  identifier?: string; // Student portal uses this
+  emailOrPhone?: string; // Admin/legacy uses this
   password: string;
 }
 

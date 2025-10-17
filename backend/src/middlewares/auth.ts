@@ -56,7 +56,7 @@ export const authenticateToken = async (
       return;
     }
 
-    req.user = user as AuthUser;
+    req.user = { ...user, userId: user.id } as AuthUser;
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {
@@ -131,7 +131,7 @@ export const optionalAuth = async (
       });
 
       if (user && user.isActive) {
-        req.user = user as AuthUser;
+        req.user = { ...user, userId: user.id } as AuthUser;
       }
     }
 
@@ -141,3 +141,6 @@ export const optionalAuth = async (
     next();
   }
 };
+
+// Alias for authenticateToken (commonly used name)
+export const authenticate = authenticateToken;

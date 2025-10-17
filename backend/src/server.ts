@@ -124,8 +124,13 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('combined'));
 }
 
-// Static files
-app.use('/uploads', express.static('uploads'));
+// Static files with CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS?.split(',')[0] || 'http://localhost:3000');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  next();
+}, express.static('uploads'));
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {
@@ -137,21 +142,19 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// API v1 routes (existing)
-app.use('/api/auth', authRoutes);
-app.use('/api/users', authenticateToken, userRoutes);
-app.use('/api/live-classes', authenticateToken, liveClassRoutes);
-app.use('/api/materials', authenticateToken, materialRoutes);
-app.use('/api/routines', authenticateToken, routineRoutes);
-app.use('/api/notices', authenticateToken, noticeRoutes);
-app.use('/api/exams', authenticateToken, examRoutes);
-app.use('/api/results', authenticateToken, resultRoutes);
-app.use('/api/certificates', authenticateToken, certificateRoutes);
-app.use('/api/notifications', authenticateToken, notificationRoutes);
-app.use('/api/messages', authenticateToken, messageRoutes);
-app.use('/api/analytics', authenticateToken, analyticsRoutes);
-
-// API v1 Admin routes (new versioned API)
+// API v1 routes
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', authenticateToken, userRoutes);
+app.use('/api/v1/live-classes', authenticateToken, liveClassRoutes);
+app.use('/api/v1/materials', authenticateToken, materialRoutes);
+app.use('/api/v1/routines', authenticateToken, routineRoutes);
+app.use('/api/v1/notices', authenticateToken, noticeRoutes);
+app.use('/api/v1/exams', authenticateToken, examRoutes);
+app.use('/api/v1/results', authenticateToken, resultRoutes);
+app.use('/api/v1/certificates', authenticateToken, certificateRoutes);
+app.use('/api/v1/notifications', authenticateToken, notificationRoutes);
+app.use('/api/v1/messages', authenticateToken, messageRoutes);
+app.use('/api/v1/analytics', authenticateToken, analyticsRoutes);
 app.use('/api/v1/admin', adminRoutes);
 
 // 404 handler
@@ -184,7 +187,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`📱 API Base URL: http://localhost:${PORT}/api`);
+  console.log(`📱 API Base URL: http://localhost:${PORT}/api/v1`);
 });
 
 export default app;

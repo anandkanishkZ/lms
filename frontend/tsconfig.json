@@ -21,13 +21,16 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
+      "@/src/*": ["./src/*"],
+      "@/config/*": ["./src/config/*"],
+      "@/constants/*": ["./src/constants/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/types/*": ["./src/types/*"],
       "@/components/*": ["./components/*"],
-      "@/lib/*": ["./lib/*"],
-      "@/hooks/*": ["./hooks/*"],
-      "@/types/*": ["./types/*"],
-      "@/store/*": ["./store/*"],
-      "@/utils/*": ["./utils/*"],
-      "@/styles/*": ["./styles/*"]
+      "@/lib/*": ["./lib/*"]
     },
     "forceConsistentCasingInFileNames": true
   },

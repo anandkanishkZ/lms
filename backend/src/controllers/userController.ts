@@ -4,6 +4,8 @@ import { AuthRequest } from '../types';
 import { asyncHandler } from '../middlewares/errorHandler';
 import { z } from 'zod';
 import bcrypt from 'bcrypt';
+import { emailService } from '../services/email.service';
+import { smsService } from '../services/sms.service';
 
 const prisma = new PrismaClient();
 
@@ -35,8 +37,11 @@ const generateUserId = (): string => {
 };
 
 // Generate temporary password
-const generateTempPassword = (): string => {
-  return Math.random().toString(36).slice(-8);
+// Format: firstName + last 2 digits of year (e.g., "John25")
+const generateTempPassword = (firstName: string): string => {
+  const currentYear = new Date().getFullYear();
+  const yearLastTwoDigits = currentYear.toString().slice(-2); // Get last 2 digits (e.g., "25" from "2025")
+  return `${firstName}${yearLastTwoDigits}`;
 };
 
 // @desc    Create new student
@@ -87,7 +92,7 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
   }
 
   // Generate temporary password and hash it
-  const tempPassword = generateTempPassword();
+  const tempPassword = generateTempPassword(validatedData.firstName);
   const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
   // Create full name
@@ -111,6 +116,56 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
     }
   });
 
+  // Send welcome email and SMS
+  const loginUrl = process.env.APP_URL || 'http://localhost:3000';
+  const notificationResults = {
+    email: { sent: false, error: null as string | null },
+    sms: { sent: false, error: null as string | null }
+  };
+
+  // Send email if email is provided
+  if (student.email) {
+    try {
+      const emailResult = await emailService.sendWelcomeEmail({
+        name: student.name,
+        symbolNo: student.symbolNo!,
+        email: student.email,
+        tempPassword: tempPassword,
+        role: 'STUDENT',
+        school: student.school || undefined,
+        loginUrl: loginUrl
+      });
+      notificationResults.email.sent = emailResult.success;
+      if (!emailResult.success) {
+        notificationResults.email.error = emailResult.message;
+      }
+    } catch (error: any) {
+      console.error('Email sending failed:', error);
+      notificationResults.email.error = error.message;
+    }
+  }
+
+  // Send SMS if phone is provided
+  if (student.phone) {
+    try {
+      const smsResult = await smsService.sendWelcomeSMS({
+        name: student.name,
+        symbolNo: student.symbolNo!,
+        tempPassword: tempPassword,
+        phone: student.phone,
+        role: 'STUDENT',
+        loginUrl: loginUrl
+      });
+      notificationResults.sms.sent = smsResult.success;
+      if (!smsResult.success) {
+        notificationResults.sms.error = smsResult.message;
+      }
+    } catch (error: any) {
+      console.error('SMS sending failed:', error);
+      notificationResults.sms.error = error.message;
+    }
+  }
+
   res.status(201).json({
     success: true,
     message: 'Student created successfully',
@@ -122,7 +177,8 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
       phone: student.phone,
       school: student.school,
       tempPassword: tempPassword, // Send this to admin for initial setup
-    }
+    },
+    notifications: notificationResults
   });
 });
 
@@ -170,7 +226,7 @@ export const createTeacher = asyncHandler(async (req: Request, res: Response) =>
   }
 
   // Generate temporary password and hash it
-  const tempPassword = generateTempPassword();
+  const tempPassword = generateTempPassword(validatedData.firstName);
   const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
   // Create full name
@@ -195,6 +251,52 @@ export const createTeacher = asyncHandler(async (req: Request, res: Response) =>
     }
   });
 
+  // Send welcome email and SMS
+  const loginUrl = process.env.APP_URL || 'http://localhost:3000';
+  const notificationResults = {
+    email: { sent: false, error: null as string | null },
+    sms: { sent: false, error: null as string | null }
+  };
+
+  // Send email
+  try {
+    const emailResult = await emailService.sendWelcomeEmail({
+      name: teacher.name,
+      symbolNo: teacher.symbolNo!,
+      email: teacher.email!,
+      tempPassword: tempPassword,
+      role: 'TEACHER',
+      department: teacher.department || undefined,
+      loginUrl: loginUrl
+    });
+    notificationResults.email.sent = emailResult.success;
+    if (!emailResult.success) {
+      notificationResults.email.error = emailResult.message;
+    }
+  } catch (error: any) {
+    console.error('Email sending failed:', error);
+    notificationResults.email.error = error.message;
+  }
+
+  // Send SMS
+  try {
+    const smsResult = await smsService.sendWelcomeSMS({
+      name: teacher.name,
+      symbolNo: teacher.symbolNo!,
+      tempPassword: tempPassword,
+      phone: teacher.phone!,
+      role: 'TEACHER',
+      loginUrl: loginUrl
+    });
+    notificationResults.sms.sent = smsResult.success;
+    if (!smsResult.success) {
+      notificationResults.sms.error = smsResult.message;
+    }
+  } catch (error: any) {
+    console.error('SMS sending failed:', error);
+    notificationResults.sms.error = error.message;
+  }
+
   res.status(201).json({
     success: true,
     message: 'Teacher created successfully',
@@ -207,7 +309,8 @@ export const createTeacher = asyncHandler(async (req: Request, res: Response) =>
       department: teacher.department,
       experience: teacher.experience,
       tempPassword: tempPassword, // Send this to admin for initial setup
-    }
+    },
+    notifications: notificationResults
   });
 });
 
