@@ -95,15 +95,27 @@ enum Grade {
 model User {
   id           String   @id @default(cuid())
   name         String
-  email        String   @unique
+  firstName    String?  // Added for better name management
+  middleName   String?  // Added for full names
+  lastName     String?  // Added for better name management
+  email        String?  @unique // Made optional for students
   phone        String?  @unique
-  symbolNo     String?  @unique // Student Symbol Number
+  symbolNo     String?  @unique // Student Symbol Number - now auto-generated
+  school       String?  // Added for students
+  department   String?  // Added for teachers
+  experience   String?  // Added for teachers
   role         Role     @default(STUDENT)
-  password     String
+  password     String?  // Made optional - will be auto-generated
   profileImage String?
   verified     Boolean  @default(false)
   isActive     Boolean  @default(true)
+  isBlocked    Boolean  @default(false)
+  blockReason  String?
+  blockedBy    String?
+  blockedAt    DateTime?
   lastLogin    DateTime?
+  loginAttempts Int     @default(0)
+  lockoutUntil DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -126,8 +138,26 @@ model User {
   messagesReceived     Message[]             @relation("MessageReceiver")
   routinesCreated      Routine[]             @relation("RoutineCreatedBy")
   teacherRoutines      Routine[]             @relation("TeacherRoutines")
+  adminSessions        AdminSession[]
 
   @@map("users")
+}
+
+model AdminSession {
+  id          String   @id @default(cuid())
+  userId      String
+  token       String   @unique
+  refreshToken String?  @unique
+  ipAddress   String?
+  userAgent   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_sessions")
 }
 
 model Profile {
@@ -501,15 +531,17 @@ model Message {
 }
 
 model ActivityLog {
-  id        String   @id @default(cuid())
-  userId    String
-  action    String   // e.g., "LOGIN", "UPLOAD_MATERIAL", "JOIN_CLASS"
-  entity    String?  // e.g., "LiveClass", "Material"
-  entityId  String?
-  details   Json?
-  ipAddress String?
-  userAgent String?
-  timestamp DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  performedBy String?  // Admin who performed the action
+  action      String   // e.g., "LOGIN", "USER_BLOCKED", "USER_UNBLOCKED", "USER_UPDATED", "USER_DELETED"
+  entity      String?  // e.g., "User", "LiveClass", "Material"
+  entityId    String?
+  details     Json?
+  notes       String?  // Admin notes for the action
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime @default(now())
 
   @@map("activity_logs")
 }

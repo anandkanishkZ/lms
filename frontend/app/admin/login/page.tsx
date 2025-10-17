@@ -6,13 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { toast } from 'react-hot-toast';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react';
 
 // Validation schema
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  rememberMe: z.boolean().optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -25,36 +26,40 @@ export default function AdminLogin() {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
+  const fillDemoCredentials = () => {
+    setValue('email', 'admin@lms.com');
+    setValue('password', 'admin123');
+    showSuccessToast('Demo credentials filled!');
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     
     try {
-      // Demo credentials for testing
-      if (data.email === 'admin@lms.com' && data.password === 'admin123') {
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Store admin session
-        localStorage.setItem('adminToken', 'demo-admin-token');
-        localStorage.setItem('adminUser', JSON.stringify({
-          id: '1',
-          email: data.email,
-          name: 'Admin User',
-          role: 'admin'
-        }));
-        
-        toast.success('Login successful! Welcome to the admin dashboard.');
+      // Import the API service dynamically to avoid SSR issues
+      const { default: adminApi } = await import('@/lib/adminApi');
+      
+      const response = await adminApi.login({
+        email: data.email,
+        password: data.password,
+        rememberMe: data.rememberMe || false,
+      });
+
+      if (response.success) {
+                showSuccessToast('Login successful!');
         router.push('/admin/dashboard');
       } else {
-        toast.error('Invalid credentials. Use admin@lms.com / admin123 for demo.');
+              showErrorToast(response.message || 'Login failed');
       }
     } catch (error) {
-      toast.error('Login failed. Please try again.');
+      console.error('Login error:', error);
+            showErrorToast('Connection error. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -165,7 +170,18 @@ export default function AdminLogin() {
 
             {/* Demo Credentials Note */}
             <div className="bg-blue-500/20 border border-blue-400/30 rounded-lg p-4">
-              <h4 className="text-sm font-medium text-blue-200 mb-2">Demo Credentials:</h4>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="text-sm font-medium text-blue-200">Demo Credentials:</h4>
+                <motion.button
+                  type="button"
+                  onClick={fillDemoCredentials}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-3 py-1 bg-blue-600/80 hover:bg-blue-600 text-white text-xs font-medium rounded-md transition-colors duration-200 border border-blue-500/50"
+                >
+                  Fill Demo
+                </motion.button>
+              </div>
               <p className="text-xs text-blue-300">
                 Email: <span className="font-mono bg-blue-900/50 px-1 rounded">admin@lms.com</span><br />
                 Password: <span className="font-mono bg-blue-900/50 px-1 rounded">admin123</span>

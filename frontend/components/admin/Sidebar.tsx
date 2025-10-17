@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Home,
@@ -30,7 +30,8 @@ import {
   Phone,
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
-import { toast } from 'react-hot-toast';
+import Link from 'next/link';
+import { showSuccessToast, showErrorToast } from '@/lib/toast';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -64,28 +65,24 @@ const menuItems = [
 export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [activeItem, setActiveItem] = useState('Dashboard');
 
-  useEffect(() => {
-    // Set active item based on current path
-    const currentItem = menuItems.find(item => item.href === pathname);
-    if (currentItem) {
-      setActiveItem(currentItem.label);
+  const handleLogout = async () => {
+    try {
+      // Import API service dynamically
+      const { default: adminApi } = await import('@/lib/adminApi');
+      
+      await adminApi.logout();
+      showSuccessToast('Logged out successfully');
+      router.push('/admin/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      showErrorToast('Error during logout');
+      // Still redirect even if logout API fails
+      router.push('/admin/login');
     }
-  }, [pathname]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminUser');
-    toast.success('Logged out successfully');
-    router.push('/admin/login');
   };
 
-  const handleNavigation = (item: typeof menuItems[0]) => {
-    setActiveItem(item.label);
-    // Navigate to the actual route
-    router.push(item.href);
-  };
+
 
   return (
     <motion.div
@@ -137,50 +134,37 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
         <nav className="h-full p-4 space-y-2 overflow-y-auto scrollbar-thin">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = activeItem === item.label;
+            const isActive = pathname === item.href;
             
             return (
-              <motion.button
+              <Link
                 key={item.label}
-                onClick={() => handleNavigation(item)}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+                href={item.href}
+                className={`block w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-150 group relative ${
                   isActive
                     ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-600 border border-blue-200'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:border-gray-200 border border-transparent'
                 }`}
               >
                 {isActive && (
-                  <motion.div
-                    layoutId="activeIndicator"
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-purple-600 rounded-r-full"
-                  />
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-purple-600 rounded-r-full" />
                 )}
                 
-                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : ''}`} />
+                <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-blue-600' : ''}`} />
                 
-                <AnimatePresence mode="wait">
-                  {!isCollapsed && (
-                    <motion.span
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -10 }}
-                      transition={{ duration: 0.2 }}
-                      className="font-medium truncate"
-                    >
-                      {item.label}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
+                {!isCollapsed && (
+                  <span className="font-medium truncate">
+                    {item.label}
+                  </span>
+                )}
                 
                 {/* Tooltip for collapsed state */}
                 {isCollapsed && (
-                  <div className="absolute left-full ml-4 px-3 py-2 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap border border-gray-300">
+                  <div className="absolute left-full ml-4 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap shadow-lg">
                     {item.label}
                   </div>
                 )}
-              </motion.button>
+              </Link>
             );
           })}
         </nav>

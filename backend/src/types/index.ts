@@ -10,6 +10,8 @@ export interface AuthUser {
   role: Role;
   verified: boolean;
   isActive: boolean;
+  userId?: string;
+  sessionId?: string;
 }
 
 export interface AuthRequest extends Request {

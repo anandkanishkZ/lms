@@ -15,7 +15,7 @@ import {
   Download,
   Mail,
 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 
 interface QuickAction {
   id: string;

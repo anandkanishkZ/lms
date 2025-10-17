@@ -21,6 +21,9 @@ import notificationRoutes from './routes/notifications';
 import messageRoutes from './routes/messages';
 import analyticsRoutes from './routes/analytics';
 
+// Import admin routes
+import adminRoutes from './routes/admin';
+
 // Import middlewares
 import { authenticateToken } from './middlewares/auth';
 import { errorHandler } from './middlewares/errorHandler';
@@ -30,27 +33,85 @@ dotenv.config();
 const app: Application = express();
 const prisma = new PrismaClient();
 
+// CORS configuration (must be before rate limiting)
+const corsOptions = {
+  origin: function (origin: any, callback: any) {
+    // Allow requests with no origin (mobile apps, curl, postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Cache-Control',
+    'X-Access-Token'
+  ],
+  optionsSuccessStatus: 200,
+  preflightContinue: false,
+};
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
 // Security middleware
 app.use(helmet());
 app.use(compression());
 
-// Rate limiting
+// Rate limiting (after CORS to avoid blocking preflight requests)
 const limiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 minutes
-  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100'),
-  message: 'Too many requests from this IP, please try again later.',
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '1000'), // Increased for development
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.',
+    error: 'RATE_LIMIT_EXCEEDED'
+  },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip preflight requests from rate limiting
+  skip: (req) => req.method === 'OPTIONS',
+  // Custom handler to return JSON
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests from this IP, please try again later.',
+      error: 'RATE_LIMIT_EXCEEDED',
+      retryAfter: 900
+    });
+  },
 });
-app.use(limiter);
 
-// CORS configuration
-const corsOptions = {
-  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
+// Apply rate limiting only to non-development environments or specific routes
+if (process.env.NODE_ENV === 'production') {
+  app.use(limiter);
+} else {
+  // In development, use a more lenient rate limiter
+  const devLimiter = rateLimit({
+    windowMs: 60000, // 1 minute
+    max: 1000, // Very high limit for development
+    skip: (req) => req.method === 'OPTIONS',
+    handler: (req, res) => {
+      res.status(429).json({
+        success: false,
+        message: 'Rate limit exceeded in development',
+        error: 'RATE_LIMIT_EXCEEDED'
+      });
+    },
+  });
+  app.use(devLimiter);
+}
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -76,7 +137,7 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// API routes
+// API v1 routes (existing)
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/live-classes', authenticateToken, liveClassRoutes);
@@ -89,6 +150,9 @@ app.use('/api/certificates', authenticateToken, certificateRoutes);
 app.use('/api/notifications', authenticateToken, notificationRoutes);
 app.use('/api/messages', authenticateToken, messageRoutes);
 app.use('/api/analytics', authenticateToken, analyticsRoutes);
+
+// API v1 Admin routes (new versioned API)
+app.use('/api/v1/admin', adminRoutes);
 
 // 404 handler
 app.use('*', (req: Request, res: Response) => {

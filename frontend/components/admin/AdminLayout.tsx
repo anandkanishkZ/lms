@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Search, Bell, RefreshCw } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import Sidebar from './Sidebar';
 
 interface AdminLayoutProps {
@@ -25,15 +25,31 @@ export default function AdminLayout({
   const router = useRouter();
 
   useEffect(() => {
-    // Check authentication
-    const token = localStorage.getItem('adminToken');
-    if (!token) {
-      router.push('/admin/login');
-      return;
-    }
+    const checkAuth = async () => {
+      try {
+        // Import API service dynamically
+        const { default: adminApi } = await import('@/lib/adminApi');
+        
+        if (!adminApi.isAuthenticated()) {
+          router.push('/admin/login');
+          return;
+        }
 
-    // Simulate loading
-    setTimeout(() => setIsLoading(false), 500);
+        // Optionally verify token with server
+        try {
+          await adminApi.getProfile();
+          setIsLoading(false);
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          router.push('/admin/login');
+        }
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        router.push('/admin/login');
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
   if (isLoading) {

@@ -2,7 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from '../components/providers'
-import { Toaster } from 'react-hot-toast'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -30,28 +31,18 @@ export default function RootLayout({
       <body className={inter.className}>
         <Providers>
           {children}
-          <Toaster
+          <ToastContainer
             position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: 'hsl(var(--background))',
-                color: 'hsl(var(--foreground))',
-                border: '1px solid hsl(var(--border))',
-              },
-              success: {
-                iconTheme: {
-                  primary: 'hsl(var(--primary))',
-                  secondary: 'white',
-                },
-              },
-              error: {
-                iconTheme: {
-                  primary: 'hsl(var(--destructive))',
-                  secondary: 'white',
-                },
-              },
-            }}
+            autoClose={4000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+            className="mt-16"
           />
         </Providers>
       </body>
