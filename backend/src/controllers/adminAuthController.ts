@@ -64,6 +64,14 @@ export const adminLogin = asyncHandler(async (req: AdminLoginRequest, res: Respo
   }
 
   // Verify password
+  if (!user.password) {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid credentials - password not set',
+    });
+    return;
+  }
+
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
@@ -109,6 +117,14 @@ export const adminLogin = asyncHandler(async (req: AdminLoginRequest, res: Respo
   });
 
   // Generate tokens
+  if (!user.email) {
+    res.status(500).json({
+      success: false,
+      message: 'User email not set',
+    });
+    return;
+  }
+
   const tokenPayload: AdminTokenPayload = {
     userId: user.id,
     email: user.email,
@@ -230,6 +246,14 @@ export const adminRefreshToken = asyncHandler(async (req: Request, res: Response
     }
 
     // Generate new access token
+    if (!session.user.email) {
+      res.status(500).json({
+        success: false,
+        message: 'User email not set',
+      });
+      return;
+    }
+
     const tokenPayload: AdminTokenPayload = {
       userId: session.user.id,
       email: session.user.email,
@@ -386,6 +410,14 @@ export const changeAdminPassword = asyncHandler(async (req: AuthRequest, res: Re
   }
 
   // Verify current password
+  if (!user.password) {
+    res.status(400).json({
+      success: false,
+      message: 'User password not set',
+    });
+    return;
+  }
+
   const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
 
   if (!isCurrentPasswordValid) {

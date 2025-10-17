@@ -67,7 +67,7 @@ export default function StudentLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl grid md:grid-cols-2 gap-8 items-center">
         
         {/* Left Side - Branding & Info */}
@@ -81,7 +81,7 @@ export default function StudentLoginPage() {
             {/* Logo & Title */}
             <div className="space-y-4">
               <div className="flex items-center space-x-3">
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
                   <GraduationCap className="w-10 h-10 text-white" />
                 </div>
                 <div>
@@ -118,8 +118,8 @@ export default function StudentLoginPage() {
                 transition={{ delay: 0.3 }}
                 className="flex items-start space-x-4 p-4 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Users className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Users className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="font-semibold text-gray-900">Live Classes</h3>
@@ -155,7 +155,7 @@ export default function StudentLoginPage() {
           <div className="bg-white rounded-2xl shadow-2xl p-8">
             {/* Mobile Logo */}
             <div className="md:hidden mb-6 text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-3">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-3">
                 <GraduationCap className="w-10 h-10 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900">Student Login</h2>
@@ -267,7 +267,7 @@ export default function StudentLoginPage() {
                 disabled={isLoading}
                 whileHover={{ scale: isLoading ? 1 : 1.02 }}
                 whileTap={{ scale: isLoading ? 1 : 0.98 }}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
               >
                 {isLoading ? (
                   <>

@@ -86,6 +86,14 @@ export const authenticateAdmin = async (
     }
 
     // Attach user info to request
+    if (!session.user.email) {
+      res.status(500).json({
+        success: false,
+        message: 'User email not set',
+      });
+      return;
+    }
+
     req.user = {
       id: session.user.id,
       userId: session.user.id,
@@ -197,7 +205,7 @@ export const optionalAdminAuth = async (
         },
       });
 
-      if (session && session.user.isActive && session.user.role === 'ADMIN') {
+      if (session && session.user.isActive && session.user.role === 'ADMIN' && session.user.email) {
         req.user = {
           id: session.user.id,
           userId: session.user.id,

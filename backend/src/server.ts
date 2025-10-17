@@ -24,6 +24,15 @@ import analyticsRoutes from './routes/analytics';
 // Import admin routes
 import adminRoutes from './routes/admin';
 
+// Import Module System routes
+import moduleRoutes from './routes/modules';
+import topicRoutes from './routes/topics';
+import lessonRoutes from './routes/lessons';
+import enrollmentRoutes from './routes/enrollments';
+import progressRoutes from './routes/progress';
+import activityRoutes from './routes/activities';
+import youtubeLiveRoutes from './routes/youtubeLive';
+
 // Import middlewares
 import { authenticateToken } from './middlewares/auth';
 import { errorHandler } from './middlewares/errorHandler';
@@ -156,6 +165,15 @@ app.use('/api/v1/notifications', authenticateToken, notificationRoutes);
 app.use('/api/v1/messages', authenticateToken, messageRoutes);
 app.use('/api/v1/analytics', authenticateToken, analyticsRoutes);
 app.use('/api/v1/admin', adminRoutes);
+
+// Module System routes (Courses -> Modules/Subjects)
+app.use('/api/v1/modules', moduleRoutes);
+app.use('/api/v1/topics', topicRoutes);
+app.use('/api/v1/lessons', lessonRoutes);
+app.use('/api/v1/enrollments', enrollmentRoutes);
+app.use('/api/v1/progress', progressRoutes);
+app.use('/api/v1/activities', activityRoutes);
+app.use('/api/v1/youtube-live', youtubeLiveRoutes);
 
 // 404 handler
 app.use('*', (req: Request, res: Response) => {
