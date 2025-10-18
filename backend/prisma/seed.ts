@@ -74,10 +74,10 @@ async function main() {
 
     // Create sample classes
     const class10A = await prisma.class.upsert({
-      where: { name_section: { name: 'Class 10', section: 'A' } },
+      where: { name_section: { name: 'Class 10-A', section: 'A' } },
       update: {},
       create: {
-        name: 'Class 10',
+        name: 'Class 10-A',
         section: 'A',
         description: 'Class 10 Section A',
         isActive: true,
@@ -85,10 +85,10 @@ async function main() {
     })
 
     const class10B = await prisma.class.upsert({
-      where: { name_section: { name: 'Class 10', section: 'B' } },
+      where: { name_section: { name: 'Class 10-B', section: 'B' } },
       update: {},
       create: {
-        name: 'Class 10',
+        name: 'Class 10-B',
         section: 'B',
         description: 'Class 10 Section B',
         isActive: true,

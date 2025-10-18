@@ -32,6 +32,8 @@ import enrollmentRoutes from './routes/enrollments';
 import progressRoutes from './routes/progress';
 import activityRoutes from './routes/activities';
 import youtubeLiveRoutes from './routes/youtubeLive';
+import subjectRoutes from './routes/subjects';
+import classRoutes from './routes/classes';
 
 // Import middlewares
 import { authenticateToken } from './middlewares/auth';
@@ -174,6 +176,8 @@ app.use('/api/v1/enrollments', enrollmentRoutes);
 app.use('/api/v1/progress', progressRoutes);
 app.use('/api/v1/activities', activityRoutes);
 app.use('/api/v1/youtube-live', youtubeLiveRoutes);
+app.use('/api/v1/subjects', subjectRoutes);
+app.use('/api/v1/classes', classRoutes);
 
 // 404 handler
 app.use('*', (req: Request, res: Response) => {
