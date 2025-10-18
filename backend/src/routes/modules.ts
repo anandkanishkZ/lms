@@ -24,10 +24,14 @@ router.get('/', authenticateToken, getModules);
 router.get('/:id', authenticateToken, getModuleById);
 router.post('/:id/view', authenticateToken, incrementViewCount);
 
-// Teacher/Admin routes - Create and manage modules
-router.post('/', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), createModule);
+// Admin-only routes - Module creation and deletion
+// Only admins can create modules and assign them to teachers
+router.post('/', authenticateToken, authorizeRoles('ADMIN'), createModule);
+router.delete('/:id', authenticateToken, authorizeRoles('ADMIN'), deleteModule);
+
+// Teacher/Admin routes - Update modules
+// Teachers can update their assigned modules, admins can update any module
 router.put('/:id', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), updateModule);
-router.delete('/:id', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), deleteModule);
 
 // Module workflow routes
 router.post('/:id/submit', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), submitForApproval);

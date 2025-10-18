@@ -37,8 +37,6 @@ export default function EditCoursePage() {
     level: 'Beginner',
     status: 'DRAFT',
     tags: [] as string[],
-    price: 0,
-    discountPrice: 0,
   });
 
   const [tagInput, setTagInput] = useState('');
@@ -64,8 +62,6 @@ export default function EditCoursePage() {
           level: course.level || 'Beginner',
           status: course.status || 'DRAFT',
           tags: (course as any).tags || [],
-          price: (course as any).price || 0,
-          discountPrice: (course as any).discountPrice || 0,
         });
 
         // Load dropdown data from backend API
@@ -99,7 +95,7 @@ export default function EditCoursePage() {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: name === 'duration' || name === 'price' || name === 'discountPrice' 
+      [name]: name === 'duration' 
         ? Number(value) 
         : value,
     }));
@@ -426,40 +422,6 @@ export default function EditCoursePage() {
                   <option value="PUBLISHED">Published</option>
                   <option value="SCHEDULED">Scheduled</option>
                 </select>
-              </div>
-
-              {/* Price */}
-              <div>
-                <label htmlFor="price" className="mb-2 block text-sm font-medium">
-                  Price ($)
-                </label>
-                <Input
-                  id="price"
-                  name="price"
-                  type="number"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-
-              {/* Discount Price */}
-              <div>
-                <label htmlFor="discountPrice" className="mb-2 block text-sm font-medium">
-                  Discount Price ($)
-                </label>
-                <Input
-                  id="discountPrice"
-                  name="discountPrice"
-                  type="number"
-                  value={formData.discountPrice}
-                  onChange={handleInputChange}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
               </div>
             </div>
           </Card>

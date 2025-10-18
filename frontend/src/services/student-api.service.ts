@@ -40,6 +40,35 @@ interface ChangePasswordData {
   newPassword: string;
 }
 
+interface ModuleEnrollment {
+  id: string;
+  studentId: string;
+  moduleId: string;
+  enrolledAt: string;
+  progress: number;
+  lastAccessedAt: string | null;
+  completedAt: string | null;
+  module: {
+    id: string;
+    title: string;
+    slug: string;
+    description: string | null;
+    thumbnail: string | null;
+    level: string;
+    duration: number | null;
+    isActive: boolean;
+    topicsCount?: number;
+  };
+}
+
+interface EnrollmentProgress {
+  enrollmentId: string;
+  progress: number;
+  completedTopics: number;
+  totalTopics: number;
+  lastAccessedAt: string | null;
+}
+
 class StudentApiService {
   private axiosInstance: AxiosInstance;
 
@@ -256,7 +285,41 @@ class StudentApiService {
     }
     return null;
   }
+
+  // Enrollment Management
+  async getMyEnrollments(): Promise<ModuleEnrollment[]> {
+    try {
+      const user = this.getStoredUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      const response = await this.axiosInstance.get(`/enrollments/students/${user.id}/enrollments`);
+      
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      }
+      return [];
+    } catch (error: any) {
+      console.error('Get enrollments error:', error);
+      throw error.response?.data || { success: false, message: 'Failed to fetch enrollments' };
+    }
+  }
+
+  async getEnrollmentProgress(enrollmentId: string): Promise<EnrollmentProgress | null> {
+    try {
+      const response = await this.axiosInstance.get(`/enrollments/${enrollmentId}/progress`);
+      
+      if (response.data.success && response.data.data) {
+        return response.data.data;
+      }
+      return null;
+    } catch (error: any) {
+      console.error('Get enrollment progress error:', error);
+      return null;
+    }
+  }
 }
 
 export const studentApiService = new StudentApiService();
-export type { StudentProfile, LoginCredentials, UpdateProfileData, ChangePasswordData };
+export type { StudentProfile, LoginCredentials, UpdateProfileData, ChangePasswordData, ModuleEnrollment, EnrollmentProgress };

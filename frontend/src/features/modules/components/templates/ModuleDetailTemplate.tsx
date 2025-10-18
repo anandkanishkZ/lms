@@ -37,8 +37,6 @@ export interface ModuleDetailData {
   enrolledCount?: number;
   rating?: number;
   totalRatings?: number;
-  price?: number;
-  isFree?: boolean;
   isEnrolled?: boolean;
   progress?: number;
   status?: 'draft' | 'published' | 'archived';
@@ -83,7 +81,6 @@ export interface TopicLesson {
   duration?: number;
   isCompleted?: boolean;
   isLocked?: boolean;
-  isFree?: boolean; // Preview lesson
 }
 
 export interface ModuleReview {
@@ -138,11 +135,7 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
   const totalDuration = module.topics?.reduce((acc, topic) => acc + (topic.duration || 0), 0) || 0;
 
   const handleEnrollClick = () => {
-    if (module.isFree) {
-      onEnroll?.();
-    } else {
-      setShowEnrollModal(true);
-    }
+    setShowEnrollModal(true);
   };
 
   const handleEnrollConfirm = () => {
@@ -187,60 +180,72 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
   return (
     <div className={cn('space-y-6', className)}>
       {/* Module Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-700 dark:to-purple-700 text-white rounded-lg p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div className="bg-[#2563eb] px-8 py-4">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-sm text-blue-100">
+            <span>Modules</span>
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            <span>{module.category || 'General'}</span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-8">
           {/* Left: Module Info */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Breadcrumb */}
-            <div className="flex items-center gap-2 text-sm text-blue-100">
-              <span>Modules</span>
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-              <span>{module.category || 'General'}</span>
-            </div>
-
-            <h1 className="text-3xl md:text-4xl font-bold">{module.title}</h1>
-            <p className="text-lg text-blue-100">{module.description}</p>
+          <div className="lg:col-span-2 space-y-5">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white">{module.title}</h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400 leading-relaxed">{module.description}</p>
 
             {/* Meta Info */}
-            <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-700 dark:text-gray-300">
               {module.rating && (
-                <div className="flex items-center gap-1">
-                  <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <div className="flex items-center gap-1.5 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-lg">
+                  <svg className="h-4 w-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
-                  <span className="font-semibold">{module.rating.toFixed(1)}</span>
-                  <span className="text-blue-100">({module.totalRatings?.toLocaleString()} ratings)</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{module.rating.toFixed(1)}</span>
+                  <span className="text-gray-600 dark:text-gray-400">({module.totalRatings?.toLocaleString()})</span>
                 </div>
               )}
               {module.enrolledCount !== undefined && (
-                <span>{module.enrolledCount.toLocaleString()} students</span>
+                <div className="flex items-center gap-1.5">
+                  <svg className="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span className="font-medium">{module.enrolledCount.toLocaleString()}</span>
+                  <span className="text-gray-600 dark:text-gray-400">students</span>
+                </div>
               )}
               {module.level && (
-                <Badge color="blue">
+                <Badge color="blue" className="bg-[#2563eb]/10 text-[#2563eb] border-[#2563eb]/20">
                   {module.level}
                 </Badge>
               )}
               {module.lastUpdated && (
-                <span>Updated {new Date(module.lastUpdated).toLocaleDateString()}</span>
+                <span className="text-gray-600 dark:text-gray-400">
+                  Updated {new Date(module.lastUpdated).toLocaleDateString()}
+                </span>
               )}
             </div>
 
             {/* Instructor */}
-            <UserAvatar
-              src={module.instructor.avatar}
-              name={module.instructor.name}
-              subtitle={`${module.instructor.totalModules || 0} modules • ${module.instructor.totalStudents?.toLocaleString() || 0} students`}
-              size="md"
-              showName
-            />
+            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+              <UserAvatar
+                src={module.instructor.avatar}
+                name={module.instructor.name}
+                subtitle={`${module.instructor.totalModules || 0} modules • ${module.instructor.totalStudents?.toLocaleString() || 0} students`}
+                size="md"
+                showName
+              />
+            </div>
 
             {/* Tags */}
             {module.tags && module.tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {module.tags.map((tag, index) => (
-                  <span key={index} className="px-3 py-1 bg-white/20 rounded-full text-sm">
+                  <span key={index} className="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-medium">
                     {tag}
                   </span>
                 ))}
@@ -250,12 +255,12 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
 
           {/* Right: Enrollment Card */}
           <div className="lg:col-span-1">
-            <Card className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white">
+            <Card className="sticky top-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg">
               {module.thumbnail && (
                 <img
                   src={module.thumbnail}
                   alt={module.title}
-                  className="w-full h-48 object-cover rounded-t-lg"
+                  className="w-full h-48 object-cover rounded-t-xl"
                 />
               )}
               <div className="p-6 space-y-4">
@@ -263,60 +268,61 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
                   <>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400">
-                        <span>Your Progress</span>
-                        <span>{module.progress || 0}%</span>
+                        <span className="font-medium">Your Progress</span>
+                        <span className="font-semibold text-[#2563eb]">{module.progress || 0}%</span>
                       </div>
-                      <Progress value={module.progress || 0} />
+                      <Progress value={module.progress || 0} className="h-2" />
                     </div>
-                    <Button fullWidth size="lg" onClick={onStartModule}>
+                    <Button 
+                      fullWidth 
+                      size="lg" 
+                      onClick={onStartModule}
+                      className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md hover:shadow-lg transition-all"
+                    >
                       {module.progress && module.progress > 0 ? 'Continue Learning' : 'Start Module'}
                     </Button>
                   </>
                 ) : (
                   <>
-                    <div className="text-center">
-                      {module.isFree ? (
-                        <div className="text-3xl font-bold text-green-600 dark:text-green-400">Free</div>
-                      ) : (
-                        <div className="text-3xl font-bold">${module.price}</div>
-                      )}
-                    </div>
                     <Button
                       fullWidth
                       size="lg"
                       onClick={handleEnrollClick}
                       isLoading={enrolling}
+                      className="bg-[#2563eb] hover:bg-[#1d4ed8] text-white shadow-md hover:shadow-lg transition-all font-semibold"
                     >
-                      {module.isFree ? 'Enroll for Free' : 'Enroll Now'}
+                      Enroll Now
                     </Button>
                   </>
                 )}
 
                 {/* Module Stats */}
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3 text-sm">
-                  <div className="flex items-center gap-3">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                    <svg className="h-5 w-5 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>{formatDuration(totalDuration)} total</span>
+                    <span className="font-medium">{formatDuration(totalDuration)}</span>
+                    <span className="text-gray-500">total</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                    <svg className="h-5 w-5 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
-                    <span>{totalLessons} lessons</span>
+                    <span className="font-medium">{totalLessons}</span>
+                    <span className="text-gray-500">lessons</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                    <svg className="h-5 w-5 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>Certificate of completion</span>
+                    <span className="font-medium">Certificate of completion</span>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                    <svg className="h-5 w-5 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
-                    <span>Access on mobile and desktop</span>
+                    <span className="font-medium">Access on mobile and desktop</span>
                   </div>
                 </div>
               </div>
@@ -335,14 +341,14 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
               <div className="space-y-6">
                 {/* What you'll learn */}
                 {module.learningOutcomes && module.learningOutcomes.length > 0 && (
-                  <Card>
+                  <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                       What you'll learn
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {module.learningOutcomes.map((outcome, index) => (
                         <div key={index} className="flex items-start gap-2">
-                          <svg className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="h-5 w-5 text-[#2563eb] shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                           </svg>
                           <span className="text-sm text-gray-700 dark:text-gray-300">{outcome}</span>
@@ -354,14 +360,14 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
 
                 {/* Requirements */}
                 {module.requirements && module.requirements.length > 0 && (
-                  <Card>
+                  <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                       Requirements
                     </h2>
                     <ul className="space-y-2">
                       {module.requirements.map((requirement, index) => (
                         <li key={index} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                          <span className="text-gray-400">•</span>
+                          <span className="text-[#2563eb]">•</span>
                           <span>{requirement}</span>
                         </li>
                       ))}
@@ -370,7 +376,7 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
                 )}
 
                 {/* Instructor Info */}
-                <Card>
+                <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                     About the instructor
                   </h2>
@@ -394,7 +400,7 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
             value: 'curriculum',
             label: 'Curriculum',
             content: module.topics && module.topics.length > 0 ? (
-              <Card>
+              <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                 <div className="mb-4">
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     Module Content
@@ -418,23 +424,20 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
                               'w-full flex items-center justify-between p-3 rounded-lg text-left transition-colors',
                               lesson.isLocked
                                 ? 'cursor-not-allowed opacity-50'
-                                : 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
+                                : 'hover:bg-blue-50 dark:hover:bg-gray-700 cursor-pointer'
                             )}
                           >
                             <div className="flex items-center gap-3 flex-1">
                               {lesson.isCompleted ? (
-                                <svg className="h-5 w-5 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                <svg className="h-5 w-5 text-[#2563eb]" fill="currentColor" viewBox="0 0 20 20">
                                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                                 </svg>
                               ) : (
-                                <div className="text-gray-400">{getLessonIcon(lesson.type)}</div>
+                                <div className="text-[#2563eb]">{getLessonIcon(lesson.type)}</div>
                               )}
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-sm font-medium">{lesson.title}</span>
-                                  {lesson.isFree && (
-                                    <Badge size="sm" color="green">Preview</Badge>
-                                  )}
+                                  <span className="text-sm font-medium text-gray-900 dark:text-white">{lesson.title}</span>
                                 </div>
                               </div>
                             </div>
@@ -466,7 +469,7 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
             content: (
               <div className="space-y-6">
                 {/* Rating Summary */}
-                <Card>
+                <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
                   <div className="flex items-center gap-8">
                     <div className="text-center">
                       <div className="text-5xl font-bold text-gray-900 dark:text-white">
@@ -555,7 +558,7 @@ export const ModuleDetailTemplate: React.FC<ModuleDetailTemplateProps> = ({
         onClose={() => setShowEnrollModal(false)}
         onConfirm={handleEnrollConfirm}
         title="Enroll in Module"
-        message={`Enroll in "${module.title}" for $${module.price}?`}
+        message={`Enroll in "${module.title}"?`}
         confirmText="Enroll Now"
         loading={enrolling}
       />

@@ -36,8 +36,6 @@ export interface CourseDetailData {
   enrolledCount?: number;
   rating?: number;
   totalRatings?: number;
-  price?: number;
-  isFree?: boolean;
   isEnrolled?: boolean;
   progress?: number;
   status?: 'draft' | 'published' | 'archived';
@@ -137,11 +135,7 @@ export const CourseDetailTemplate: React.FC<CourseDetailTemplateProps> = ({
   const totalDuration = course.modules?.reduce((acc, module) => acc + (module.duration || 0), 0) || 0;
 
   const handleEnrollClick = () => {
-    if (course.isFree) {
-      onEnroll?.();
-    } else {
-      setShowEnrollModal(true);
-    }
+    setShowEnrollModal(true);
   };
 
   const handleEnrollConfirm = () => {
@@ -273,20 +267,13 @@ export const CourseDetailTemplate: React.FC<CourseDetailTemplateProps> = ({
                   </>
                 ) : (
                   <>
-                    <div className="text-center">
-                      {course.isFree ? (
-                        <div className="text-3xl font-bold text-green-600 dark:text-green-400">Free</div>
-                      ) : (
-                        <div className="text-3xl font-bold">${course.price}</div>
-                      )}
-                    </div>
                     <Button
                       fullWidth
                       size="lg"
                       onClick={handleEnrollClick}
                       isLoading={enrolling}
                     >
-                      {course.isFree ? 'Enroll for Free' : 'Enroll Now'}
+                      Enroll Now
                     </Button>
                   </>
                 )}
@@ -554,7 +541,7 @@ export const CourseDetailTemplate: React.FC<CourseDetailTemplateProps> = ({
         onClose={() => setShowEnrollModal(false)}
         onConfirm={handleEnrollConfirm}
         title="Enroll in Course"
-        message={`Enroll in "${course.title}" for $${course.price}?`}
+        message={`Enroll in "${course.title}"?`}
         confirmText="Enroll Now"
         loading={enrolling}
       />

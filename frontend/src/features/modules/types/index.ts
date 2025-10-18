@@ -102,9 +102,6 @@ export interface UpdateModuleData {
   duration?: number | null;
   level?: string | null;
   status?: ModuleStatus;
-  tags?: string[];
-  price?: number;
-  discountPrice?: number;
   isFeatured?: boolean;
   isPublic?: boolean;
 }

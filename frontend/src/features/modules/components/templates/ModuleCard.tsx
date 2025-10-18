@@ -25,8 +25,6 @@ export interface ModuleCardData {
   level?: 'Beginner' | 'Intermediate' | 'Advanced';
   enrolledCount?: number;
   rating?: number;
-  price?: number;
-  isFree?: boolean;
   isEnrolled?: boolean;
   progress?: number; // 0-100
   status?: 'draft' | 'published' | 'archived';
@@ -245,16 +243,8 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({
           </div>
         )}
 
-        {/* Price & Action */}
-        <div className="flex items-center justify-between pt-2">
-          {module.isFree ? (
-            <span className="text-lg font-bold text-green-600 dark:text-green-400">Free</span>
-          ) : module.price !== undefined ? (
-            <span className="text-lg font-bold text-gray-900 dark:text-white">
-              ${module.price}
-            </span>
-          ) : null}
-
+        {/* Enroll Action */}
+        <div className="flex items-center justify-end pt-2">
           {module.isEnrolled ? (
             <Button size="sm" onClick={handleView}>
               Continue Learning
@@ -262,10 +252,9 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({
           ) : (
             <Button
               size="sm"
-              variant={module.isFree ? 'outline' : 'default'}
               onClick={handleEnroll}
             >
-              {module.isFree ? 'Enroll Free' : 'Enroll Now'}
+              Enroll Now
             </Button>
           )}
         </div>

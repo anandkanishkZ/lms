@@ -19,7 +19,6 @@ export interface CourseFilters {
   search?: string;
   category?: string;
   level?: string[];
-  priceType?: 'all' | 'free' | 'paid';
   rating?: number;
   sortBy?: 'recent' | 'popular' | 'rating' | 'title';
 }
@@ -83,10 +82,6 @@ export const CourseListTemplate: React.FC<CourseListTemplateProps> = ({
     onFilterChange?.({ ...filters, category });
   };
 
-  const handlePriceTypeChange = (priceType: 'all' | 'free' | 'paid') => {
-    onFilterChange?.({ ...filters, priceType });
-  };
-
   const handleSortChange = (sortBy: 'recent' | 'popular' | 'rating' | 'title') => {
     onFilterChange?.({ ...filters, sortBy });
   };
@@ -94,14 +89,13 @@ export const CourseListTemplate: React.FC<CourseListTemplateProps> = ({
   const handleClearFilters = () => {
     setSearchQuery('');
     setSelectedLevels([]);
-    onFilterChange?.({ search: '', category: undefined, level: [], priceType: 'all' });
+    onFilterChange?.({ search: '', category: undefined, level: [] });
   };
 
   const activeFilterCount = [
     filters.search,
     filters.category,
     filters.level && filters.level.length > 0,
-    filters.priceType && filters.priceType !== 'all',
   ].filter(Boolean).length;
 
   return (
@@ -175,18 +169,6 @@ export const CourseListTemplate: React.FC<CourseListTemplateProps> = ({
               Level {selectedLevels.length > 0 && `(${selectedLevels.length})`}
             </Button>
           </div>
-
-          {/* Price Type */}
-          <Tabs
-            tabs={[
-              { value: 'all', label: 'All', content: null },
-              { value: 'free', label: 'Free', content: null },
-              { value: 'paid', label: 'Paid', content: null },
-            ]}
-            value={filters.priceType || 'all'}
-            onChange={(value) => handlePriceTypeChange(value as any)}
-            variant="pills"
-          />
 
           {/* Sort By */}
           <Select

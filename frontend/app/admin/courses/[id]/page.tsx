@@ -182,61 +182,66 @@ export default function AdminModuleDetailPage() {
       title={module.title}
       description="Module management and details"
     >
-      <div className="p-6">
+      <div className="p-6 bg-gray-50 dark:bg-gray-900">
         {/* Header Actions */}
-        <div className="mb-6 flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Modules
-          </Button>
+        <div className="mb-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex items-center justify-between">
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Modules
+            </Button>
 
-          <div className="flex items-center gap-2">
-            {/* Module Stats */}
-            <div className="flex items-center gap-4 mr-4 text-sm text-gray-600">
-              <span className="flex items-center gap-1">
+            <div className="flex items-center gap-3">
+              {/* Module Stats */}
+              <div className="flex items-center gap-4 mr-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-4 py-2 rounded-lg">
+                <span className="flex items-center gap-1.5">
+                  <Users className="h-4 w-4 text-[#2563eb]" />
+                  <span className="font-medium text-gray-900 dark:text-white">{enrollments.length}</span>
+                  <span className="hidden sm:inline">enrolled</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Eye className="h-4 w-4 text-[#2563eb]" />
+                  <span className="font-medium text-gray-900 dark:text-white">{module.viewCount || 0}</span>
+                  <span className="hidden sm:inline">views</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Star className="h-4 w-4 text-yellow-500" />
+                  <span className="font-medium text-gray-900 dark:text-white">{module.avgRating?.toFixed(1) || '0.0'}</span>
+                </span>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={handleEnrollStudent}
+                className="flex items-center gap-2 hover:bg-blue-50 hover:text-[#2563eb] hover:border-[#2563eb] dark:hover:bg-gray-700"
+              >
                 <Users className="h-4 w-4" />
-                {enrollments.length} enrolled
-              </span>
-              <span className="flex items-center gap-1">
-                <Eye className="h-4 w-4" />
-                {module.viewCount || 0} views
-              </span>
-              <span className="flex items-center gap-1">
-                <Star className="h-4 w-4 text-yellow-500" />
-                {module.avgRating?.toFixed(1) || '0.0'}
-              </span>
+                <span className="hidden sm:inline">Manage Enrollments</span>
+                <span className="sm:hidden">Enrollments</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={handleEdit}
+                className="flex items-center gap-2 hover:bg-blue-50 hover:text-[#2563eb] hover:border-[#2563eb] dark:hover:bg-gray-700"
+              >
+                <Edit className="h-4 w-4" />
+                <span className="hidden sm:inline">Edit</span>
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleDelete}
+                className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-300 dark:hover:bg-red-900/20"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Delete</span>
+              </Button>
             </div>
-
-            <Button
-              variant="outline"
-              onClick={handleEnrollStudent}
-              className="flex items-center gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Manage Enrollments
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={handleEdit}
-              className="flex items-center gap-2"
-            >
-              <Edit className="h-4 w-4" />
-              Edit
-            </Button>
-
-            <Button
-              variant="outline"
-              onClick={handleDelete}
-              className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </Button>
           </div>
         </div>
 

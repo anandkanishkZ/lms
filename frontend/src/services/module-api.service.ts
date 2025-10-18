@@ -351,11 +351,11 @@ class ModuleApiService {
    * Get enrollments for a module
    */
   async getModuleEnrollments(moduleId: string, filters?: EnrollmentFilters): Promise<ModuleEnrollment[]> {
-    const response = await apiClient.get<ApiResponse<ModuleEnrollment[]>>(
+    const response = await apiClient.get<ApiResponse<{ enrollments: ModuleEnrollment[]; pagination: any }>>(
       `/enrollments/modules/${moduleId}/enrollments`,
       { params: filters }
     );
-    return response.data.data || [];
+    return response.data.data?.enrollments || [];
   }
 
   /**

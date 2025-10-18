@@ -342,11 +342,39 @@ class ModuleService {
       if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
       if (data.status !== undefined) updateData.status = data.status;
       
-      // Note: tags, price, discountPrice are not in the current schema
-      // They would need to be added to the Prisma schema first
+      // Note: Module system is FREE-only - no pricing fields in schema
+      // All modules are available to students without payment
       
       // For relations, only allow if user is admin
       const isAdmin = user.role === 'ADMIN';
+
+      // Teachers cannot modify admin-controlled fields
+      // Remove these from the update data if user is not an admin
+      if (!isAdmin) {
+        delete data.teacherId;    // Cannot reassign module to another teacher
+        delete data.isFeatured;   // Cannot change featured status
+        delete data.isPublic;     // Cannot change public visibility
+        delete data.subjectId;    // Cannot change subject
+        delete data.classId;      // Cannot change class
+        
+        // Teachers can only change status to DRAFT or PENDING_APPROVAL
+        if (data.status && !['DRAFT', 'PENDING_APPROVAL'].includes(data.status)) {
+          delete data.status;
+        }
+        
+        // Clear admin-only fields from updateData as well
+        delete updateData.teacherId;
+        delete updateData.isFeatured;
+        delete updateData.isPublic;
+        delete updateData.subjectId;
+        delete updateData.classId;
+        
+        // Restrict status changes
+        if (updateData.status && !['DRAFT', 'PENDING_APPROVAL'].includes(updateData.status)) {
+          delete updateData.status;
+        }
+      }
+
       if (isAdmin) {
         if (data.subjectId !== undefined) updateData.subjectId = data.subjectId;
         if (data.classId !== undefined) updateData.classId = data.classId;
