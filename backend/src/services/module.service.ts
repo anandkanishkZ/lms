@@ -278,8 +278,12 @@ class ModuleService {
       slug: string;
       description: string;
       thumbnailUrl: string;
+      subjectId: string;
+      classId: string;
+      teacherId: string;
       level: string;
       duration: number;
+      status: string;
       isFeatured: boolean;
       isPublic: boolean;
     }>,
@@ -322,12 +326,36 @@ class ModuleService {
 
     // Update module with transaction
     const updatedModule = await prisma.$transaction(async (tx) => {
+      // Prepare update data - only allow certain fields to be updated
+      const updateData: any = {
+        updatedAt: new Date(),
+      };
+
+      // Add allowed fields if they exist in data
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.slug !== undefined) updateData.slug = data.slug;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.thumbnailUrl !== undefined) updateData.thumbnailUrl = data.thumbnailUrl;
+      if (data.level !== undefined) updateData.level = data.level;
+      if (data.duration !== undefined) updateData.duration = data.duration;
+      if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured;
+      if (data.isPublic !== undefined) updateData.isPublic = data.isPublic;
+      if (data.status !== undefined) updateData.status = data.status;
+      
+      // Note: tags, price, discountPrice are not in the current schema
+      // They would need to be added to the Prisma schema first
+      
+      // For relations, only allow if user is admin
+      const isAdmin = user.role === 'ADMIN';
+      if (isAdmin) {
+        if (data.subjectId !== undefined) updateData.subjectId = data.subjectId;
+        if (data.classId !== undefined) updateData.classId = data.classId;
+        if (data.teacherId !== undefined) updateData.teacherId = data.teacherId;
+      }
+
       const updated = await tx.module.update({
         where: { id: moduleId },
-        data: {
-          ...data,
-          updatedAt: new Date(),
-        },
+        data: updateData,
         include: {
           subject: { select: { id: true, name: true } },
           class: { select: { id: true, name: true } },

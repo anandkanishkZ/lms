@@ -33,7 +33,7 @@ export interface MenuItem {
 export const ADMIN_MENU_ITEMS: MenuItem[] = [
   { icon: Home, label: 'Dashboard', href: ROUTES.admin.dashboard },
   { icon: Users, label: 'Users', href: ROUTES.admin.users },
-  { icon: BookOpen, label: 'Courses', href: ROUTES.admin.courses },
+  { icon: BookOpen, label: 'Modules', href: ROUTES.admin.courses },
   { icon: GraduationCap, label: 'Live Classes', href: ROUTES.admin.classes },
   { icon: Calendar, label: 'Schedule', href: ROUTES.admin.schedule },
   { icon: FileText, label: 'Assignments', href: ROUTES.admin.assignments },

@@ -114,7 +114,7 @@ export function EnrollmentChart() {
 
 export function CourseDistributionChart() {
   return (
-    <ChartCard title="Course Distribution">
+    <ChartCard title="Module Distribution">
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie

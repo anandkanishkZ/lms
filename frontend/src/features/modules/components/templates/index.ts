@@ -3,10 +3,36 @@
  * Central export point for all page templates and widgets
  */
 
-// Course Templates
-export { 
-  CourseCard, 
-  CourseCardSkeleton, 
+// Module Templates (NEW - Primary exports)
+export {
+  ModuleCard,
+  ModuleCardSkeleton,
+  ModuleGrid,
+  type ModuleCardData,
+  type ModuleCardProps,
+  type ModuleGridProps,
+} from './ModuleCard';
+
+export {
+  ModuleListTemplate,
+  type ModuleFilters,
+  type ModuleListTemplateProps,
+} from './ModuleListTemplate';
+
+export {
+  ModuleDetailTemplate,
+  ModuleDetailSkeleton,
+  type ModuleDetailData,
+  type ModuleTopic,
+  type TopicLesson,
+  type ModuleReview,
+  type ModuleDetailTemplateProps,
+} from './ModuleDetailTemplate';
+
+// Course Templates (DEPRECATED - Use Module* instead, keeping for backward compatibility)
+export {
+  CourseCard,
+  CourseCardSkeleton,
   CourseGrid,
   type CourseCardData,
   type CourseCardProps,
@@ -17,13 +43,11 @@ export {
   CourseListTemplate,
   type CourseFilters,
   type CourseListTemplateProps,
-} from './CourseListTemplate';
-
-export {
+} from './CourseListTemplate';export {
   CourseDetailTemplate,
   CourseDetailSkeleton,
   type CourseDetailData,
-  type CourseModule,
+  type CourseModule as CourseModuleLegacy,
   type CourseLesson,
   type CourseReview,
   type CourseDetailTemplateProps,
@@ -66,7 +90,7 @@ export {
   ProfilePageTemplate,
   ProfilePageSkeleton,
   type UserProfile,
-  type EnrolledCourse,
+  type EnrolledModule,
   type ActivityLog,
   type ProfilePageTemplateProps,
 } from './ProfilePageTemplate';

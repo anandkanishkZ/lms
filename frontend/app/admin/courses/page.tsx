@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
 import { AdminLayout } from '@/src/features/admin';
-import { CourseListTemplate } from '@/src/features/modules';
+import { ModuleListTemplate } from '@/src/features/modules';
 import { Button } from '@/src/components/ui/button';
 import { moduleApi } from '@/src/services/module-api.service';
 import { showErrorToast } from '@/src/utils/toast.util';
 
-// Transform Module to CourseCardData
-const transformModuleToCourse = (module: any) => ({
+// Transform Module API response to ModuleCardData
+const transformModuleToCardData = (module: any) => ({
   id: module.id,
   title: module.title,
   description: module.description || '',
@@ -30,16 +30,16 @@ const transformModuleToCourse = (module: any) => ({
   tags: module.tags || [],
 });
 
-export default function AdminCoursesPage() {
+export default function AdminModulesPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [totalCourses, setTotalCourses] = useState(0);
+  const [modules, setModules] = useState<any[]>([]);
+  const [totalModules, setTotalModules] = useState(0);
   const [filters, setFilters] = useState<any>({});
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch courses from API
-  const fetchCourses = async (filterParams = {}) => {
+  // Fetch modules from API
+  const fetchModules = async (filterParams = {}) => {
     try {
       setIsLoading(true);
       const response = await moduleApi.getModules({
@@ -48,37 +48,37 @@ export default function AdminCoursesPage() {
         limit: 12,
       });
       
-      const transformedCourses = response.modules.map(transformModuleToCourse);
-      setCourses(transformedCourses);
-      setTotalCourses(response.pagination.total);
+      const transformedModules = response.modules.map(transformModuleToCardData);
+      setModules(transformedModules);
+      setTotalModules(response.pagination.total);
     } catch (error) {
-      console.error('Failed to fetch courses:', error);
-      showErrorToast('Failed to load courses');
-      setCourses([]);
+      console.error('Failed to fetch modules:', error);
+      showErrorToast('Failed to load modules');
+      setModules([]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Load courses on mount
+  // Load modules on mount
   useEffect(() => {
-    fetchCourses(filters);
+    fetchModules(filters);
   }, [currentPage]);
 
-  const handleCourseClick = (courseId: string) => {
-    router.push(`/admin/courses/${courseId}`);
+  const handleModuleClick = (moduleId: string) => {
+    router.push(`/admin/courses/${moduleId}`);
   };
 
-  const handleEnroll = async (courseId: string) => {
+  const handleEnroll = async (moduleId: string) => {
     // In admin view, enrollment is managed differently
-    console.log('Manage enrollment for course:', courseId);
+    console.log('Manage enrollment for module:', moduleId);
   };
 
   const handleFilterChange = (newFilters: any) => {
     console.log('Filters changed:', newFilters);
     setFilters(newFilters);
     setCurrentPage(1);
-    fetchCourses(newFilters);
+    fetchModules(newFilters);
   };
 
   const handleSearch = (query: string) => {
@@ -86,17 +86,17 @@ export default function AdminCoursesPage() {
     const newFilters = { ...filters, search: query };
     setFilters(newFilters);
     setCurrentPage(1);
-    fetchCourses(newFilters);
+    fetchModules(newFilters);
   };
 
   const handleSort = (sortBy: string) => {
     console.log('Sort by:', sortBy);
     const newFilters = { ...filters, sortBy };
     setFilters(newFilters);
-    fetchCourses(newFilters);
+    fetchModules(newFilters);
   };
 
-  const handleCreateCourse = () => {
+  const handleCreateModule = () => {
     router.push('/admin/courses/create');
   };
 
@@ -106,41 +106,41 @@ export default function AdminCoursesPage() {
 
   return (
     <AdminLayout
-      title="Course Management"
-      description="Manage all courses, modules, and learning content"
+      title="Module Management"
+      description="Manage all modules, subjects, and learning content"
     >
       <div className="p-6">
         {/* Header with Create Button */}
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-              Courses
+              Modules & Subjects
             </h1>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Manage all courses, modules, and learning content
+              Manage all modules, subjects, and learning content
             </p>
           </div>
           <Button
-            onClick={handleCreateCourse}
+            onClick={handleCreateModule}
             className="flex items-center gap-2"
           >
             <Plus className="h-4 w-4" />
-            Create Course
+            Create Module
           </Button>
         </div>
 
-        {/* Course List */}
-        <CourseListTemplate
-          courses={courses}
+        {/* Module List */}
+        <ModuleListTemplate
+          modules={modules}
           loading={isLoading}
-          onClick={handleCourseClick}
+          onClick={handleModuleClick}
           onEnroll={handleEnroll}
           onFilterChange={handleFilterChange}
           onSearch={handleSearch}
-          totalCourses={totalCourses}
+          totalModules={totalModules}
           page={currentPage}
           pageSize={12}
-          totalPages={Math.ceil(totalCourses / 12)}
+          totalPages={Math.ceil(totalModules / 12)}
           onPageChange={handlePageChange}
           categories={[
             { value: 'all', label: 'All Categories' },
@@ -156,4 +156,3 @@ export default function AdminCoursesPage() {
     </AdminLayout>
   );
 }
-

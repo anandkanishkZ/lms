@@ -92,13 +92,21 @@ export interface CreateModuleData {
 
 export interface UpdateModuleData {
   title?: string;
+  slug?: string;
   description?: string;
+  thumbnailUrl?: string | null;
   thumbnail?: string | null;
   subjectId?: string;
   classId?: string;
+  teacherId?: string;
   duration?: number | null;
   level?: string | null;
+  status?: ModuleStatus;
+  tags?: string[];
+  price?: number;
+  discountPrice?: number;
   isFeatured?: boolean;
+  isPublic?: boolean;
 }
 
 export interface ModuleFilters {

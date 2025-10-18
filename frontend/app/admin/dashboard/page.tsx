@@ -50,12 +50,12 @@ export default function AdminDashboard() {
             description="Certified instructors"
           />
           <StatsCard
-            title="Active Courses"
+            title="Active Modules"
             value={56}
             change={{ value: 15.3, type: 'increase' }}
             icon={BookOpen}
             color="purple"
-            description="Published courses"
+            description="Published modules"
           />
           <StatsCard
             title="Live Classes"

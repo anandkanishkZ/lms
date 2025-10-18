@@ -11,10 +11,10 @@ import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 import { ArrowLeft, Save, Eye, Upload, X } from 'lucide-react';
 
 /**
- * Create Course Page
- * Form for creating new courses with all required fields
+ * Create Module Page
+ * Form for creating new modules with all required fields
  */
-export default function CreateCoursePage() {
+export default function CreateModulePage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [subjects, setSubjects] = useState<any[]>([]);
@@ -110,11 +110,11 @@ export default function CreateCoursePage() {
     
     // Validation
     if (!formData.title.trim()) {
-      showErrorToast('Please enter a course title');
+      showErrorToast('Please enter a module title');
       return;
     }
     if (!formData.description.trim()) {
-      showErrorToast('Please enter a course description');
+      showErrorToast('Please enter a module description');
       return;
     }
     if (!formData.subjectId) {
@@ -136,7 +136,7 @@ export default function CreateCoursePage() {
         .replace(/(^-|-$)/g, '');
 
       // Prepare data for API
-      const courseData: any = {
+      const moduleData: any = {
         title: formData.title,
         slug: slug,
         description: formData.description,
@@ -148,24 +148,24 @@ export default function CreateCoursePage() {
       };
 
       // Add optional fields only if they have values
-      if (formData.classId) courseData.classId = formData.classId;
-      if (formData.thumbnail) courseData.thumbnailUrl = formData.thumbnail;
-      if (formData.duration) courseData.duration = formData.duration;
+      if (formData.classId) moduleData.classId = formData.classId;
+      if (formData.thumbnail) moduleData.thumbnailUrl = formData.thumbnail;
+      if (formData.duration) moduleData.duration = formData.duration;
 
-      // Create course
-      const newCourse = await moduleApi.createModule(courseData);
+      // Create module
+      const newModule = await moduleApi.createModule(moduleData);
       
       showSuccessToast(
         isDraft 
-          ? 'Course saved as draft successfully' 
-          : 'Course created successfully'
+          ? 'Module saved as draft successfully' 
+          : 'Module created successfully'
       );
       
-      // Redirect to course detail page
-      router.push(`/admin/courses/${newCourse.id}`);
+      // Redirect to module detail page
+      router.push(`/admin/courses/${newModule.id}`);
     } catch (error: any) {
-      console.error('Error creating course:', error);
-      const errorMessage = error?.message || 'Failed to create course. Please try again.';
+      console.error('Error creating module:', error);
+      const errorMessage = error?.message || 'Failed to create module. Please try again.';
       showErrorToast(errorMessage);
     } finally {
       setIsLoading(false);
@@ -178,8 +178,8 @@ export default function CreateCoursePage() {
 
   return (
     <AdminLayout
-      title="Create New Course"
-      description="Add a new course to your curriculum"
+      title="Create New Module"
+      description="Add a new module to your curriculum"
     >
       <div className="p-6">
         {/* Header */}
@@ -190,7 +190,7 @@ export default function CreateCoursePage() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Courses
+            Back to Modules
           </Button>
 
           <div className="flex gap-3">
@@ -210,7 +210,7 @@ export default function CreateCoursePage() {
               className="flex items-center gap-2"
             >
               <Eye className="h-4 w-4" />
-              {isLoading ? 'Creating...' : 'Create Course'}
+              {isLoading ? 'Creating...' : 'Create Module'}
             </Button>
           </div>
         </div>
@@ -223,14 +223,14 @@ export default function CreateCoursePage() {
             {/* Title */}
             <div className="mb-4">
               <label htmlFor="title" className="mb-2 block text-sm font-medium">
-                Course Title <span className="text-red-500">*</span>
+                Module Title <span className="text-red-500">*</span>
               </label>
               <Input
                 id="title"
                 name="title"
                 value={formData.title}
                 onChange={handleInputChange}
-                placeholder="Enter course title"
+                placeholder="Enter module title"
                 required
               />
             </div>
@@ -245,7 +245,7 @@ export default function CreateCoursePage() {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                placeholder="Enter course description"
+                placeholder="Enter module description"
                 rows={4}
                 required
                 className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
@@ -255,7 +255,7 @@ export default function CreateCoursePage() {
             {/* Thumbnail */}
             <div className="mb-4">
               <label htmlFor="thumbnail" className="mb-2 block text-sm font-medium">
-                Course Thumbnail URL
+                Module Thumbnail URL
               </label>
               <Input
                 id="thumbnail"
@@ -268,7 +268,7 @@ export default function CreateCoursePage() {
           </Card>
 
           <Card className="p-6">
-            <h2 className="mb-4 text-xl font-semibold">Course Details</h2>
+            <h2 className="mb-4 text-xl font-semibold">Module Details</h2>
             
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {/* Subject */}

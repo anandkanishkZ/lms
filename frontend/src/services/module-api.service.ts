@@ -90,7 +90,7 @@ class ModuleApiService {
    * Update module (TEACHER/ADMIN)
    */
   async updateModule(moduleId: string, data: UpdateModuleData): Promise<Module> {
-    const response = await apiClient.patch<ApiResponse<Module>>(`${this.baseUrl}/${moduleId}`, data);
+    const response = await apiClient.put<ApiResponse<Module>>(`${this.baseUrl}/${moduleId}`, data);
     return response.data.data as Module;
   }
 
@@ -352,7 +352,7 @@ class ModuleApiService {
    */
   async getModuleEnrollments(moduleId: string, filters?: EnrollmentFilters): Promise<ModuleEnrollment[]> {
     const response = await apiClient.get<ApiResponse<ModuleEnrollment[]>>(
-      `/enrollments/modules/${moduleId}`,
+      `/enrollments/modules/${moduleId}/enrollments`,
       { params: filters }
     );
     return response.data.data || [];

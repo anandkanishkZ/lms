@@ -148,9 +148,16 @@ export default function EditCoursePage() {
     try {
       setIsLoading(true);
 
-      // Prepare data for API
-      const courseData = {
-        ...formData,
+      // Prepare data for API - map frontend field names to backend
+      const courseData: any = {
+        title: formData.title,
+        description: formData.description,
+        thumbnailUrl: formData.thumbnail, // Map thumbnail to thumbnailUrl
+        subjectId: formData.subjectId,
+        classId: formData.classId,
+        teacherId: formData.teacherId,
+        duration: formData.duration,
+        level: formData.level,
         status: isDraft ? 'DRAFT' : formData.status,
       };
 
@@ -165,9 +172,16 @@ export default function EditCoursePage() {
       
       // Redirect to course detail page
       router.push(`/admin/courses/${courseId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating course:', error);
-      showErrorToast('Failed to update course. Please try again.');
+      
+      // Extract error message from different error formats
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        'Failed to update course. Please try again.';
+      
+      showErrorToast(errorMessage);
     } finally {
       setIsLoading(false);
     }

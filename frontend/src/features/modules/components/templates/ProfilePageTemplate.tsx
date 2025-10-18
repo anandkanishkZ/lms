@@ -1,7 +1,7 @@
 /**
  * Profile Page Template
  * Complete user profile page with viewing and editing capabilities
- * Includes: Profile header, About/Courses/Activity tabs, Edit mode, Settings
+ * Includes: Profile header, About/Modules/Activity tabs, Edit mode, Settings
  */
 
 import React from 'react';
@@ -29,16 +29,16 @@ export interface UserProfile {
   website?: string;
   joinedDate: Date;
   stats: {
-    coursesEnrolled?: number;
-    coursesTeaching?: number;
+    modulesEnrolled?: number;
+    modulesTeaching?: number;
     totalStudents?: number;
-    completedCourses?: number;
+    completedModules?: number;
     certificatesEarned?: number;
     totalLearningHours?: number;
   };
 }
 
-export interface EnrolledCourse {
+export interface EnrolledModule {
   id: string;
   title: string;
   thumbnail?: string;
@@ -53,12 +53,12 @@ export interface ActivityLog {
   action: string;
   description: string;
   timestamp: Date;
-  type: 'course' | 'exam' | 'certificate' | 'system';
+  type: 'module' | 'exam' | 'certificate' | 'system';
 }
 
 export interface ProfilePageTemplateProps {
   profile: UserProfile;
-  enrolledCourses?: EnrolledCourse[];
+  enrolledModules?: EnrolledModule[];
   activityLogs?: ActivityLog[];
   isOwnProfile: boolean;
   isEditing: boolean;
@@ -66,7 +66,7 @@ export interface ProfilePageTemplateProps {
   onSave: (updates: Partial<UserProfile>) => void;
   onAvatarChange?: (file: File) => void;
   onPasswordChange?: (oldPassword: string, newPassword: string) => void;
-  onCourseClick?: (courseId: string) => void;
+  onModuleClick?: (moduleId: string) => void;
   loading?: boolean;
   className?: string;
 }
@@ -76,7 +76,7 @@ export interface ProfilePageTemplateProps {
  */
 export const ProfilePageTemplate: React.FC<ProfilePageTemplateProps> = ({
   profile,
-  enrolledCourses = [],
+  enrolledModules = [],
   activityLogs = [],
   isOwnProfile,
   isEditing,
@@ -84,7 +84,7 @@ export const ProfilePageTemplate: React.FC<ProfilePageTemplateProps> = ({
   onSave,
   onAvatarChange,
   onPasswordChange,
-  onCourseClick,
+  onModuleClick,
   loading = false,
   className,
 }) => {
@@ -251,13 +251,13 @@ export const ProfilePageTemplate: React.FC<ProfilePageTemplateProps> = ({
             <>
               <div className="text-center">
                 <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {profile.stats.coursesEnrolled || 0}
+                  {profile.stats.modulesEnrolled || 0}
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Enrolled Courses</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Enrolled Modules</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  {profile.stats.completedCourses || 0}
+                  {profile.stats.completedModules || 0}
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Completed</p>
               </div>
@@ -279,9 +279,9 @@ export const ProfilePageTemplate: React.FC<ProfilePageTemplateProps> = ({
             <>
               <div className="text-center">
                 <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {profile.stats.coursesTeaching || 0}
+                  {profile.stats.modulesTeaching || 0}
                 </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Courses Teaching</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Modules Teaching</p>
               </div>
               <div className="text-center">
                 <p className="text-3xl font-bold text-green-600 dark:text-green-400">
@@ -330,52 +330,52 @@ export const ProfilePageTemplate: React.FC<ProfilePageTemplateProps> = ({
             ),
           },
           {
-            value: 'courses',
-            label: `Courses (${enrolledCourses.length})`,
+            value: 'modules',
+            label: `Modules (${enrolledModules.length})`,
             content: (
               <div className="space-y-4">
-                {enrolledCourses.length === 0 ? (
+                {enrolledModules.length === 0 ? (
                   <Card className="p-8">
                     <p className="text-center text-gray-500 dark:text-gray-400">
-                      No courses enrolled yet.
+                      No modules enrolled yet.
                     </p>
                   </Card>
                 ) : (
-                  enrolledCourses.map((course) => (
-                    <Card key={course.id} className="p-6">
+                  enrolledModules.map((module) => (
+                    <Card key={module.id} className="p-6">
                       <div className="flex items-center gap-4">
-                        {course.thumbnail && (
+                        {module.thumbnail && (
                           <img
-                            src={course.thumbnail}
-                            alt={course.title}
+                            src={module.thumbnail}
+                            alt={module.title}
                             className="w-32 h-20 object-cover rounded-lg shrink-0"
                           />
                         )}
                         <div className="flex-1 min-w-0">
                           <button
-                            onClick={() => onCourseClick?.(course.id)}
+                            onClick={() => onModuleClick?.(module.id)}
                             className="text-left"
                           >
                             <h4 className="text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 truncate">
-                              {course.title}
+                              {module.title}
                             </h4>
                             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                              by {course.instructor}
+                              by {module.instructor}
                             </p>
                           </button>
                           <div className="space-y-2">
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-gray-600 dark:text-gray-400">Progress</span>
                               <span className="font-semibold text-gray-900 dark:text-white">
-                                {course.progress}%
+                                {module.progress}%
                               </span>
                             </div>
-                            <Progress value={course.progress} size="sm" />
+                            <Progress value={module.progress} size="sm" />
                             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-                              <Badge color={course.status === 'completed' ? 'green' : 'blue'} size="sm">
-                                {course.status === 'completed' ? 'Completed' : 'In Progress'}
+                              <Badge color={module.status === 'completed' ? 'green' : 'blue'} size="sm">
+                                {module.status === 'completed' ? 'Completed' : 'In Progress'}
                               </Badge>
-                              <span>Last accessed: {new Date(course.lastAccessed).toLocaleDateString()}</span>
+                              <span>Last accessed: {new Date(module.lastAccessed).toLocaleDateString()}</span>
                             </div>
                           </div>
                         </div>
@@ -403,7 +403,7 @@ export const ProfilePageTemplate: React.FC<ProfilePageTemplateProps> = ({
                     {activityLogs.map((log) => (
                       <div key={log.id} className="flex items-start gap-3 pb-4 border-b border-gray-200 dark:border-gray-700 last:border-0">
                         <div className="mt-1">
-                          {log.type === 'course' && (
+                          {log.type === 'module' && (
                             <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
                               <svg className="h-4 w-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />

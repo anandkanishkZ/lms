@@ -4,60 +4,76 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Users, Eye, Clock, Star } from 'lucide-react';
 import { AdminLayout } from '@/src/features/admin';
-import { CourseDetailTemplate } from '@/src/features/modules';
+import { ModuleDetailTemplate } from '@/src/features/modules';
 import { Button } from '@/src/components/ui/button';
 import { ConfirmModal } from '@/src/components/ui/confirm-modal';
 import { moduleApi } from '@/src/services/module-api.service';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 
-export default function AdminCourseDetailPage() {
+export default function AdminModuleDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const courseId = params?.id as string;
+  const moduleId = params?.id as string;
 
   const [isLoading, setIsLoading] = useState(true);
-  const [course, setCourse] = useState<any>(null);
+  const [module, setModule] = useState<any>(null);
   const [topics, setTopics] = useState<any[]>([]);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch course details
-  const fetchCourseDetails = async () => {
+  // Fetch module details
+  const fetchModuleDetails = async () => {
     try {
       setIsLoading(true);
       
-      // Fetch course with topics
-      const courseData = await moduleApi.getModuleById(courseId, true);
-      setCourse(courseData);
+      console.log('Fetching module with ID:', moduleId);
+      
+      // Fetch module with topics
+      const moduleData = await moduleApi.getModuleById(moduleId, true);
+      console.log('Module data received:', moduleData);
+      setModule(moduleData);
 
       // Fetch topics separately
-      const topicsData = await moduleApi.getTopicsByModule(courseId);
+      const topicsData = await moduleApi.getTopicsByModule(moduleId);
+      console.log('Topics data received:', topicsData);
       setTopics(topicsData);
 
       // Fetch enrollments for admin view
-      const enrollmentsData = await moduleApi.getModuleEnrollments(courseId);
+      const enrollmentsData = await moduleApi.getModuleEnrollments(moduleId);
+      console.log('Enrollments data received:', enrollmentsData);
       setEnrollments(enrollmentsData || []);
-    } catch (error) {
-      console.error('Failed to fetch course details:', error);
-      showErrorToast('Failed to load course details');
+    } catch (error: any) {
+      console.error('Failed to fetch module details:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+      });
+      
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        'Failed to load module details';
+      
+      showErrorToast(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (courseId) {
-      fetchCourseDetails();
+    if (moduleId) {
+      fetchModuleDetails();
     }
-  }, [courseId]);
+  }, [moduleId]);
 
   const handleBack = () => {
     router.push('/admin/courses');
   };
 
   const handleEdit = () => {
-    router.push(`/admin/courses/${courseId}/edit`);
+    router.push(`/admin/courses/${moduleId}/edit`);
   };
 
   const handleDelete = () => {
@@ -67,12 +83,18 @@ export default function AdminCourseDetailPage() {
   const confirmDelete = async () => {
     try {
       setIsDeleting(true);
-      await moduleApi.deleteModule(courseId);
-      showSuccessToast('Course deleted successfully');
+      await moduleApi.deleteModule(moduleId);
+      showSuccessToast('Module deleted successfully');
       router.push('/admin/courses');
-    } catch (error) {
-      console.error('Failed to delete course:', error);
-      showErrorToast('Failed to delete course');
+    } catch (error: any) {
+      console.error('Failed to delete module:', error);
+      
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        'Failed to delete module';
+      
+      showErrorToast(errorMessage);
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -81,19 +103,19 @@ export default function AdminCourseDetailPage() {
 
   const handleEnrollStudent = () => {
     // Navigate to enrollment management
-    router.push(`/admin/courses/${courseId}/enroll`);
+    router.push(`/admin/courses/${moduleId}/enroll`);
   };
 
   const handleTopicClick = (topicId: string) => {
-    router.push(`/admin/courses/${courseId}/topics/${topicId}`);
+    router.push(`/admin/courses/${moduleId}/topics/${topicId}`);
   };
 
-  const handleLessonClick = (lessonId: string) => {
-    router.push(`/admin/courses/${courseId}/lessons/${lessonId}`);
+  const handleLessonClick = (topicId: string, lessonId: string) => {
+    router.push(`/admin/courses/${moduleId}/topics/${topicId}/lessons/${lessonId}`);
   };
 
   const handleAddTopic = () => {
-    router.push(`/admin/courses/${courseId}/topics/create`);
+    router.push(`/admin/courses/${moduleId}/topics/create`);
   };
 
   if (isLoading) {
@@ -108,48 +130,47 @@ export default function AdminCourseDetailPage() {
     );
   }
 
-  if (!course) {
+  if (!module) {
     return (
-      <AdminLayout title="Course Not Found" description="The requested course could not be found">
+      <AdminLayout title="Module Not Found" description="The requested module could not be found">
         <div className="p-6">
           <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">Course not found</p>
-            <Button onClick={handleBack}>Back to Courses</Button>
+            <p className="text-gray-600 mb-4">Module not found</p>
+            <Button onClick={handleBack}>Back to Modules</Button>
           </div>
         </div>
       </AdminLayout>
     );
   }
 
-  // Transform course data for template
-  const courseData = {
-    id: course.id,
-    title: course.title,
-    description: course.description || '',
-    thumbnail: course.thumbnail,
+  // Transform module data for template
+  const moduleData = {
+    id: module.id,
+    title: module.title,
+    description: module.description || '',
+    thumbnail: module.thumbnail,
     instructor: {
-      id: course.teacher?.id || '',
-      name: course.teacher?.name || 'Unknown',
-      avatar: course.teacher?.avatar,
-      bio: course.teacher?.bio,
-      email: course.teacher?.email,
+      id: module.teacher?.id || '',
+      name: module.teacher?.name || 'Unknown',
+      avatar: module.teacher?.avatar,
+      bio: module.teacher?.bio,
+      totalModules: module.teacher?.moduleCount || 0,
+      totalStudents: module.teacher?.studentCount || 0,
     },
-    duration: course.duration || 0,
-    level: course.level || 'Beginner',
-    rating: course.avgRating || 0,
-    reviewCount: course.reviewCount || 0,
-    enrolledCount: course.enrollmentCount || 0,
-    status: course.status || 'draft',
-    category: course.subject?.name || 'General',
-    tags: course.tags || [],
-    lastUpdated: course.updatedAt ? new Date(course.updatedAt) : new Date(),
+    duration: module.duration || 0,
+    level: module.level || 'Beginner',
+    rating: module.avgRating || 0,
+    totalRatings: module.reviewCount || 0,
+    enrolledCount: module.enrollmentCount || 0,
+    status: module.status || 'draft',
+    category: module.subject?.name || 'General',
+    tags: module.tags || [],
+    lastUpdated: module.updatedAt ? new Date(module.updatedAt) : new Date(),
     topics: topics.map((topic) => ({
       id: topic.id,
       title: topic.title,
       description: topic.description,
       duration: topic.duration,
-      lessonCount: topic.totalLessons || 0,
-      orderIndex: topic.orderIndex,
       lessons: topic.lessons || [],
     })),
     isEnrolled: false,
@@ -158,8 +179,8 @@ export default function AdminCourseDetailPage() {
 
   return (
     <AdminLayout
-      title={course.title}
-      description="Course management and details"
+      title={module.title}
+      description="Module management and details"
     >
       <div className="p-6">
         {/* Header Actions */}
@@ -170,11 +191,11 @@ export default function AdminCourseDetailPage() {
             className="flex items-center gap-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Courses
+            Back to Modules
           </Button>
 
           <div className="flex items-center gap-2">
-            {/* Course Stats */}
+            {/* Module Stats */}
             <div className="flex items-center gap-4 mr-4 text-sm text-gray-600">
               <span className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
@@ -182,11 +203,11 @@ export default function AdminCourseDetailPage() {
               </span>
               <span className="flex items-center gap-1">
                 <Eye className="h-4 w-4" />
-                {course.viewCount || 0} views
+                {module.viewCount || 0} views
               </span>
               <span className="flex items-center gap-1">
                 <Star className="h-4 w-4 text-yellow-500" />
-                {course.avgRating?.toFixed(1) || '0.0'}
+                {module.avgRating?.toFixed(1) || '0.0'}
               </span>
             </div>
 
@@ -219,11 +240,11 @@ export default function AdminCourseDetailPage() {
           </div>
         </div>
 
-        {/* Course Detail Template */}
-        <CourseDetailTemplate
-          course={courseData}
+        {/* Module Detail Template */}
+        <ModuleDetailTemplate
+          module={moduleData}
           onEnroll={() => handleEnrollStudent()}
-          onLessonClick={(moduleId, lessonId) => handleLessonClick(lessonId)}
+          onLessonClick={(topicId, lessonId) => handleLessonClick(topicId, lessonId)}
         />
 
         {/* Delete Confirmation Modal */}
@@ -231,9 +252,9 @@ export default function AdminCourseDetailPage() {
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
           onConfirm={confirmDelete}
-          title="Delete Course"
-          message={`Are you sure you want to delete "${course?.title}"? This action cannot be undone and will permanently remove all course content, topics, and lessons.`}
-          confirmText="Delete Course"
+          title="Delete Module"
+          message={`Are you sure you want to delete "${module?.title}"? This action cannot be undone and will permanently remove all module content, topics, and lessons.`}
+          confirmText="Delete Module"
           cancelText="Cancel"
           variant="danger"
           isLoading={isDeleting}
