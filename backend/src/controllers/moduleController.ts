@@ -61,6 +61,23 @@ export const getModuleById = asyncHandler(async (req: AuthRequest, res: Response
   res.status(200).json(result);
 });
 
+// @desc    Get module by slug
+// @route   GET /api/modules/slug/:slug
+// @access  Public/Authenticated
+export const getModuleBySlug = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await moduleService.getModuleBySlug(req.params.slug);
+
+  if (!result.data) {
+    res.status(404).json({
+      success: false,
+      message: 'Module not found',
+    });
+    return;
+  }
+
+  res.status(200).json(result);
+});
+
 // @desc    Update module
 // @route   PUT /api/modules/:id
 // @access  Teacher/Admin

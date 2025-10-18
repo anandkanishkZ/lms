@@ -54,7 +54,13 @@ class ApiClient {
         const originalRequest = error.config as RequestConfig;
 
         // Handle 401 Unauthorized - Try to refresh token
-        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+        // BUT SKIP for login/register endpoints (no tokens exist yet)
+        if (
+          error.response?.status === 401 && 
+          originalRequest && 
+          !originalRequest._retry &&
+          !this.isAuthEndpoint(originalRequest.url || '')
+        ) {
           originalRequest._retry = true;
 
           try {
@@ -77,6 +83,12 @@ class ApiClient {
     );
   }
 
+  // Check if the endpoint is an authentication endpoint (login/register)
+  private isAuthEndpoint(url: string): boolean {
+    const authEndpoints = ['/auth/login', '/admin/auth/login', '/auth/register', '/admin/auth/register'];
+    return authEndpoints.some(endpoint => url.includes(endpoint));
+  }
+
   private async handleTokenRefresh(): Promise<string | null> {
     // Prevent multiple simultaneous refresh requests
     if (this.refreshTokenPromise) {
@@ -87,8 +99,12 @@ class ApiClient {
       try {
         const refreshToken = this.getRefreshToken();
         if (!refreshToken) {
+          console.warn('⚠️ No refresh token available - user needs to login again');
+          this.clearAuth();
           throw new Error('No refresh token available');
         }
+
+        console.log('🔄 Attempting to refresh access token...');
 
         const response = await axios.post<ApiResponse<{ accessToken: string }>>(
           `${API_CONFIG.baseURL}/auth/refresh`,
@@ -99,11 +115,13 @@ class ApiClient {
         if (response.data.success && response.data.data?.accessToken) {
           const newToken = response.data.data.accessToken;
           this.setAccessToken(newToken);
+          console.log('✅ Access token refreshed successfully');
           return newToken;
         }
 
         throw new Error('Token refresh failed');
       } catch (error) {
+        console.error('❌ Token refresh failed:', error);
         this.clearAuth();
         throw error;
       } finally {

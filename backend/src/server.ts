@@ -34,6 +34,7 @@ import activityRoutes from './routes/activities';
 import youtubeLiveRoutes from './routes/youtubeLive';
 import subjectRoutes from './routes/subjects';
 import classRoutes from './routes/classes';
+import resourceRoutes from './routes/resources';
 
 // Import middlewares
 import { authenticateToken } from './middlewares/auth';
@@ -178,6 +179,7 @@ app.use('/api/v1/activities', activityRoutes);
 app.use('/api/v1/youtube-live', youtubeLiveRoutes);
 app.use('/api/v1/subjects', subjectRoutes);
 app.use('/api/v1/classes', classRoutes);
+app.use('/api/v1/resources', resourceRoutes);
 
 // 404 handler
 app.use('*', (req: Request, res: Response) => {

@@ -79,6 +79,17 @@ class ModuleApiService {
   }
 
   /**
+   * Get module by slug
+   */
+  async getModuleBySlug(slug: string, includeTopics = false): Promise<Module> {
+    const response = await apiClient.get<ApiResponse<Module>>(
+      `${this.baseUrl}/slug/${slug}`,
+      { params: { includeTopics } }
+    );
+    return response.data.data as Module;
+  }
+
+  /**
    * Create new module (TEACHER/ADMIN)
    */
   async createModule(data: CreateModuleData): Promise<Module> {

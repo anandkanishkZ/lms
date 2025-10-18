@@ -20,7 +20,18 @@ import {
   User,
   Calendar,
   ArrowRight,
-  Home
+  Home,
+  Download,
+  Eye,
+  Search,
+  Filter,
+  File,
+  Image as ImageIcon,
+  Music,
+  Video,
+  Link as LinkIcon,
+  Archive,
+  Code
 } from 'lucide-react';
 import moduleApiService from '@/src/services/module-api.service';
 import { studentApiService, type ModuleEnrollment } from '@/src/services/student-api.service';
@@ -73,6 +84,26 @@ interface Topic {
   progress?: number;
 }
 
+interface Resource {
+  id: string;
+  title: string;
+  description: string | null;
+  type: 'PDF' | 'DOCUMENT' | 'PRESENTATION' | 'SPREADSHEET' | 'VIDEO' | 'AUDIO' | 'IMAGE' | 'LINK' | 'YOUTUBE' | 'ARCHIVE' | 'CODE' | 'OTHER';
+  category: string;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  externalUrl: string | null;
+  isMandatory: boolean;
+  viewCount: number;
+  downloadCount: number;
+  createdAt: string;
+  uploader: {
+    id: string;
+    name: string;
+  };
+}
+
 export default function ModuleDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -80,16 +111,27 @@ export default function ModuleDetailPage() {
 
   const [module, setModule] = useState<any>(null);
   const [topics, setTopics] = useState<any[]>([]);
+  const [resources, setResources] = useState<Resource[]>([]);
   const [enrollment, setEnrollment] = useState<ModuleEnrollment | null>(null);
   const [expandedTopics, setExpandedTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [resourcesLoading, setResourcesLoading] = useState(false);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'overview' | 'topics' | 'resources'>('topics');
+  const [resourceTypeFilter, setResourceTypeFilter] = useState<string>('all');
+  const [resourceSearch, setResourceSearch] = useState('');
 
   useEffect(() => {
     if (slug) {
       fetchModuleData();
     }
   }, [slug]);
+
+  useEffect(() => {
+    if (activeTab === 'resources' && module && !resources.length && !resourcesLoading) {
+      fetchResources();
+    }
+  }, [activeTab, module]);
 
   const fetchModuleData = async () => {
     try {
@@ -101,8 +143,8 @@ export default function ModuleDetailPage() {
         return;
       }
 
-      // Fetch module details
-      const moduleData = await moduleApiService.getModuleById(slug);
+      // Fetch module details by slug
+      const moduleData = await moduleApiService.getModuleBySlug(slug);
       setModule(moduleData);
 
       // Fetch topics with lessons
@@ -160,6 +202,108 @@ export default function ModuleDetailPage() {
       setLoading(false);
     }
   };
+
+  const fetchResources = async () => {
+    if (!module) return;
+    
+    try {
+      setResourcesLoading(true);
+      const token = localStorage.getItem('student_token');
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/resources/modules/${module.id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setResources(data.data?.resources || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch resources:', error);
+    } finally {
+      setResourcesLoading(false);
+    }
+  };
+
+  const trackResourceAccess = async (resourceId: string, action: 'VIEW' | 'DOWNLOAD') => {
+    try {
+      const token = localStorage.getItem('student_token');
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/resources/${resourceId}/track`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ action }),
+        }
+      );
+    } catch (error) {
+      console.error('Failed to track resource access:', error);
+    }
+  };
+
+  const handleViewResource = (resource: Resource) => {
+    trackResourceAccess(resource.id, 'VIEW');
+    const url = resource.fileUrl || resource.externalUrl;
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleDownloadResource = (resource: Resource) => {
+    trackResourceAccess(resource.id, 'DOWNLOAD');
+    if (resource.fileUrl) {
+      window.open(resource.fileUrl, '_blank');
+    }
+  };
+
+  const getResourceIcon = (type: string) => {
+    const iconClass = "w-6 h-6";
+    switch (type) {
+      case 'PDF':
+      case 'DOCUMENT':
+        return <FileText className={`${iconClass} text-red-500`} />;
+      case 'PRESENTATION':
+        return <FileText className={`${iconClass} text-orange-500`} />;
+      case 'VIDEO':
+        return <Video className={`${iconClass} text-purple-500`} />;
+      case 'AUDIO':
+        return <Music className={`${iconClass} text-teal-500`} />;
+      case 'IMAGE':
+        return <ImageIcon className={`${iconClass} text-green-500`} />;
+      case 'LINK':
+        return <LinkIcon className={`${iconClass} text-blue-500`} />;
+      case 'YOUTUBE':
+        return <Youtube className={`${iconClass} text-red-600`} />;
+      case 'ARCHIVE':
+        return <Archive className={`${iconClass} text-gray-500`} />;
+      case 'CODE':
+        return <Code className={`${iconClass} text-indigo-500`} />;
+      default:
+        return <File className={`${iconClass} text-gray-500`} />;
+    }
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return 'N/A';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const filteredResources = resources.filter((resource) => {
+    const matchesType = resourceTypeFilter === 'all' || resource.type === resourceTypeFilter;
+    const matchesSearch = !resourceSearch || 
+      resource.title.toLowerCase().includes(resourceSearch.toLowerCase()) ||
+      resource.description?.toLowerCase().includes(resourceSearch.toLowerCase());
+    return matchesType && matchesSearch;
+  });
 
   const toggleTopic = (topicId: string) => {
     setExpandedTopics((prev) =>
@@ -384,17 +528,86 @@ export default function ModuleDetailPage() {
 
       {/* Course Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Course Content</h2>
+        {/* Tabs */}
+        <div className="flex items-center gap-1 mb-6 bg-white rounded-lg p-1 shadow-sm border border-gray-200">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`flex-1 px-4 py-2.5 rounded-md font-medium transition ${
+              activeTab === 'overview'
+                ? 'bg-[#2563eb] text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('topics')}
+            className={`flex-1 px-4 py-2.5 rounded-md font-medium transition ${
+              activeTab === 'topics'
+                ? 'bg-[#2563eb] text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Topics & Lessons
+          </button>
+          <button
+            onClick={() => setActiveTab('resources')}
+            className={`flex-1 px-4 py-2.5 rounded-md font-medium transition ${
+              activeTab === 'resources'
+                ? 'bg-[#2563eb] text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Resources
+          </button>
+        </div>
 
-        {topics.length === 0 ? (
-          <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-            <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No content available</h3>
-            <p className="text-gray-600">This module doesn't have any topics or lessons yet.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {topics.map((topic, topicIndex) => (
+        {/* Overview Tab */}
+        {activeTab === 'overview' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl p-8 shadow-sm"
+          >
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">About This Module</h2>
+            <p className="text-gray-600 leading-relaxed mb-6">
+              {module.description || 'No description available for this module.'}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Instructor</div>
+                <div className="font-semibold text-gray-900">{module.teacher.name}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Level</div>
+                <div className="font-semibold text-gray-900">{module.level}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Total Topics</div>
+                <div className="font-semibold text-gray-900">{module.totalTopics}</div>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="text-sm text-gray-600 mb-1">Total Lessons</div>
+                <div className="font-semibold text-gray-900">{module.totalLessons}</div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Topics Tab */}
+        {activeTab === 'topics' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {topics.length === 0 ? (
+              <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No content available</h3>
+                <p className="text-gray-600">This module doesn't have any topics or lessons yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">{topics.map((topic, topicIndex) => (
               <motion.div
                 key={topic.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -531,8 +744,157 @@ export default function ModuleDetailPage() {
               </motion.div>
             ))}
           </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Resources Tab */}
+        {activeTab === 'resources' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {/* Filter Bar */}
+            <div className="bg-white rounded-xl p-4 shadow-sm mb-4 flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search resources..."
+                  value={resourceSearch}
+                  onChange={(e) => setResourceSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563eb] focus:border-transparent"
+                />
+              </div>
+              <div className="relative">
+                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <select
+                  value={resourceTypeFilter}
+                  onChange={(e) => setResourceTypeFilter(e.target.value)}
+                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563eb] focus:border-transparent appearance-none bg-white cursor-pointer"
+                >
+                  <option value="all">All Types</option>
+                  <option value="PDF">PDF</option>
+                  <option value="VIDEO">Video</option>
+                  <option value="DOCUMENT">Document</option>
+                  <option value="IMAGE">Image</option>
+                  <option value="LINK">Link</option>
+                  <option value="YOUTUBE">YouTube</option>
+                  <option value="AUDIO">Audio</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Resources Grid */}
+            {resourcesLoading ? (
+              <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#2563eb] mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading resources...</p>
+              </div>
+            ) : filteredResources.length === 0 ? (
+              <div className="bg-white rounded-xl p-12 text-center shadow-sm">
+                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  {resourceSearch || resourceTypeFilter !== 'all' ? 'No resources found' : 'No resources available'}
+                </h3>
+                <p className="text-gray-600">
+                  {resourceSearch || resourceTypeFilter !== 'all' 
+                    ? 'Try adjusting your search or filters'
+                    : 'Your instructor hasn\'t added any resources yet.'}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredResources.map((resource, index) => (
+                  <motion.div
+                    key={resource.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition"
+                  >
+                    {/* Resource Header */}
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="flex-shrink-0">
+                        {getResourceIcon(resource.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start gap-2 mb-1">
+                          <h3 className="font-semibold text-gray-900 flex-1">
+                            {resource.title}
+                          </h3>
+                          {resource.isMandatory && (
+                            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-md flex-shrink-0">
+                              MANDATORY
+                            </span>
+                          )}
+                        </div>
+                        {resource.description && (
+                          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+                            {resource.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Resource Metadata */}
+                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4">
+                      <div className="flex items-center gap-1">
+                        <User className="w-4 h-4" />
+                        <span>{resource.uploader.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{new Date(resource.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      {resource.fileSize && (
+                        <div className="flex items-center gap-1">
+                          <FileText className="w-4 h-4" />
+                          <span>{formatFileSize(resource.fileSize)}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Resource Stats */}
+                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4 pb-4 border-b border-gray-200">
+                      <div className="flex items-center gap-1">
+                        <Eye className="w-4 h-4" />
+                        <span>{resource.viewCount} views</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Download className="w-4 h-4" />
+                        <span>{resource.downloadCount} downloads</span>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleViewResource(resource)}
+                        className="flex-1 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition flex items-center justify-center gap-2 text-sm font-medium"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>View</span>
+                      </button>
+                      {resource.fileUrl && (
+                        <button
+                          onClick={() => handleDownloadResource(resource)}
+                          className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center justify-center gap-2 text-sm font-medium"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download</span>
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </motion.div>
         )}
       </div>
     </div>
   );
 }
+

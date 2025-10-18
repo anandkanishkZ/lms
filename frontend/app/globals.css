@@ -74,6 +74,14 @@
   .slide-up {
     animation: slideUp 0.3s ease-out;
   }
+
+  .delay-1000 {
+    animation-delay: 1000ms;
+  }
+
+  .delay-2000 {
+    animation-delay: 2000ms;
+  }
 }
 
 @keyframes animateIn {

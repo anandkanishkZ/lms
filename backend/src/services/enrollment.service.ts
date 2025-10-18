@@ -528,6 +528,7 @@ class EnrollmentService {
           select: {
             id: true,
             title: true,
+            slug: true,
             description: true,
             thumbnailUrl: true,
             totalTopics: true,

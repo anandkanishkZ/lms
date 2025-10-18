@@ -177,6 +177,59 @@ class ModuleService {
   }
 
   /**
+   * Get module by slug with full details
+   */
+  async getModuleBySlug(slug: string, includeTopics = false) {
+    const module = await prisma.module.findUnique({
+      where: { slug: slug },
+      include: {
+        subject: { select: { id: true, name: true } },
+        class: { select: { id: true, name: true, section: true } },
+        teacher: { 
+          select: { 
+            id: true, 
+            name: true, 
+            email: true,
+            profileImage: true,
+          } 
+        },
+        topics: includeTopics ? {
+          include: {
+            lessons: {
+              select: {
+                id: true,
+                title: true,
+                type: true,
+                duration: true,
+                isPublished: true,
+                orderIndex: true,
+              },
+              orderBy: { orderIndex: 'asc' },
+            },
+          },
+          orderBy: { orderIndex: 'asc' },
+        } : false,
+        _count: {
+          select: {
+            topics: true,
+            enrollments: true,
+            reviews: true,
+          },
+        },
+      },
+    });
+
+    if (!module) {
+      throw new Error('Module not found');
+    }
+
+    return {
+      success: true,
+      data: module,
+    };
+  }
+
+  /**
    * Get all modules with filters
    */
   async getModules(filters: {

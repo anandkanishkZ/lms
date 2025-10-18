@@ -3,6 +3,7 @@ import {
   createModule,
   getModules,
   getModuleById,
+  getModuleBySlug,
   updateModule,
   deleteModule,
   submitForApproval,
@@ -21,6 +22,7 @@ router.get('/featured', getFeaturedModules);
 
 // Authenticated routes
 router.get('/', authenticateToken, getModules);
+router.get('/slug/:slug', authenticateToken, getModuleBySlug);
 router.get('/:id', authenticateToken, getModuleById);
 router.post('/:id/view', authenticateToken, incrementViewCount);
 

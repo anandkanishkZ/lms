@@ -24,6 +24,8 @@ const storage = multer.diskStorage({
       subDir = 'notices';
     } else if (file.fieldname === 'certificate') {
       subDir = 'certificates';
+    } else if (file.fieldname === 'resource') {
+      subDir = 'resources';
     }
 
     const fullPath = path.join(uploadDir, subDir);
@@ -49,6 +51,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     material: /pdf|doc|docx|ppt|pptx|txt|mp4|avi|mkv/,
     notice: /pdf|doc|docx|jpg|jpeg|png/,
     certificate: /pdf/,
+    resource: /pdf|doc|docx|ppt|pptx|xls|xlsx|txt|mp4|avi|mkv|mp3|wav|zip|rar|jpeg|jpg|png|gif|webp|svg/,
   };
 
   const fieldType = file.fieldname || 'general';
