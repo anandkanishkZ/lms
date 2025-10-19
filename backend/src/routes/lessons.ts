@@ -12,6 +12,9 @@ import {
   getLessonsByType,
   searchLessons,
   duplicateLesson,
+  reorderLessons,
+  togglePublishStatus,
+  bulkCreateLessons,
 } from '../controllers/lessonController';
 import { authenticateToken, authorizeRoles } from '../middlewares/auth';
 
@@ -44,5 +47,10 @@ router.post('/:id/duplicate', authenticateToken, authorizeRoles('TEACHER', 'ADMI
 // Attachment management - Teacher/Admin
 router.post('/:id/attachments', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), addAttachment);
 router.delete('/:lessonId/attachments/:attachmentId', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), deleteAttachment);
+
+// New endpoints - Reorder, Publish, Bulk Create
+router.patch('/topics/:topicId/reorder', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), reorderLessons);
+router.patch('/:id/publish', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), togglePublishStatus);
+router.post('/topics/:topicId/bulk', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), bulkCreateLessons);
 
 export default router;

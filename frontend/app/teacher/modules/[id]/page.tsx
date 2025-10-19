@@ -36,6 +36,7 @@ import {
   Search,
 } from 'lucide-react';
 import { showSuccessToast, showErrorToast, showInfoToast } from '@/src/utils/toast.util';
+import { TopicsLessonsTab } from './components/TopicsLessonsTab';
 
 interface Module {
   id: string;
@@ -322,15 +323,10 @@ export default function TeacherModuleDetailPage() {
           )}
 
           {activeTab === 'topics' && (
-            <motion.div
-              key="topics"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-lg p-6"
-            >
-              <p className="text-gray-600">Topics and lessons view coming soon...</p>
-            </motion.div>
+            <TopicsLessonsTab 
+              moduleId={moduleId} 
+              moduleName={module.title} 
+            />
           )}
         </AnimatePresence>
       </div>

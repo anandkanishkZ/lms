@@ -275,10 +275,11 @@ class LessonService {
       throw new Error('Unauthorized to update this lesson');
     }
 
-    // Handle order index change
-    if (data.orderIndex !== undefined && data.orderIndex !== lesson.orderIndex) {
-      await this.reorderLessons(lesson.topicId, lessonId, data.orderIndex);
-    }
+    // Handle order index change (will be done via separate reorder API)
+    // Commenting out old single-lesson reorder logic
+    // if (data.orderIndex !== undefined && data.orderIndex !== lesson.orderIndex) {
+    //   await this.reorderLessons(lesson.topicId, lessonId, data.orderIndex);
+    // }
 
     // Update lesson
     const updatedLesson = await prisma.$transaction(async (tx) => {
@@ -600,63 +601,277 @@ class LessonService {
   }
 
   /**
-   * Reorder lessons within a topic
+   * Reorder lessons within a topic (Bulk reorder)
    */
-  private async reorderLessons(topicId: string, lessonId: string, newIndex: number) {
-    // Get all lessons in topic
-    const lessons = await prisma.lesson.findMany({
+  async reorderLessons(
+    topicId: string,
+    lessonOrders: Array<{ id: string; orderIndex: number }>,
+    userId: string
+  ) {
+    // Verify topic exists and get module info
+    const topic = await prisma.topic.findUnique({
+      where: { id: topicId },
+      include: { module: true },
+    });
+
+    if (!topic) {
+      throw new Error('Topic not found');
+    }
+
+    // Check authorization
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        OR: [
+          { id: topic.module.teacherId },
+          { role: 'ADMIN' },
+        ],
+      },
+    });
+
+    if (!user) {
+      throw new Error('Unauthorized to reorder lessons in this topic');
+    }
+
+    // Update all lesson orders in a transaction
+    await prisma.$transaction(
+      lessonOrders.map(({ id, orderIndex }) =>
+        prisma.lesson.update({
+          where: { id },
+          data: { orderIndex },
+        })
+      )
+    );
+
+    // Log activity
+    await prisma.activityHistory.create({
+      data: {
+        userId,
+        moduleId: topic.module.id,
+        topicId,
+        activityType: 'LESSON_VIEWED', // Using as "LESSONS_REORDERED"
+        title: 'Reordered lessons',
+        description: `Reordered ${lessonOrders.length} lessons in topic ${topic.title}`,
+        metadata: {
+          action: 'lessons_reordered',
+          lessonCount: lessonOrders.length,
+          topicTitle: topic.title,
+        },
+      },
+    });
+
+    // Get updated lessons
+    const updatedLessons = await prisma.lesson.findMany({
       where: { topicId },
+      include: {
+        attachments: {
+          select: {
+            id: true,
+            title: true,
+            fileType: true,
+          },
+        },
+        _count: {
+          select: { progress: true },
+        },
+      },
       orderBy: { orderIndex: 'asc' },
     });
 
-    // Find current lesson
-    const currentLesson = lessons.find((l) => l.id === lessonId);
-    if (!currentLesson) {
-      throw new Error('Lesson not found in topic');
+    return {
+      success: true,
+      message: 'Lessons reordered successfully',
+      data: updatedLessons,
+    };
+  }
+
+  /**
+   * Toggle publish status of a lesson
+   */
+  async togglePublishStatus(lessonId: string, userId: string) {
+    // Get lesson with topic and module info
+    const lesson = await prisma.lesson.findUnique({
+      where: { id: lessonId },
+      include: {
+        topic: {
+          include: { module: true },
+        },
+      },
+    });
+
+    if (!lesson) {
+      throw new Error('Lesson not found');
     }
 
-    const oldIndex = currentLesson.orderIndex;
+    // Check authorization
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        OR: [
+          { id: lesson.topic.module.teacherId },
+          { role: 'ADMIN' },
+        ],
+      },
+    });
 
-    // Reorder logic
-    if (newIndex === oldIndex) return;
+    if (!user) {
+      throw new Error('Unauthorized to publish/unpublish this lesson');
+    }
 
-    await prisma.$transaction(async (tx) => {
-      if (newIndex > oldIndex) {
-        // Moving down: shift lessons between old and new index up
-        await tx.lesson.updateMany({
-          where: {
+    // Toggle publish status
+    const updatedLesson = await prisma.$transaction(async (tx) => {
+      const updated = await tx.lesson.update({
+        where: { id: lessonId },
+        data: {
+          isPublished: !lesson.isPublished,
+          updatedAt: new Date(),
+        },
+        include: {
+          topic: {
+            select: { id: true, title: true },
+          },
+        },
+      });
+
+      // Log activity
+      await tx.activityHistory.create({
+        data: {
+          userId,
+          moduleId: lesson.topic.module.id,
+          topicId: lesson.topicId,
+          lessonId: updated.id,
+          activityType: 'LESSON_VIEWED',
+          title: `${updated.isPublished ? 'Published' : 'Unpublished'} lesson: ${updated.title}`,
+          description: `Changed publish status in topic ${lesson.topic.title}`,
+          metadata: {
+            action: updated.isPublished ? 'lesson_published' : 'lesson_unpublished',
+            lessonTitle: updated.title,
+          },
+        },
+      });
+
+      return updated;
+    });
+
+    return {
+      success: true,
+      message: `Lesson ${updatedLesson.isPublished ? 'published' : 'unpublished'} successfully`,
+      data: updatedLesson,
+    };
+  }
+
+  /**
+   * Bulk create lessons in a topic
+   */
+  async bulkCreateLessons(
+    topicId: string,
+    lessonsData: Array<{
+      title: string;
+      description?: string;
+      type: LessonType;
+      duration?: number;
+      videoUrl?: string;
+      youtubeVideoId?: string;
+      content?: string;
+      isFree?: boolean;
+      isPublished?: boolean;
+    }>,
+    userId: string
+  ) {
+    // Verify topic exists and get module info
+    const topic = await prisma.topic.findUnique({
+      where: { id: topicId },
+      include: { module: true },
+    });
+
+    if (!topic) {
+      throw new Error('Topic not found');
+    }
+
+    // Check authorization
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        OR: [
+          { id: topic.module.teacherId },
+          { role: 'ADMIN' },
+        ],
+      },
+    });
+
+    if (!user) {
+      throw new Error('Unauthorized to add lessons to this topic');
+    }
+
+    // Validate all lessons
+    for (const lessonData of lessonsData) {
+      this.validateLessonData(lessonData);
+    }
+
+    // Get next order index
+    const lastLesson = await prisma.lesson.findFirst({
+      where: { topicId },
+      orderBy: { orderIndex: 'desc' },
+    });
+    let startOrderIndex = lastLesson ? lastLesson.orderIndex + 1 : 0;
+
+    // Create all lessons in transaction
+    const createdLessons = await prisma.$transaction(async (tx) => {
+      const lessons = [];
+      
+      for (const lessonData of lessonsData) {
+        const newLesson = await tx.lesson.create({
+          data: {
+            title: lessonData.title,
+            description: lessonData.description,
             topicId,
-            orderIndex: {
-              gt: oldIndex,
-              lte: newIndex,
+            type: lessonData.type,
+            orderIndex: startOrderIndex++,
+            duration: lessonData.duration,
+            videoUrl: lessonData.videoUrl,
+            youtubeVideoId: lessonData.youtubeVideoId,
+            content: lessonData.content,
+            isFree: lessonData.isFree || false,
+            isPublished: lessonData.isPublished !== undefined ? lessonData.isPublished : true,
+          },
+          include: {
+            topic: {
+              select: { id: true, title: true },
             },
           },
-          data: {
-            orderIndex: { decrement: 1 },
-          },
         });
-      } else {
-        // Moving up: shift lessons between new and old index down
-        await tx.lesson.updateMany({
-          where: {
-            topicId,
-            orderIndex: {
-              gte: newIndex,
-              lt: oldIndex,
-            },
-          },
-          data: {
-            orderIndex: { increment: 1 },
-          },
-        });
+        lessons.push(newLesson);
       }
 
-      // Update the moved lesson
-      await tx.lesson.update({
-        where: { id: lessonId },
-        data: { orderIndex: newIndex },
+      // Log activity
+      await tx.activityHistory.create({
+        data: {
+          userId,
+          moduleId: topic.module.id,
+          topicId,
+          activityType: 'LESSON_VIEWED',
+          title: `Bulk created ${lessons.length} lessons`,
+          description: `Created multiple lessons in topic ${topic.title}`,
+          metadata: {
+            action: 'lessons_bulk_created',
+            lessonCount: lessons.length,
+            topicTitle: topic.title,
+          },
+        },
       });
+
+      return lessons;
     });
+
+    // Update topic and module counts
+    await topicService.updateLessonCount(topicId);
+    await moduleService.updateCounts(topic.module.id);
+
+    return {
+      success: true,
+      message: `Successfully created ${createdLessons.length} lessons`,
+      data: createdLessons,
+    };
   }
 
   /**

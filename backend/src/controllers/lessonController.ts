@@ -156,3 +156,52 @@ export const duplicateLesson = asyncHandler(async (req: AuthRequest, res: Respon
 
   res.status(201).json(result);
 });
+
+// @desc    Reorder lessons in a topic
+// @route   PATCH /api/topics/:topicId/lessons/reorder
+// @access  Teacher/Admin
+export const reorderLessons = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { topicId } = req.params;
+  const { lessons } = req.body; // Array of { id, orderIndex }
+
+  if (!Array.isArray(lessons) || lessons.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'Lessons array is required and must not be empty',
+    });
+    return;
+  }
+
+  const result = await lessonService.reorderLessons(topicId, lessons, req.user!.id);
+
+  res.status(200).json(result);
+});
+
+// @desc    Toggle publish status of a lesson
+// @route   PATCH /api/lessons/:id/publish
+// @access  Teacher/Admin
+export const togglePublishStatus = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await lessonService.togglePublishStatus(req.params.id, req.user!.id);
+
+  res.status(200).json(result);
+});
+
+// @desc    Bulk create lessons in a topic
+// @route   POST /api/topics/:topicId/lessons/bulk
+// @access  Teacher/Admin
+export const bulkCreateLessons = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { topicId } = req.params;
+  const { lessons } = req.body; // Array of lesson data
+
+  if (!Array.isArray(lessons) || lessons.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'Lessons array is required and must not be empty',
+    });
+    return;
+  }
+
+  const result = await lessonService.bulkCreateLessons(topicId, lessons, req.user!.id);
+
+  res.status(201).json(result);
+});

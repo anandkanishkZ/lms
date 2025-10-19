@@ -222,10 +222,11 @@ class TopicService {
       throw new Error('Unauthorized to update this topic');
     }
 
-    // Handle order index change
-    if (data.orderIndex !== undefined && data.orderIndex !== topic.orderIndex) {
-      await this.reorderTopics(topic.moduleId, topicId, data.orderIndex);
-    }
+    // Handle order index change (will be done via separate reorder API)
+    // Commenting out old single-topic reorder logic
+    // if (data.orderIndex !== undefined && data.orderIndex !== topic.orderIndex) {
+    //   await this.reorderTopics(topic.moduleId, topicId, data.orderIndex);
+    // }
 
     // Update topic
     const updatedTopic = await prisma.$transaction(async (tx) => {
@@ -348,63 +349,79 @@ class TopicService {
   }
 
   /**
-   * Reorder topics within a module
+   * Reorder topics within a module (Bulk reorder)
    */
-  private async reorderTopics(moduleId: string, topicId: string, newIndex: number) {
-    // Get all topics in module
-    const topics = await prisma.topic.findMany({
+  async reorderTopics(
+    moduleId: string,
+    topicOrders: Array<{ id: string; orderIndex: number }>,
+    userId: string
+  ) {
+    // Verify module exists and user has access
+    const module = await prisma.module.findUnique({
+      where: { id: moduleId },
+    });
+
+    if (!module) {
+      throw new Error('Module not found');
+    }
+
+    // Check authorization
+    const user = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        OR: [
+          { id: module.teacherId },
+          { role: 'ADMIN' },
+        ],
+      },
+    });
+
+    if (!user) {
+      throw new Error('Unauthorized to reorder topics in this module');
+    }
+
+    // Update all topic orders in a transaction
+    await prisma.$transaction(
+      topicOrders.map(({ id, orderIndex }) =>
+        prisma.topic.update({
+          where: { id },
+          data: { orderIndex },
+        })
+      )
+    );
+
+    // Log activity
+    await prisma.activityHistory.create({
+      data: {
+        userId,
+        moduleId,
+        activityType: 'MODULE_ENROLLED', // Using as "TOPICS_REORDERED"
+        title: 'Reordered topics',
+        description: `Reordered ${topicOrders.length} topics in module ${module.title}`,
+        metadata: {
+          action: 'topics_reordered',
+          topicCount: topicOrders.length,
+          moduleName: module.title,
+        },
+      },
+    });
+
+    // Get updated topics
+    const updatedTopics = await prisma.topic.findMany({
       where: { moduleId },
+      include: {
+        _count: {
+          select: { lessons: true },
+        },
+      },
       orderBy: { orderIndex: 'asc' },
     });
 
-    // Find current topic
-    const currentTopic = topics.find((t) => t.id === topicId);
-    if (!currentTopic) {
-      throw new Error('Topic not found in module');
-    }
-
-    const oldIndex = currentTopic.orderIndex;
-
-    // Reorder logic
-    if (newIndex === oldIndex) return;
-
-    await prisma.$transaction(async (tx) => {
-      if (newIndex > oldIndex) {
-        // Moving down: shift topics between old and new index up
-        await tx.topic.updateMany({
-          where: {
-            moduleId,
-            orderIndex: {
-              gt: oldIndex,
-              lte: newIndex,
-            },
-          },
-          data: {
-            orderIndex: { decrement: 1 },
-          },
-        });
-      } else {
-        // Moving up: shift topics between new and old index down
-        await tx.topic.updateMany({
-          where: {
-            moduleId,
-            orderIndex: {
-              gte: newIndex,
-              lt: oldIndex,
-            },
-          },
-          data: {
-            orderIndex: { increment: 1 },
-          },
-        });
-      }
-
-      // Update the moved topic
-      await tx.topic.update({
-        where: { id: topicId },
-        data: { orderIndex: newIndex },
-      });
-    });
+    return {
+      success: true,
+      message: 'Topics reordered successfully',
+      data: updatedTopics,
+    };
   }
 
   /**

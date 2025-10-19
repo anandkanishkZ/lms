@@ -78,3 +78,23 @@ export const duplicateTopic = asyncHandler(async (req: AuthRequest, res: Respons
 
   res.status(201).json(result);
 });
+
+// @desc    Reorder topics in a module
+// @route   PATCH /api/modules/:moduleId/topics/reorder
+// @access  Teacher/Admin
+export const reorderTopics = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { moduleId } = req.params;
+  const { topics } = req.body; // Array of { id, orderIndex }
+
+  if (!Array.isArray(topics) || topics.length === 0) {
+    res.status(400).json({
+      success: false,
+      message: 'Topics array is required and must not be empty',
+    });
+    return;
+  }
+
+  const result = await topicService.reorderTopics(moduleId, topics, req.user!.id);
+
+  res.status(200).json(result);
+});
