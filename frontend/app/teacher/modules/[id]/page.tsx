@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { showSuccessToast, showErrorToast, showInfoToast } from '@/src/utils/toast.util';
 import { TopicsLessonsTab } from './components/TopicsLessonsTab';
+import { ResourceActionsModal } from './components/ResourceActionsModal';
 
 interface Module {
   id: string;
@@ -454,8 +455,7 @@ function ResourcesTab({
 
 // Resource Card Component
 function ResourceCard({ resource, onUpdate }: { resource: Resource; onUpdate: () => void }) {
-  const [showActions, setShowActions] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [showActionsModal, setShowActionsModal] = useState(false);
 
   const getResourceIcon = (type: string) => {
     switch (type) {
@@ -478,63 +478,11 @@ function ResourceCard({ resource, onUpdate }: { resource: Resource; onUpdate: ()
     return `${mb.toFixed(1)} MB`;
   };
 
-  const handleToggleVisibility = async () => {
-    try {
-      setIsProcessing(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/resources/${resource.id}/visibility`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('teacher_token')}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ isHidden: !resource.isHidden }),
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to update visibility');
-      
-      showSuccessToast(resource.isHidden ? 'Resource is now visible' : 'Resource is now hidden');
-      onUpdate();
-    } catch (error: any) {
-      showErrorToast(error.message || 'Failed to update visibility');
-    } finally {
-      setIsProcessing(false);
-      setShowActions(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this resource?')) return;
-
-    try {
-      setIsProcessing(true);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/resources/${resource.id}`,
-        {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('teacher_token')}`,
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error('Failed to delete resource');
-      
-      showSuccessToast('Resource deleted successfully');
-      onUpdate();
-    } catch (error: any) {
-      showErrorToast(error.message || 'Failed to delete resource');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   return (
-    <div className={`bg-white rounded-lg p-4 border-2 transition-all ${
-      resource.isHidden ? 'border-orange-200 bg-orange-50/30' : 'border-gray-200 hover:border-[#2563eb]'
-    }`}>
+    <>
+      <div className={`bg-white rounded-lg p-4 border-2 transition-all ${
+        resource.isHidden ? 'border-orange-200 bg-orange-50/30' : 'border-gray-200 hover:border-[#2563eb]'
+      }`}>
       <div className="flex items-start gap-4">
         {/* Icon */}
         <div className="p-3 bg-gray-100 rounded-lg">
@@ -584,49 +532,29 @@ function ResourceCard({ resource, onUpdate }: { resource: Resource; onUpdate: ()
             {/* Actions */}
             <div className="relative">
               <button
-                onClick={() => setShowActions(!showActions)}
+                onClick={() => setShowActionsModal(true)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                disabled={isProcessing}
               >
-                {isProcessing ? (
-                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-                ) : (
-                  <MoreVertical className="w-5 h-5 text-gray-600" />
-                )}
+                <MoreVertical className="w-5 h-5 text-gray-600" />
               </button>
-
-              {showActions && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                  <button
-                    onClick={handleToggleVisibility}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm"
-                  >
-                    {resource.isHidden ? (
-                      <>
-                        <Eye className="w-4 h-4" />
-                        Make Visible
-                      </>
-                    ) : (
-                      <>
-                        <EyeOff className="w-4 h-4" />
-                        Hide from Students
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+
+      {/* Resource Actions Modal */}
+      <ResourceActionsModal
+        resource={{
+          id: resource.id,
+          title: resource.title,
+          isHidden: resource.isHidden,
+        }}
+        isOpen={showActionsModal}
+        onClose={() => setShowActionsModal(false)}
+        onUpdate={onUpdate}
+      />
+    </>
   );
 }
 

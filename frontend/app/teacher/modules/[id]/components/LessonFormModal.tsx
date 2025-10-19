@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Play, Youtube, FileText, BookOpen, CheckSquare, FileCheck, Link as LinkIcon } from 'lucide-react';
 import { lessonApiService, Lesson, LessonType, CreateLessonDto } from '@/services/lesson-api.service';
 import { toast } from 'react-hot-toast';
+import { RichTextEditor } from '../../../../../src/components/RichTextEditor';
 
 interface LessonFormModalProps {
   topicId: string;
@@ -65,21 +66,27 @@ const LESSON_TYPES: Array<{ value: LessonType; label: string; icon: any; color: 
 ];
 
 export function LessonFormModal({ topicId, lesson, onClose, onSaved }: LessonFormModalProps) {
-  const [selectedType, setSelectedType] = useState<LessonType>('TEXT');
+  console.log('🎨 LessonFormModal rendered with:', { topicId, lesson: lesson?.id, lessonTitle: lesson?.title });
+  
+  const [selectedType, setSelectedType] = useState<LessonType>(lesson?.type || 'TEXT');
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    duration: '',
-    videoUrl: '',
-    youtubeVideoId: '',
-    content: '',
-    isFree: false,
-    isPublished: true,
+    title: lesson?.title || '',
+    description: lesson?.description || '',
+    duration: lesson?.duration?.toString() || '',
+    videoUrl: lesson?.videoUrl || '',
+    youtubeVideoId: lesson?.youtubeVideoId || '',
+    content: lesson?.content || '',
+    isFree: lesson?.isFree ?? false,  // Use ?? instead of || to handle false values
+    isPublished: lesson?.isPublished ?? true,
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    console.log('🔄 useEffect triggered, lesson:', lesson?.id);
     if (lesson) {
+      console.log('✏️ Editing mode - populating form with:', lesson.title);
+      console.log('📄 Lesson object keys:', Object.keys(lesson));
+      console.log('📄 Lesson content value:', lesson.content, 'length:', lesson.content?.length || 0);
       setSelectedType(lesson.type);
       setFormData({
         title: lesson.title,
@@ -88,8 +95,22 @@ export function LessonFormModal({ topicId, lesson, onClose, onSaved }: LessonFor
         videoUrl: lesson.videoUrl || '',
         youtubeVideoId: lesson.youtubeVideoId || '',
         content: lesson.content || '',
-        isFree: lesson.isFree,
-        isPublished: lesson.isPublished,
+        isFree: lesson.isFree ?? false,  // Use ?? to handle false values properly
+        isPublished: lesson.isPublished ?? true,
+      });
+    } else {
+      console.log('➕ Create mode - resetting form');
+      // Reset to default values for new lesson
+      setSelectedType('TEXT');
+      setFormData({
+        title: '',
+        description: '',
+        duration: '',
+        videoUrl: '',
+        youtubeVideoId: '',
+        content: '',
+        isFree: false,
+        isPublished: true,
       });
     }
   }, [lesson]);
@@ -196,20 +217,24 @@ export function LessonFormModal({ topicId, lesson, onClose, onSaved }: LessonFor
         );
 
       case 'TEXT':
+        console.log('🎨 Rendering RichTextEditor with content:', formData.content?.substring(0, 100) || '(empty)');
         return (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Content
             </label>
-            <textarea
-              value={formData.content}
-              onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-              placeholder="Enter your lesson content here..."
-              rows={8}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
+            <RichTextEditor
+              content={formData.content}
+              onChange={(html) => {
+                console.log('📝 Content changed to:', html?.substring(0, 100) || '(empty)');
+                setFormData({ ...formData, content: html });
+              }}
+              placeholder="Write your lesson content here... Use the toolbar to format text, add images, and more."
+              minHeight="300px"
+              maxHeight="600px"
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Rich text editor will be available in the next update
+            <p className="text-xs text-gray-500 mt-2">
+              💡 Use the rich text editor to create engaging lesson content with formatting, images, and links
             </p>
           </div>
         );

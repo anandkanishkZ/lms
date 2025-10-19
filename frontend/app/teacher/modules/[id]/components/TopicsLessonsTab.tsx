@@ -50,7 +50,16 @@ export function TopicsLessonsTab({ moduleId, moduleName }: TopicsLessonsTabProps
       setLoading(true);
       const response = await topicApiService.getTopicsByModule(moduleId, true);
       if (response.success) {
-        setTopics(response.data);
+        // Ensure lessons have topicId if they're included
+        const topicsWithTopicId = response.data.map(topic => ({
+          ...topic,
+          lessons: topic.lessons?.map(lesson => ({
+            ...lesson,
+            topicId: topic.id  // Add topicId to each lesson
+          }))
+        }));
+        
+        setTopics(topicsWithTopicId);
       }
     } catch (error: any) {
       console.error('Error loading topics:', error);
@@ -64,10 +73,16 @@ export function TopicsLessonsTab({ moduleId, moduleName }: TopicsLessonsTabProps
     try {
       const response = await lessonApiService.getLessonsByTopic(topicId, true);
       if (response.success) {
+        // Ensure each lesson has topicId (backend might not include it)
+        const lessonsWithTopicId = response.data.map(lesson => ({
+          ...lesson,
+          topicId: topicId  // Add topicId to each lesson
+        }));
+        
         setTopics(prevTopics =>
           prevTopics.map(topic =>
             topic.id === topicId
-              ? { ...topic, lessons: response.data }
+              ? { ...topic, lessons: lessonsWithTopicId }
               : topic
           )
         );
@@ -139,10 +154,50 @@ export function TopicsLessonsTab({ moduleId, moduleName }: TopicsLessonsTabProps
     setShowLessonModal(true);
   };
 
-  const handleEditLesson = (lesson: Lesson) => {
-    setSelectedTopicForLesson(lesson.topicId);
-    setSelectedLesson(lesson);
-    setShowLessonModal(true);
+  const handleEditLesson = async (lesson: Lesson) => {
+    console.log('🔍 handleEditLesson called with:', lesson);
+    
+    // Get topicId from lesson, or find it from topics array
+    let topicId = lesson.topicId;
+    
+    if (!topicId) {
+      console.warn('⚠️ Lesson missing topicId, searching in topics...');
+      // Find the topic that contains this lesson
+      const parentTopic = topics.find(t => 
+        t.lessons?.some(l => l.id === lesson.id)
+      );
+      
+      if (parentTopic) {
+        topicId = parentTopic.id;
+        console.log('✅ Found topicId from parent topic:', topicId);
+      } else {
+        console.error('❌ Could not find topicId for lesson:', lesson.id);
+        toast.error('Cannot edit lesson: missing topic information');
+        return;
+      }
+    }
+    
+    console.log('📝 Topic ID:', topicId);
+    
+    // Fetch complete lesson details including content
+    try {
+      console.log('📡 Fetching full lesson details...');
+      const response = await lessonApiService.getLessonById(lesson.id);
+      if (response.success) {
+        const fullLesson = {
+          ...response.data,
+          topicId: topicId  // Ensure topicId is included
+        };
+        console.log('✅ Full lesson loaded, content length:', fullLesson.content?.length || 0);
+        setSelectedTopicForLesson(topicId);
+        setSelectedLesson(fullLesson);
+        setShowLessonModal(true);
+        console.log('✅ Modal state set with full lesson data');
+      }
+    } catch (error: any) {
+      console.error('❌ Error loading lesson details:', error);
+      toast.error(error.response?.data?.message || 'Failed to load lesson details');
+    }
   };
 
   const handleDeleteLesson = async (lessonId: string) => {
@@ -312,6 +367,7 @@ export function TopicsLessonsTab({ moduleId, moduleName }: TopicsLessonsTabProps
 
       {showLessonModal && selectedTopicForLesson && (
         <LessonFormModal
+          key={selectedLesson?.id || 'new-lesson'}
           topicId={selectedTopicForLesson}
           lesson={selectedLesson}
           onClose={() => {
