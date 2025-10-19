@@ -2,9 +2,27 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, ChevronDown, ChevronRight, FolderOpen, FileText, Clock, Eye } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { topicApiService } from '@/services/topic-api.service';
 import { lessonApiService, Lesson } from '@/services/lesson-api.service';
+import moduleApiService from '@/src/services/module-api.service';
 import { TopicCard } from './TopicCard';
+import { DraggableTopicCard } from './DraggableTopicCard';
+import { DraggableLessonCard } from './DraggableLessonCard';
 import { TopicFormModal } from './TopicFormModal';
 import { LessonFormModal } from './LessonFormModal';
 import { toast } from 'react-hot-toast';
@@ -39,6 +57,18 @@ export function TopicsLessonsTab({ moduleId, moduleName }: TopicsLessonsTabProps
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [selectedTopicForLesson, setSelectedTopicForLesson] = useState<string | null>(null);
+
+  // Drag-and-drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Load topics
   useEffect(() => {
@@ -243,6 +273,92 @@ export function TopicsLessonsTab({ moduleId, moduleName }: TopicsLessonsTabProps
     await loadTopics();
   };
 
+  // Lesson reorder handler for TopicCard
+  const handleLessonReorder = async (topicId: string, lessons: { id: string; orderIndex: number }[]) => {
+    try {
+      await moduleApiService.reorderLessons(topicId, lessons);
+      toast.success('Lessons reordered successfully');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to reorder lessons');
+      // Reload lessons for this topic to rollback
+      await loadLessonsForTopic(topicId);
+      throw error; // Re-throw so TopicCard can handle rollback
+    }
+  };
+
+  // Handle topic drag end
+  const handleTopicDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = topics.findIndex((t) => t.id === active.id);
+    const newIndex = topics.findIndex((t) => t.id === over.id);
+
+    // Reorder locally
+    const reorderedTopics = arrayMove(topics, oldIndex, newIndex);
+    setTopics(reorderedTopics);
+
+    // Update order indices
+    const topicsToUpdate = reorderedTopics.map((topic, index) => ({
+      id: topic.id,
+      orderIndex: index,
+    }));
+
+    // Save to backend
+    try {
+      await moduleApiService.reorderTopics(moduleId, topicsToUpdate);
+      toast.success('Topics reordered successfully');
+    } catch (error: any) {
+      console.error('Error reordering topics:', error);
+      toast.error(error.response?.data?.message || 'Failed to reorder topics');
+      // Revert on error
+      await loadTopics();
+    }
+  };
+
+  // Handle lesson drag end
+  const handleLessonDragEnd = (topicId: string) => async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const topic = topics.find((t) => t.id === topicId);
+    if (!topic || !topic.lessons) return;
+
+    const oldIndex = topic.lessons.findIndex((l) => l.id === active.id);
+    const newIndex = topic.lessons.findIndex((l) => l.id === over.id);
+
+    // Reorder locally
+    const reorderedLessons = arrayMove(topic.lessons, oldIndex, newIndex);
+    setTopics(prevTopics =>
+      prevTopics.map(t =>
+        t.id === topicId ? { ...t, lessons: reorderedLessons } : t
+      )
+    );
+
+    // Update order indices
+    const lessonsToUpdate = reorderedLessons.map((lesson, index) => ({
+      id: lesson.id,
+      orderIndex: index,
+    }));
+
+    // Save to backend
+    try {
+      await moduleApiService.reorderLessons(topicId, lessonsToUpdate);
+      toast.success('Lessons reordered successfully');
+    } catch (error: any) {
+      console.error('Error reordering lessons:', error);
+      toast.error(error.response?.data?.message || 'Failed to reorder lessons');
+      // Revert on error
+      await loadLessonsForTopic(topicId);
+    }
+  };
+
   // Calculate total stats
   const totalLessons = topics.reduce((sum, topic) => sum + (topic._count?.lessons || 0), 0);
   const totalDuration = topics.reduce((sum, topic) => sum + (topic.duration || 0), 0);
@@ -334,21 +450,33 @@ export function TopicsLessonsTab({ moduleId, moduleName }: TopicsLessonsTabProps
         </div>
       ) : (
         <div className="space-y-4">
-          {topics.map((topic) => (
-            <TopicCard
-              key={topic.id}
-              topic={topic}
-              isExpanded={expandedTopics.has(topic.id)}
-              onToggleExpand={() => toggleTopic(topic.id)}
-              onEdit={handleEditTopic}
-              onDelete={handleDeleteTopic}
-              onDuplicate={handleDuplicateTopic}
-              onAddLesson={handleAddLesson}
-              onEditLesson={handleEditLesson}
-              onDeleteLesson={handleDeleteLesson}
-              onTogglePublishLesson={handleTogglePublish}
-            />
-          ))}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleTopicDragEnd}
+          >
+            <SortableContext
+              items={topics.map((t) => t.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {topics.map((topic) => (
+                <DraggableTopicCard
+                  key={topic.id}
+                  topic={topic}
+                  isExpanded={expandedTopics.has(topic.id)}
+                  onToggleExpand={() => toggleTopic(topic.id)}
+                  onEdit={handleEditTopic}
+                  onDelete={handleDeleteTopic}
+                  onDuplicate={handleDuplicateTopic}
+                  onAddLesson={handleAddLesson}
+                  onEditLesson={handleEditLesson}
+                  onDeleteLesson={handleDeleteLesson}
+                  onTogglePublishLesson={handleTogglePublish}
+                  onReorderLessons={handleLessonReorder}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
       )}
 

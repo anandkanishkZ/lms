@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ChevronDown, 
   ChevronRight, 
@@ -13,8 +13,23 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react';
+import { 
+  DndContext, 
+  closestCenter, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  DragEndEvent 
+} from '@dnd-kit/core';
+import { 
+  arrayMove, 
+  SortableContext, 
+  sortableKeyboardCoordinates, 
+  verticalListSortingStrategy 
+} from '@dnd-kit/sortable';
 import { Lesson } from '@/services/lesson-api.service';
-import { LessonCard } from './LessonCard';
+import { DraggableLessonCard } from './DraggableLessonCard';
 
 interface Topic {
   id: string;
@@ -43,6 +58,7 @@ interface TopicCardProps {
   onEditLesson: (lesson: Lesson) => void;
   onDeleteLesson: (lessonId: string) => void;
   onTogglePublishLesson: (lessonId: string) => void;
+  onReorderLessons?: (topicId: string, lessons: { id: string; orderIndex: number }[]) => Promise<void>;
 }
 
 export function TopicCard({
@@ -56,8 +72,63 @@ export function TopicCard({
   onEditLesson,
   onDeleteLesson,
   onTogglePublishLesson,
+  onReorderLessons,
 }: TopicCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [localLessons, setLocalLessons] = useState(topic.lessons || []);
+
+  // Update local lessons when topic.lessons changes
+  useEffect(() => {
+    setLocalLessons(topic.lessons || []);
+  }, [topic.lessons]);
+
+  // Sensors for drag-and-drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle lesson drag end
+  const handleLessonDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const oldIndex = localLessons.findIndex((l) => l.id === active.id);
+    const newIndex = localLessons.findIndex((l) => l.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      return;
+    }
+
+    // Optimistic update
+    const reorderedLessons = arrayMove(localLessons, oldIndex, newIndex);
+    setLocalLessons(reorderedLessons);
+
+    // Prepare API payload
+    const lessonsToUpdate = reorderedLessons.map((lesson, index) => ({
+      id: lesson.id,
+      orderIndex: index,
+    }));
+
+    // Call parent handler if provided
+    if (onReorderLessons) {
+      try {
+        await onReorderLessons(topic.id, lessonsToUpdate);
+      } catch (error) {
+        // Rollback on error
+        setLocalLessons(topic.lessons || []);
+      }
+    }
+  };
 
   const lessonCount = topic._count?.lessons || topic.lessons?.length || 0;
   const publishedLessons = topic.lessons?.filter(l => l.isPublished).length || 0;
@@ -183,16 +254,27 @@ export function TopicCard({
             </div>
           ) : (
             <div className="p-4 space-y-2">
-              {topic.lessons.map((lesson, index) => (
-                <LessonCard
-                  key={lesson.id}
-                  lesson={lesson}
-                  index={index}
-                  onEdit={onEditLesson}
-                  onDelete={onDeleteLesson}
-                  onTogglePublish={onTogglePublishLesson}
-                />
-              ))}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleLessonDragEnd}
+              >
+                <SortableContext
+                  items={localLessons.map((l) => l.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {localLessons.map((lesson, index) => (
+                    <DraggableLessonCard
+                      key={lesson.id}
+                      lesson={lesson}
+                      index={index}
+                      onEdit={onEditLesson}
+                      onDelete={onDeleteLesson}
+                      onTogglePublish={onTogglePublishLesson}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
             </div>
           )}
         </div>

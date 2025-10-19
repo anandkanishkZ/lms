@@ -213,6 +213,14 @@ class ModuleApiService {
     return response.data.data as Topic;
   }
 
+  /**
+   * Bulk reorder topics (TEACHER/ADMIN)
+   */
+  async reorderTopics(moduleId: string, topics: { id: string; orderIndex: number }[]): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.patch<ApiResponse<any>>(`/topics/modules/${moduleId}/reorder`, { topics });
+    return { success: response.data.success, message: response.data.message || 'Topics reordered successfully' };
+  }
+
   // ==================== LESSON ENDPOINTS (14) ====================
 
   /**
@@ -306,6 +314,14 @@ class ModuleApiService {
   async updateLessonOrder(lessonId: string, newOrder: number): Promise<Lesson> {
     const response = await apiClient.patch<ApiResponse<Lesson>>(`/lessons/${lessonId}/order`, { order: newOrder });
     return response.data.data as Lesson;
+  }
+
+  /**
+   * Bulk reorder lessons (TEACHER/ADMIN)
+   */
+  async reorderLessons(topicId: string, lessons: { id: string; orderIndex: number }[]): Promise<{ success: boolean; message: string }> {
+    const response = await apiClient.patch<ApiResponse<any>>(`/lessons/topics/${topicId}/reorder`, { lessons });
+    return { success: response.data.success, message: response.data.message || 'Lessons reordered successfully' };
   }
 
   /**
