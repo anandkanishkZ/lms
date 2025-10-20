@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import './RichTextEditor.css';
-import Image from '@tiptap/extension-image';
+import { CustomImage } from './CustomImage';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
+import { FileLink } from './FileLinkExtension';
 import { 
   Bold, 
   Italic, 
@@ -33,8 +34,11 @@ import {
   Heading2,
   Heading3,
   Highlighter,
-  Palette
+  Palette,
+  Paperclip
 } from 'lucide-react';
+import { ImageUploadModal } from './ImageUploadModal';
+import { FileUploadModal } from './FileUploadModal';
 
 interface RichTextEditorProps {
   content: string;
@@ -57,6 +61,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   console.log('🎨 RichTextEditor render - content length:', content?.length || 0, 'editable:', editable);
   
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isFileModalOpen, setIsFileModalOpen] = useState(false);
+  
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -65,10 +72,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           levels: [1, 2, 3]
         }
       }),
-      Image.configure({
-        inline: true,
-        allowBase64: true
+      CustomImage.configure({
+        inline: false,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'custom-image',
+        },
       }),
+      FileLink,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -122,9 +133,45 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   console.log('✅ Editor ready, current HTML length:', editor.getHTML()?.length || 0);
 
   const addImage = () => {
-    const url = window.prompt('Enter image URL:');
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
+    setIsImageModalOpen(true);
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    if (editor) {
+      // Insert customImage node with all attributes
+      editor.chain().focus().insertContent({
+        type: 'customImage',
+        attrs: {
+          src: imageUrl,
+          width: '50%', // Default to medium size
+          align: 'center', // Default to center alignment
+          alt: ''
+        }
+      }).run();
+    }
+  };
+
+  const addFile = () => {
+    setIsFileModalOpen(true);
+  };
+
+  const handleFileUpload = (fileData: { 
+    url: string; 
+    fileName: string; 
+    fileSize: number; 
+    fileType: string;
+  }) => {
+    console.log('📎 handleFileUpload called with data:', fileData);
+    if (editor) {
+      editor.chain().focus().setFileLink({
+        url: fileData.url,
+        fileName: fileData.fileName,
+        fileType: fileData.fileType,
+        fileSize: fileData.fileSize,
+      }).run();
+      console.log('📎 File link inserted into editor');
+      console.log('📎 Editor content after insert:', editor.getHTML());
+      setIsFileModalOpen(false);
     }
   };
 
@@ -159,8 +206,21 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   };
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
-      {editable && (
+    <>
+      <ImageUploadModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        onImageUpload={handleImageUpload}
+      />
+
+      <FileUploadModal
+        isOpen={isFileModalOpen}
+        onClose={() => setIsFileModalOpen(false)}
+        onFileUpload={handleFileUpload}
+      />
+      
+      <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+        {editable && (
         <div className="border-b border-gray-300 bg-gray-50 p-2 flex flex-wrap gap-1">
           {/* Text Formatting */}
           <div className="flex gap-1 border-r border-gray-300 pr-2">
@@ -338,6 +398,14 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             >
               <ImageIcon className="w-4 h-4" />
             </button>
+            <button
+              onClick={addFile}
+              className="p-2 rounded hover:bg-gray-200 transition-colors"
+              title="Upload File"
+              type="button"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Colors */}
@@ -411,7 +479,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <div className="p-4 bg-white">
         <EditorContent editor={editor} />
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

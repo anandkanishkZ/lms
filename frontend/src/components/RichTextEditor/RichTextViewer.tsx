@@ -3,7 +3,6 @@
 import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import TextAlign from '@tiptap/extension-text-align';
 import Underline from '@tiptap/extension-underline';
@@ -11,6 +10,8 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import './RichTextEditor.css';
+import { CustomImage } from './CustomImage';
+import { FileLink } from './FileLinkExtension';
 
 interface RichTextViewerProps {
   content: string;
@@ -21,6 +22,8 @@ export const RichTextViewer: React.FC<RichTextViewerProps> = ({
   content,
   className = ''
 }) => {
+  console.log('👀 RichTextViewer rendering with content:', content?.substring(0, 200));
+  
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -29,10 +32,11 @@ export const RichTextViewer: React.FC<RichTextViewerProps> = ({
           levels: [1, 2, 3]
         }
       }),
-      Image.configure({
-        inline: true,
-        allowBase64: true
+      CustomImage.configure({
+        inline: false,
+        allowBase64: true,
       }),
+      FileLink,
       Link.configure({
         openOnClick: true,
         HTMLAttributes: {

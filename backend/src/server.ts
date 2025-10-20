@@ -35,6 +35,7 @@ import youtubeLiveRoutes from './routes/youtubeLive';
 import subjectRoutes from './routes/subjects';
 import classRoutes from './routes/classes';
 import resourceRoutes from './routes/resources';
+import uploadRoutes from './routes/upload';
 
 // Import middlewares
 import { authenticateToken } from './middlewares/auth';
@@ -136,13 +137,15 @@ if (process.env.NODE_ENV !== 'production') {
   app.use(morgan('combined'));
 }
 
-// Static files with CORS headers
-app.use('/uploads', (req, res, next) => {
+// SECURITY: Disable direct static file serving for editor uploads
+// Files should only be accessed through authenticated API endpoints
+// Only allow avatars to be served statically
+app.use('/uploads/avatars', (req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS?.split(',')[0] || 'http://localhost:3000');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   next();
-}, express.static('uploads'));
+}, express.static('uploads/avatars'));
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {
@@ -180,6 +183,7 @@ app.use('/api/v1/youtube-live', youtubeLiveRoutes);
 app.use('/api/v1/subjects', subjectRoutes);
 app.use('/api/v1/classes', classRoutes);
 app.use('/api/v1/resources', resourceRoutes);
+app.use('/api/v1/upload', uploadRoutes);
 
 // 404 handler
 app.use('*', (req: Request, res: Response) => {
