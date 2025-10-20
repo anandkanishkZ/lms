@@ -21,6 +21,8 @@ import {
   HelpCircle,
   Settings,
   LucideIcon,
+  Layers,
+  Trophy,
 } from 'lucide-react';
 import { ROUTES } from '@/src/config/routes.config';
 
@@ -35,6 +37,8 @@ export const ADMIN_MENU_ITEMS: MenuItem[] = [
   { icon: Users, label: 'Users', href: ROUTES.admin.users },
   { icon: BookOpen, label: 'Modules', href: ROUTES.admin.courses },
   { icon: GraduationCap, label: 'Live Classes', href: ROUTES.admin.classes },
+  { icon: Layers, label: 'Batches', href: ROUTES.admin.batches },
+  { icon: Trophy, label: 'Graduations', href: ROUTES.admin.graduations },
   { icon: Calendar, label: 'Schedule', href: ROUTES.admin.schedule },
   { icon: FileText, label: 'Assignments', href: ROUTES.admin.assignments },
   { icon: Award, label: 'Certificates', href: ROUTES.admin.certificates },

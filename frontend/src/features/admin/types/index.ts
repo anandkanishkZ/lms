@@ -68,6 +68,12 @@ export interface UserItem {
   school: string | null;
   department: string | null;
   experience: string | null;
+  batchId: string | null;
+  batch?: {
+    id: string;
+    name: string;
+    status: string;
+  } | null;
   verified: boolean;
   isActive: boolean;
   isBlocked: boolean;

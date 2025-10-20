@@ -8,6 +8,8 @@ export const ROUTES = {
     users: '/admin/users',
     courses: '/admin/courses',
     classes: '/admin/classes',
+    batches: '/admin/batches',
+    graduations: '/admin/graduations',
     schedule: '/admin/schedule',
     assignments: '/admin/assignments',
     certificates: '/admin/certificates',

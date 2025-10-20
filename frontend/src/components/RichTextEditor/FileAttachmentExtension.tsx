@@ -53,25 +53,46 @@ export const FileAttachment = Node.create<FileAttachmentOptions>({
     return [
       {
         tag: 'div[data-file-attachment]',
+        getAttrs: (dom) => {
+          const element = dom as HTMLElement;
+          return {
+            url: element.getAttribute('data-url'),
+            fileName: element.getAttribute('data-file-name'),
+            fileSize: element.getAttribute('data-file-size') ? parseInt(element.getAttribute('data-file-size')!) : 0,
+            fileType: element.getAttribute('data-file-type'),
+          };
+        },
       },
     ];
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ['div', mergeAttributes(HTMLAttributes, { 'data-file-attachment': '' })];
+    return [
+      'div', 
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 
+        'data-file-attachment': '',
+        'data-url': HTMLAttributes.url,
+        'data-file-name': HTMLAttributes.fileName,
+        'data-file-size': HTMLAttributes.fileSize,
+        'data-file-type': HTMLAttributes.fileType,
+      })
+    ];
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(FileAttachmentComponent);
+    return ReactNodeViewRenderer(FileAttachmentComponent as any);
   },
 
   addCommands() {
     return {
       setFileAttachment: (options) => ({ commands }) => {
-        return commands.insertContent({
+        console.log('📎 setFileAttachment command called with options:', options);
+        const result = commands.insertContent({
           type: this.name,
           attrs: options,
         });
+        console.log('📎 insertContent result:', result);
+        return result;
       },
     };
   },

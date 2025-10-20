@@ -29,11 +29,14 @@ import {
   CheckCircle,
   Ban,
   History,
-  Globe
+  Globe,
+  RefreshCw
 } from 'lucide-react';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 import { AdminLayout, adminApiService } from '@/src/features/admin';
 import CredentialsModal from '@/src/features/admin/components/CredentialsModal';
+import { batchApiService, type Batch, type BatchClass } from '@/src/services/batch-api.service';
+import { classEnrollmentApiService } from '@/src/services/classEnrollment-api.service';
 
 // Use the service from the feature module
 const adminApi = adminApiService;
@@ -44,6 +47,7 @@ const studentSchema = z.object({
   middleName: z.string().optional(),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
   school: z.string().min(2, 'School name is required'),
+  batchId: z.string().optional(),
   phone: z.string().optional().refine((val) => !val || (val.length >= 10 && /^\+?[\d\s\-\(\)]+$/.test(val)), 'Invalid phone format'),
   email: z.string().optional().refine((val) => !val || z.string().email().safeParse(val).success, 'Invalid email format'),
 });
@@ -82,6 +86,12 @@ interface ApiUser {
   school: string | null;
   department: string | null;
   experience: string | null;
+  batchId: string | null;
+  batch?: {
+    id: string;
+    name: string;
+    status: string;
+  } | null;
   verified: boolean;
   isActive: boolean;
   isBlocked: boolean;
@@ -148,6 +158,18 @@ export default function UsersPage() {
   // Credentials modal state
   const [showCredentials, setShowCredentials] = useState(false);
   const [userCredentials, setUserCredentials] = useState<any>(null);
+
+  // Batch state
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [batchesLoading, setBatchesLoading] = useState(false);
+
+  // Enrollment modal state
+  const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
+  const [enrollmentStudent, setEnrollmentStudent] = useState<ApiUser | null>(null);
+  const [batchClasses, setBatchClasses] = useState<BatchClass[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
+  const [enrollmentRemarks, setEnrollmentRemarks] = useState('');
+  const [enrollmentLoading, setEnrollmentLoading] = useState(false);
   
   const studentForm = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -156,6 +178,7 @@ export default function UsersPage() {
       middleName: '',
       lastName: '',
       school: '',
+      batchId: '',
       phone: '',
       email: '',
     }
@@ -193,6 +216,27 @@ export default function UsersPage() {
       showErrorToast('Failed to fetch users');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch batches for student assignment
+  const fetchBatches = async () => {
+    try {
+      setBatchesLoading(true);
+      const response = await batchApiService.getBatches({
+        page: 1,
+        limit: 100, // Get all active batches
+        status: 'ACTIVE' as any,
+      });
+
+      if (response.success && response.data) {
+        setBatches(response.data.batches);
+      }
+    } catch (error) {
+      console.error('Error fetching batches:', error);
+      showErrorToast('Failed to fetch batches');
+    } finally {
+      setBatchesLoading(false);
     }
   };
 
@@ -425,6 +469,7 @@ export default function UsersPage() {
   const handleAddUser = () => {
     if (activeTab === 'students') {
       setModalType('student');
+      fetchBatches(); // Fetch available batches when opening student modal
     } else if (activeTab === 'teachers') {
       setModalType('teacher');
     } else {
@@ -497,6 +542,77 @@ export default function UsersPage() {
     } catch (error: any) {
       console.error('Error creating teacher:', error);
       showErrorToast(error.message || 'Failed to create teacher');
+    }
+  };
+
+  // Enrollment modal handlers
+  const handleOpenEnrollModal = async (user: ApiUser) => {
+    if (!user.batchId) {
+      showErrorToast('This student is not assigned to any batch. Please assign a batch first.');
+      return;
+    }
+
+    setEnrollmentStudent(user);
+    setIsEnrollModalOpen(true);
+    setSelectedClassId('');
+    setEnrollmentRemarks('');
+
+    // Fetch classes in student's batch
+    try {
+      const response = await batchApiService.getBatchClasses(user.batchId);
+      if (response.success && response.data) {
+        setBatchClasses(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching batch classes:', error);
+      showErrorToast('Failed to load classes for this batch');
+    }
+  };
+
+  const handleCloseEnrollModal = () => {
+    setIsEnrollModalOpen(false);
+    setEnrollmentStudent(null);
+    setBatchClasses([]);
+    setSelectedClassId('');
+    setEnrollmentRemarks('');
+  };
+
+  const handleSubmitEnrollment = async () => {
+    if (!enrollmentStudent || !selectedClassId) {
+      showErrorToast('Please select a class');
+      return;
+    }
+
+    // Get admin ID from localStorage
+    const adminData = localStorage.getItem('adminUser');
+    const enrolledById = adminData ? JSON.parse(adminData).id : '';
+
+    if (!enrolledById) {
+      showErrorToast('Admin session not found. Please login again.');
+      return;
+    }
+
+    try {
+      setEnrollmentLoading(true);
+      const response = await classEnrollmentApiService.enrollStudent({
+        studentId: enrollmentStudent.id,
+        classId: selectedClassId,
+        batchId: enrollmentStudent.batchId!,
+        enrolledById,
+        remarks: enrollmentRemarks || undefined,
+      });
+
+      if (response.success) {
+        showSuccessToast('Student enrolled successfully');
+        handleCloseEnrollModal();
+      } else {
+        showErrorToast(response.message || 'Failed to enroll student');
+      }
+    } catch (error: any) {
+      console.error('Error enrolling student:', error);
+      showErrorToast(error.message || 'Failed to enroll student');
+    } finally {
+      setEnrollmentLoading(false);
     }
   };
 
@@ -697,6 +813,12 @@ export default function UsersPage() {
                             {user.school || 'N/A'}
                           </div>
                           <div className="text-gray-500">ID: {user.symbolNo}</div>
+                          {user.batch && (
+                            <div className="flex items-center gap-1 mt-1">
+                              <GraduationCap className="w-3 h-3 text-purple-500" />
+                              <span className="text-xs text-purple-600">{user.batch.name}</span>
+                            </div>
+                          )}
                         </div>
                       ) : activeTab === 'teachers' ? (
                         <div className="text-sm">
@@ -915,6 +1037,32 @@ export default function UsersPage() {
                           {studentForm.formState.errors.school.message}
                         </p>
                       )}
+                    </div>
+
+                    {/* Batch Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <GraduationCap className="inline w-4 h-4 mr-1" />
+                        Assign to Batch
+                      </label>
+                      <select
+                        {...studentForm.register('batchId')}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        disabled={batchesLoading}
+                      >
+                        <option value="">No Batch (Assign Later)</option>
+                        {batches.map((batch) => (
+                          <option key={batch.id} value={batch.id}>
+                            {batch.name} ({batch.status}) - {new Date(batch.startDate).getFullYear()} to {new Date(batch.endDate).getFullYear()}
+                          </option>
+                        ))}
+                      </select>
+                      {batchesLoading && (
+                        <p className="mt-1 text-sm text-gray-500">Loading batches...</p>
+                      )}
+                      <p className="mt-1 text-sm text-gray-500">
+                        Optional: Assign student to a batch for group management
+                      </p>
                     </div>
 
                     {/* Contact Fields */}
@@ -1747,6 +1895,30 @@ export default function UsersPage() {
                     </svg>
                   </motion.button>
 
+                  {/* Enroll to Class - Only for Students */}
+                  {selectedUser.role === 'STUDENT' && (
+                    <motion.button
+                      onClick={() => {
+                        setIsActionsModalOpen(false);
+                        handleOpenEnrollModal(selectedUser);
+                      }}
+                      whileHover={{ scale: 1.02, x: 4 }}
+                      whileTap={{ scale: 0.98 }}
+                      className="w-full flex items-center space-x-4 p-4 rounded-xl bg-teal-50 hover:bg-teal-100 border-2 border-teal-200 transition-all group"
+                    >
+                      <div className="w-12 h-12 bg-teal-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <BookOpen className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <p className="font-semibold text-gray-900">Enroll to Class</p>
+                        <p className="text-sm text-gray-600">Add student to a class</p>
+                      </div>
+                      <svg className="w-5 h-5 text-gray-400 group-hover:text-teal-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </motion.button>
+                  )}
+
                   {/* Divider */}
                   <div className="border-t border-gray-200 my-4"></div>
 
@@ -1928,6 +2100,24 @@ export default function UsersPage() {
                       <div>
                         <label className="text-sm font-medium text-gray-500">School</label>
                         <p className="text-gray-900">{selectedUser.school || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Assigned Batch</label>
+                        {selectedUser.batch ? (
+                          <div>
+                            <p className="text-gray-900 font-medium">{selectedUser.batch.name}</p>
+                            <span className={`inline-flex px-2 py-1 text-xs font-medium rounded mt-1 ${
+                              selectedUser.batch.status === 'ACTIVE' ? 'bg-green-100 text-green-800' :
+                              selectedUser.batch.status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
+                              selectedUser.batch.status === 'GRADUATED' ? 'bg-purple-100 text-purple-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {selectedUser.batch.status}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500">Not assigned to any batch</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2439,6 +2629,155 @@ export default function UsersPage() {
         onClose={() => setShowCredentials(false)}
         credentials={userCredentials}
       />
+
+      {/* Enrollment Modal */}
+      <AnimatePresence>
+        {isEnrollModalOpen && enrollmentStudent && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={handleCloseEnrollModal}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-teal-600 to-teal-700 px-6 py-5 flex justify-between items-center">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Enroll Student to Class</h2>
+                  <p className="text-teal-100 mt-1">
+                    Enrolling: {enrollmentStudent.name}
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseEnrollModal}
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-6">
+                {/* Student Info */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
+                      <User className="w-6 h-6 text-teal-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900">{enrollmentStudent.name}</p>
+                      <p className="text-sm text-gray-600">Symbol No: {enrollmentStudent.symbolNo}</p>
+                    </div>
+                    {enrollmentStudent.batch && (
+                      <div className="flex items-center gap-2 bg-purple-100 px-3 py-1 rounded-lg">
+                        <GraduationCap className="w-4 h-4 text-purple-600" />
+                        <span className="text-sm font-medium text-purple-800">
+                          {enrollmentStudent.batch.name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Class Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Class *
+                  </label>
+                  {batchClasses.length === 0 ? (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                      <AlertCircle className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
+                      <p className="text-yellow-800 font-medium">No classes available</p>
+                      <p className="text-sm text-yellow-700 mt-1">
+                        Please add classes to the batch first
+                      </p>
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedClassId}
+                      onChange={(e) => setSelectedClassId(e.target.value)}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors"
+                    >
+                      <option value="">Choose a class...</option>
+                      {batchClasses.map((batchClass) => (
+                        <option key={batchClass.class.id} value={batchClass.class.id}>
+                          {batchClass.class.name} - {batchClass.class.section || 'No Section'} 
+                          {batchClass.class.description && ` (${batchClass.class.description})`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <p className="mt-1 text-sm text-gray-500">
+                    Select from classes available in the student's batch
+                  </p>
+                </div>
+
+                {/* Remarks */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Enrollment Remarks (Optional)
+                  </label>
+                  <textarea
+                    value={enrollmentRemarks}
+                    onChange={(e) => setEnrollmentRemarks(e.target.value)}
+                    placeholder="Add any notes about this enrollment..."
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors resize-none"
+                  />
+                </div>
+
+                {/* Info Box */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium">Enrollment Information</p>
+                    <ul className="mt-1 space-y-1 list-disc list-inside">
+                      <li>The student will be enrolled to the selected class</li>
+                      <li>Progress tracking will be enabled for this enrollment</li>
+                      <li>Student can view class materials and submit assignments</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-gray-50 px-6 py-4 flex justify-end gap-3 border-t">
+                <button
+                  onClick={handleCloseEnrollModal}
+                  disabled={enrollmentLoading}
+                  className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitEnrollment}
+                  disabled={!selectedClassId || enrollmentLoading || batchClasses.length === 0}
+                  className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {enrollmentLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Enrolling...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      Enroll Student
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AdminLayout>
   );
 }

@@ -17,6 +17,7 @@ const createStudentSchema = z.object({
   school: z.string().min(2, 'School name is required'),
   phone: z.string().optional().refine((val) => !val || (val.length >= 10 && /^\+?[\d\s\-\(\)]+$/.test(val)), 'Invalid phone format'),
   email: z.string().optional().refine((val) => !val || z.string().email().safeParse(val).success, 'Invalid email format'),
+  batchId: z.string().optional(), // Optional batch assignment
 });
 
 const createTeacherSchema = z.object({
@@ -98,6 +99,21 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
   // Create full name
   const fullName = `${validatedData.firstName} ${validatedData.middleName ? validatedData.middleName + ' ' : ''}${validatedData.lastName}`.trim();
 
+  // Validate batch if provided
+  if (validatedData.batchId) {
+    const batchExists = await prisma.batch.findUnique({
+      where: { id: validatedData.batchId }
+    });
+    
+    if (!batchExists) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid batch ID'
+      });
+      return;
+    }
+  }
+
   // Create the student user
   const student = await prisma.user.create({
     data: {
@@ -113,6 +129,7 @@ export const createStudent = asyncHandler(async (req: Request, res: Response) =>
       role: 'STUDENT',
       verified: false,
       isActive: true,
+      batchId: validatedData.batchId || null,
     }
   });
 

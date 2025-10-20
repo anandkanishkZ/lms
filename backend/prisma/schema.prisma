@@ -127,6 +127,14 @@ enum Grade {
   F
 }
 
+enum BatchStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  GRADUATED
+  ARCHIVED
+}
+
 enum LessonType {
   VIDEO
   YOUTUBE_LIVE
@@ -218,6 +226,15 @@ model User {
   resourcesUploaded  ModuleResource[]    @relation("ResourceUploader")
   resourceAccessLogs ResourceAccessLog[] @relation("ResourceAccess")
 
+  // Batch and Graduation system relations
+  batchId                    String?
+  batch                      Batch?              @relation("StudentBatch", fields: [batchId], references: [id])
+  batchesCreated             Batch[]             @relation("BatchCreator")
+  classEnrollments           ClassEnrollment[]   @relation("StudentClassEnrollments")
+  classEnrollmentsCreated    ClassEnrollment[]   @relation("ClassEnrollmentCreator")
+  graduations                Graduation[]        @relation("StudentGraduations")
+  graduationsCreated         Graduation[]        @relation("GraduationCreator")
+
   @@map("users")
 }
 
@@ -269,14 +286,16 @@ model Class {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  teachers    TeacherClass[]
-  students    StudentClass[]
-  liveClasses LiveClass[]
-  routines    Routine[]
-  notices     Notice[]
-  exams       Exam[]
-  messages    Message[]
-  modules     Module[]
+  teachers         TeacherClass[]
+  students         StudentClass[]
+  liveClasses      LiveClass[]
+  routines         Routine[]
+  notices          Notice[]
+  exams            Exam[]
+  messages         Message[]
+  modules          Module[]
+  classBatches     ClassBatch[]
+  classEnrollments ClassEnrollment[]
 
   @@unique([name, section])
   @@map("classes")
@@ -1014,4 +1033,143 @@ model ResourceAccessLog {
   @@index([timestamp])
   @@index([action])
   @@map("resource_access_logs")
+}
+
+// ============================================
+// BATCH AND GRADUATION SYSTEM
+// ============================================
+
+model Batch {
+  id              String      @id @default(cuid())
+  name            String      @unique // e.g., "Batch 2025"
+  description     String?
+  startYear       Int // e.g., 2023
+  endYear         Int // e.g., 2025
+  startDate       DateTime
+  endDate         DateTime?
+  status          BatchStatus @default(PLANNING)
+  maxStudents     Int?
+  currentStudents Int         @default(0)
+
+  // Metadata
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime? // When marked as completed
+  graduatedAt DateTime? // When graduation process completed
+
+  // Relations
+  createdByUser    User              @relation("BatchCreator", fields: [createdBy], references: [id])
+  classBatches     ClassBatch[]
+  students         User[]            @relation("StudentBatch")
+  classEnrollments ClassEnrollment[]
+  graduations      Graduation[]
+
+  @@index([status])
+  @@index([startYear, endYear])
+  @@index([createdBy])
+  @@map("batches")
+}
+
+model ClassBatch {
+  id       String  @id @default(cuid())
+  classId  String
+  batchId  String
+  sequence Int     @default(1) // Order in progression (1, 2, 3...)
+  isActive Boolean @default(true)
+
+  // Date ranges for this class within the batch
+  startDate DateTime
+  endDate   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  class Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, batchId])
+  @@index([batchId])
+  @@index([classId])
+  @@index([sequence])
+  @@map("class_batches")
+}
+
+model ClassEnrollment {
+  id         String    @id @default(cuid())
+  studentId  String
+  classId    String
+  batchId    String
+  enrolledAt DateTime  @default(now())
+  enrolledBy String // Admin who enrolled
+  completedAt DateTime?
+
+  // Academic tracking
+  isCompleted Boolean @default(false)
+  isPassed    Boolean?
+  finalGrade  Grade?
+  finalMarks  Float?
+  totalMarks  Float?
+  attendance  Float? // Percentage
+  remarks     String?
+
+  // Status
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  student        User  @relation("StudentClassEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  class          Class @relation(fields: [classId], references: [id])
+  batch          Batch @relation(fields: [batchId], references: [id])
+  enrolledByUser User  @relation("ClassEnrollmentCreator", fields: [enrolledBy], references: [id])
+
+  @@unique([studentId, classId, batchId])
+  @@index([batchId])
+  @@index([studentId])
+  @@index([classId])
+  @@index([isActive])
+  @@map("class_enrollments")
+}
+
+model Graduation {
+  id             String   @id @default(cuid())
+  batchId        String
+  studentId      String
+  graduatedAt    DateTime @default(now())
+  graduationDate DateTime // Official ceremony date
+
+  // Academic summary
+  overallGrade      Grade?
+  overallPercentage Float?
+  totalCredits      Float?
+  cgpa              Float?
+
+  // Certificate
+  certificateNo  String? @unique
+  certificateUrl String?
+
+  // Status
+  isAwarded Boolean   @default(false)
+  awardedAt DateTime?
+
+  // Metadata
+  remarks  String?
+  honors   String? // "With Distinction", "With Honors", etc.
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  batch         Batch @relation(fields: [batchId], references: [id])
+  student       User  @relation("StudentGraduations", fields: [studentId], references: [id])
+  createdByUser User  @relation("GraduationCreator", fields: [createdBy], references: [id])
+
+  @@unique([batchId, studentId])
+  @@index([batchId])
+  @@index([studentId])
+  @@index([graduationDate])
+  @@map("graduations")
 }

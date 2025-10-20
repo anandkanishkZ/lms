@@ -229,4 +229,146 @@ export interface PerformanceReport {
   overallGrade: string;
 }
 
+// Batch & Graduation System Types
+export type BatchStatus = 'PLANNING' | 'ACTIVE' | 'COMPLETED' | 'GRADUATED' | 'ARCHIVED';
+
+export interface BatchData {
+  name: string;
+  description?: string;
+  startDate: Date | string;
+  endDate: Date | string;
+  status?: BatchStatus;
+  createdById: string;
+}
+
+export interface UpdateBatchData {
+  name?: string;
+  description?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  status?: BatchStatus;
+}
+
+export interface BatchFilters extends QueryFilters {
+  status?: BatchStatus;
+  startDate?: Date;
+  endDate?: Date;
+  createdById?: string;
+}
+
+export interface AttachClassToBatchData {
+  classId: string;
+  sequence: number;
+}
+
+export interface BatchStatistics {
+  totalStudents: number;
+  totalEnrollments: number;
+  completedEnrollments: number;
+  activeEnrollments: number;
+  totalGraduations: number;
+  averageAttendance: number;
+  completionRate: number;
+  passRate: number;
+  classesBySequence: Array<{
+    sequence: number;
+    className: string;
+    enrollmentCount: number;
+    completedCount: number;
+  }>;
+}
+
+export interface ClassEnrollmentData {
+  studentId: string;
+  classId: string;
+  batchId: string;
+  enrolledById: string;
+  status?: string;
+  remarks?: string;
+}
+
+export interface BulkEnrollmentData {
+  enrollments: ClassEnrollmentData[];
+}
+
+export interface UpdateEnrollmentData {
+  status?: string;
+  finalGrade?: string;
+  attendance?: number;
+  remarks?: string;
+}
+
+export interface MarkCompletedData {
+  completedAt: Date | string;
+  finalGrade: string;
+  attendance?: number;
+}
+
+export interface PromoteStudentData {
+  targetClassId: string;
+}
+
+export interface EnrollmentFilters extends QueryFilters {
+  studentId?: string;
+  classId?: string;
+  batchId?: string;
+  status?: string;
+  enrolledById?: string;
+}
+
+export interface GraduationData {
+  studentId: string;
+  batchId: string;
+  graduationDate: Date | string;
+  remarks?: string;
+  issuedById: string;
+}
+
+export interface GraduateBatchData {
+  graduationDate: Date | string;
+  remarks?: string;
+}
+
+export interface UpdateGraduationData {
+  graduationDate?: Date | string;
+  certificateNumber?: string;
+  certificateUrl?: string;
+  gpa?: number;
+  honors?: string;
+  remarks?: string;
+}
+
+export interface AttachCertificateData {
+  certificateUrl: string;
+}
+
+export interface GraduationFilters extends QueryFilters {
+  studentId?: string;
+  batchId?: string;
+  issuedById?: string;
+  startDate?: Date;
+  endDate?: Date;
+  hasHonors?: boolean;
+}
+
+export interface GraduationStatistics {
+  totalGraduations: number;
+  graduationsByBatch: Array<{
+    batchId: string;
+    batchName: string;
+    graduationCount: number;
+  }>;
+  averageGpa: number;
+  honorsDistribution: {
+    distinction: number;
+    firstClass: number;
+    secondClass: number;
+    none: number;
+  };
+  graduationsByYear: Array<{
+    year: number;
+    count: number;
+  }>;
+}
+
 export * from '@prisma/client';
