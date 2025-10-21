@@ -2,6 +2,7 @@ import express from 'express';
 import adminAuthRoutes from './auth';
 import adminUserRoutes from './users';
 import batchRoutes from './batches';
+import classRoutes from './classes';
 import classEnrollmentRoutes from './classEnrollments';
 import graduationRoutes from './graduations';
 import { authenticateAdmin } from '../../middlewares/adminAuth';
@@ -14,6 +15,7 @@ router.use('/auth', adminAuthRoutes);
 // All other admin routes require authentication
 router.use('/users', authenticateAdmin, adminUserRoutes);
 router.use('/batches', authenticateAdmin, batchRoutes);
+router.use('/classes', authenticateAdmin, classRoutes);
 router.use('/enrollments', authenticateAdmin, classEnrollmentRoutes);
 router.use('/graduations', authenticateAdmin, graduationRoutes);
 // router.use('/dashboard', authenticateAdmin, adminDashboardRoutes);

@@ -23,6 +23,8 @@ import {
   LucideIcon,
   Layers,
   Trophy,
+  School,
+  Video,
 } from 'lucide-react';
 import { ROUTES } from '@/src/config/routes.config';
 
@@ -36,7 +38,8 @@ export const ADMIN_MENU_ITEMS: MenuItem[] = [
   { icon: Home, label: 'Dashboard', href: ROUTES.admin.dashboard },
   { icon: Users, label: 'Users', href: ROUTES.admin.users },
   { icon: BookOpen, label: 'Modules', href: ROUTES.admin.courses },
-  { icon: GraduationCap, label: 'Live Classes', href: ROUTES.admin.classes },
+  { icon: School, label: 'Classes', href: '/admin/classes' },
+  { icon: Video, label: 'Live Classes', href: '/admin/live-classes' },
   { icon: Layers, label: 'Batches', href: ROUTES.admin.batches },
   { icon: Trophy, label: 'Graduations', href: ROUTES.admin.graduations },
   { icon: Calendar, label: 'Schedule', href: ROUTES.admin.schedule },

@@ -7,7 +7,7 @@ export const ROUTES = {
     dashboard: '/admin/dashboard',
     users: '/admin/users',
     courses: '/admin/courses',
-    classes: '/admin/classes',
+    liveClasses: '/admin/live-classes',
     batches: '/admin/batches',
     graduations: '/admin/graduations',
     schedule: '/admin/schedule',

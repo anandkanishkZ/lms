@@ -153,7 +153,7 @@ class GraduationApiService {
 
   private getAccessToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('adminAccessToken');
+    return localStorage.getItem('adminToken');
   }
 
   /**

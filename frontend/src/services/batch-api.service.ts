@@ -7,12 +7,18 @@ export interface Batch {
   id: string;
   name: string;
   description?: string;
+  startYear: number;
+  endYear: number;
   startDate: string;
-  endDate: string;
+  endDate?: string;
   status: BatchStatus;
+  maxStudents?: number;
+  currentStudents: number;
   createdById: string;
   createdAt: string;
   updatedAt: string;
+  completedAt?: string;
+  graduatedAt?: string;
   createdBy?: {
     id: string;
     firstName: string;
@@ -52,17 +58,22 @@ export interface BatchWithDetails extends Batch {
 export interface CreateBatchData {
   name: string;
   description?: string;
+  startYear: number;
+  endYear: number;
   startDate: string;
-  endDate: string;
-  createdById: string;
+  endDate?: string;
+  maxStudents?: number;
 }
 
 export interface UpdateBatchData {
   name?: string;
   description?: string;
+  startYear?: number;
+  endYear?: number;
   startDate?: string;
   endDate?: string;
   status?: BatchStatus;
+  maxStudents?: number;
 }
 
 export interface BatchFilters {
@@ -161,7 +172,7 @@ class BatchApiService {
 
   private getAccessToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('adminAccessToken');
+    return localStorage.getItem('adminToken');
   }
 
   /**

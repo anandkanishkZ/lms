@@ -97,11 +97,9 @@ export default function BatchClassesPage() {
   // Fetch available classes from your API
   const fetchAvailableClasses = async () => {
     try {
-      // Replace with actual API call to get all classes
-      // For now, using mock data
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/admin/classes`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/classes`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('adminAccessToken')}`,
+          Authorization: `Bearer ${localStorage.getItem('adminToken')}`,
         },
       });
 

@@ -174,12 +174,14 @@ class BatchService {
 
       return {
         success: true,
-        data: batches,
-        pagination: {
-          total,
-          page,
-          limit,
-          totalPages: Math.ceil(total / limit),
+        data: {
+          batches,
+          pagination: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+          },
         },
       };
     } catch (error: any) {

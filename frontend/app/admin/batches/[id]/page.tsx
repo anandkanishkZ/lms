@@ -98,6 +98,14 @@ export default function BatchDetailPage() {
     return statusFlow[currentIndex + 1];
   };
 
+  // Get previous status in flow (for reverting)
+  const getPreviousStatus = (): BatchStatus | null => {
+    if (!batch) return null;
+    const currentIndex = statusFlow.indexOf(batch.status);
+    if (currentIndex === -1 || currentIndex === 0) return null;
+    return statusFlow[currentIndex - 1];
+  };
+
   // Format date
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -165,7 +173,9 @@ export default function BatchDetailPage() {
               <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
-                  <span>{formatDate(batch.startDate)} - {formatDate(batch.endDate)}</span>
+                  <span>
+                    {formatDate(batch.startDate)} - {batch.endDate ? formatDate(batch.endDate) : 'TBD'}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
@@ -182,6 +192,20 @@ export default function BatchDetailPage() {
                 >
                   <TrendingUp className="w-5 h-5" />
                   Move to {nextStatus}
+                </button>
+              )}
+              {getPreviousStatus() && (
+                <button
+                  onClick={() => {
+                    const prevStatus = getPreviousStatus();
+                    if (prevStatus && confirm(`Are you sure you want to revert status back to ${prevStatus}?`)) {
+                      handleStatusUpdate(prevStatus);
+                    }
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                  Revert to {getPreviousStatus()}
                 </button>
               )}
               <button
@@ -232,7 +256,9 @@ export default function BatchDetailPage() {
               <div className="flex items-center justify-between mb-2">
                 <CheckCircle className="w-8 h-8 text-purple-600" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">{statistics.completionRate.toFixed(1)}%</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {statistics.completionRate != null ? statistics.completionRate.toFixed(1) : '0.0'}%
+              </p>
               <p className="text-sm text-gray-600 mt-1">Completion Rate</p>
             </motion.div>
 
@@ -245,7 +271,9 @@ export default function BatchDetailPage() {
               <div className="flex items-center justify-between mb-2">
                 <Award className="w-8 h-8 text-orange-600" />
               </div>
-              <p className="text-3xl font-bold text-gray-900">{statistics.passRate.toFixed(1)}%</p>
+              <p className="text-3xl font-bold text-gray-900">
+                {statistics.passRate != null ? statistics.passRate.toFixed(1) : '0.0'}%
+              </p>
               <p className="text-sm text-gray-600 mt-1">Pass Rate</p>
             </motion.div>
           </div>
@@ -328,7 +356,7 @@ export default function BatchDetailPage() {
               </div>
 
               {/* Performance by Class */}
-              {statistics && statistics.classesBySequence.length > 0 && (
+              {statistics && statistics.classesBySequence && statistics.classesBySequence.length > 0 && (
                 <div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance by Class</h3>
                   <div className="space-y-3">

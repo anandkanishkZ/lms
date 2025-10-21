@@ -31,10 +31,20 @@ import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 const batchSchema = z.object({
   name: z.string().min(3, 'Batch name must be at least 3 characters'),
   description: z.string().optional(),
+  startYear: z.string().min(1, 'Start year is required').transform((val) => parseInt(val)),
+  endYear: z.string().min(1, 'End year is required').transform((val) => parseInt(val)),
   startDate: z.string().min(1, 'Start date is required'),
-  endDate: z.string().min(1, 'End date is required'),
+  endDate: z.string().optional(),
 }).refine((data) => {
-  return new Date(data.endDate) > new Date(data.startDate);
+  return data.endYear > data.startYear;
+}, {
+  message: 'End year must be greater than start year',
+  path: ['endYear'],
+}).refine((data) => {
+  if (data.endDate) {
+    return new Date(data.endDate) > new Date(data.startDate);
+  }
+  return true;
 }, {
   message: 'End date must be after start date',
   path: ['endDate'],
@@ -60,6 +70,7 @@ export default function BatchesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<Batch | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
@@ -83,17 +94,22 @@ export default function BatchesPage() {
       const response = await batchApiService.getBatches({
         search: searchQuery,
         status: selectedStatus || undefined,
-        page: pagination.page,
-        limit: pagination.limit,
+        page: currentPage,
+        limit: 10,
       });
 
       if (response.success && response.data) {
-        setBatches(response.data.batches);
+        setBatches(response.data.batches || []);
         setPagination(response.data.pagination);
+      } else {
+        setBatches([]);
+        setPagination({ page: 1, limit: 10, total: 0, totalPages: 0 });
       }
     } catch (error) {
       console.error('Error fetching batches:', error);
       showErrorToast('Failed to load batches');
+      setBatches([]); // Set empty array on error
+      setPagination({ page: 1, limit: 10, total: 0, totalPages: 0 }); // Reset pagination
     } finally {
       setLoading(false);
     }
@@ -101,26 +117,33 @@ export default function BatchesPage() {
 
   useEffect(() => {
     fetchBatches();
-  }, [searchQuery, selectedStatus, pagination.page]);
+  }, [searchQuery, selectedStatus, currentPage]);
 
   // Create batch
   const onSubmit = async (data: BatchFormData) => {
     try {
-      // Get current user ID from localStorage
-      const adminId = localStorage.getItem('adminUserId') || '';
-
-      const batchData: CreateBatchData = {
-        ...data,
-        createdById: adminId,
+      // Backend automatically sets createdBy from authenticated admin token
+      // No need to send createdById from frontend
+      const batchData = {
+        name: data.name,
+        description: data.description,
+        startYear: data.startYear,
+        endYear: data.endYear,
+        startDate: data.startDate,
+        endDate: data.endDate || undefined,
       };
 
+      console.log('Creating batch with data:', batchData);
       const response = await batchApiService.createBatch(batchData);
+      console.log('Create batch response:', response);
 
       if (response.success) {
         showSuccessToast('Batch created successfully');
         setShowCreateModal(false);
         reset();
-        fetchBatches();
+        await fetchBatches(); // Wait for fetch to complete
+      } else {
+        showErrorToast(response.message || 'Failed to create batch');
       }
     } catch (error: any) {
       console.error('Error creating batch:', error);
@@ -189,14 +212,20 @@ export default function BatchesPage() {
                   type="text"
                   placeholder="Search batches..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1); // Reset to first page on search
+                  }}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
             <select
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value as BatchStatus | '')}
+              onChange={(e) => {
+                setSelectedStatus(e.target.value as BatchStatus | '');
+                setCurrentPage(1); // Reset to first page on filter change
+              }}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Statuses</option>
@@ -214,7 +243,7 @@ export default function BatchesPage() {
           <div className="flex justify-center items-center py-12">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
           </div>
-        ) : batches.length === 0 ? (
+        ) : !batches || batches.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
             <GraduationCap className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No batches found</h3>
@@ -276,7 +305,19 @@ export default function BatchesPage() {
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="w-4 h-4" />
-                    <span>{formatDate(batch.startDate)} - {formatDate(batch.endDate)}</span>
+                    <span className="font-semibold">{batch.startYear} - {batch.endYear}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 ml-6">
+                    <span>{formatDate(batch.startDate)}</span>
+                    {batch.endDate && (
+                      <>
+                        <span>→</span>
+                        <span>{formatDate(batch.endDate)}</span>
+                      </>
+                    )}
+                    {!batch.endDate && (
+                      <span className="text-amber-600">(End date TBD)</span>
+                    )}
                   </div>
                 </div>
 
@@ -309,11 +350,11 @@ export default function BatchesPage() {
         )}
 
         {/* Pagination */}
-        {pagination.totalPages > 1 && (
+        {pagination && pagination.totalPages > 1 && (
           <div className="flex justify-center items-center gap-2 mt-8">
             <button
-              onClick={() => setPagination({ ...pagination, page: pagination.page - 1 })}
-              disabled={pagination.page === 1}
+              onClick={() => setCurrentPage(currentPage - 1)}
+              disabled={currentPage === 1}
               className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               Previous
@@ -322,8 +363,8 @@ export default function BatchesPage() {
               Page {pagination.page} of {pagination.totalPages}
             </span>
             <button
-              onClick={() => setPagination({ ...pagination, page: pagination.page + 1 })}
-              disabled={pagination.page === pagination.totalPages}
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={currentPage === pagination.totalPages}
               className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
             >
               Next
@@ -386,6 +427,42 @@ export default function BatchesPage() {
                     />
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Start Year *
+                      </label>
+                      <input
+                        type="number"
+                        {...register('startYear')}
+                        placeholder="2025"
+                        min="2000"
+                        max="2100"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      {errors.startYear && (
+                        <p className="text-red-500 text-sm mt-1">{errors.startYear.message}</p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        End Year *
+                      </label>
+                      <input
+                        type="number"
+                        {...register('endYear')}
+                        placeholder="2027"
+                        min="2000"
+                        max="2100"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      {errors.endYear && (
+                        <p className="text-red-500 text-sm mt-1">{errors.endYear.message}</p>
+                      )}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Start Date *
@@ -402,7 +479,7 @@ export default function BatchesPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      End Date *
+                      End Date <span className="text-gray-500 text-xs">(Optional - can be updated later)</span>
                     </label>
                     <input
                       type="date"
@@ -412,6 +489,9 @@ export default function BatchesPage() {
                     {errors.endDate && (
                       <p className="text-red-500 text-sm mt-1">{errors.endDate.message}</p>
                     )}
+                    <p className="text-xs text-gray-500 mt-1">
+                      Leave empty if the exact end date is not yet determined
+                    </p>
                   </div>
 
                   <div className="flex gap-3 pt-4">
