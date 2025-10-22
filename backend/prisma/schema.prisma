@@ -365,10 +365,11 @@ model LiveClass {
   subjectId    String
   teacherId    String
   classId      String
+  moduleId     String?         // Optional: Link to module for course-specific live classes
   youtubeUrl   String?
   meetingLink  String?
   startTime    DateTime
-  endTime      DateTime
+  endTime      DateTime?
   status       LiveClassStatus @default(SCHEDULED)
   isRecorded   Boolean         @default(false)
   recordingUrl String?
@@ -380,8 +381,10 @@ model LiveClass {
   subject     Subject      @relation(fields: [subjectId], references: [id])
   teacher     User         @relation("TeacherLiveClasses", fields: [teacherId], references: [id])
   class       Class        @relation(fields: [classId], references: [id])
+  module      Module?      @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   attendances Attendance[]
 
+  @@index([moduleId])
   @@map("live_classes")
 }
 
@@ -709,6 +712,7 @@ model Module {
   reviews         ModuleReview[]
   activityHistory ActivityHistory[]
   resources       ModuleResource[]
+  liveClasses     LiveClass[]        // Live classes associated with this module
 
   @@index([subjectId])
   @@index([teacherId])

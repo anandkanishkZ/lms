@@ -14,6 +14,7 @@ export const createLiveClass = asyncHandler(async (req: AuthRequest, res: Respon
     description,
     subjectId,
     classId,
+    moduleId,
     youtubeUrl,
     meetingLink,
     startTime,
@@ -41,6 +42,24 @@ export const createLiveClass = asyncHandler(async (req: AuthRequest, res: Respon
     return;
   }
 
+  // If moduleId is provided, validate teacher owns the module
+  if (moduleId) {
+    const module = await prisma.module.findFirst({
+      where: {
+        id: moduleId,
+        teacherId,
+      },
+    });
+
+    if (!module && req.user!.role !== 'ADMIN') {
+      res.status(403).json({
+        success: false,
+        message: 'You are not authorized to add live classes to this module',
+      });
+      return;
+    }
+  }
+
   const liveClass = await prisma.liveClass.create({
     data: {
       title,
@@ -48,16 +67,18 @@ export const createLiveClass = asyncHandler(async (req: AuthRequest, res: Respon
       subjectId,
       teacherId,
       classId,
+      moduleId,
       youtubeUrl,
       meetingLink,
       startTime: new Date(startTime),
-      endTime: new Date(endTime),
+      ...(endTime && { endTime: new Date(endTime) }),
       maxStudents,
     },
     include: {
       subject: { select: { name: true } },
       teacher: { select: { name: true } },
       class: { select: { name: true, section: true } },
+      module: { select: { id: true, title: true } },
     },
   });
 
@@ -78,6 +99,7 @@ export const getLiveClasses = asyncHandler(async (req: AuthRequest, res: Respons
     status,
     classId,
     subjectId,
+    moduleId,
     date,
     upcoming = false,
   } = req.query;
@@ -105,6 +127,7 @@ export const getLiveClasses = asyncHandler(async (req: AuthRequest, res: Respons
   if (status) where.status = status;
   if (classId) where.classId = classId;
   if (subjectId) where.subjectId = subjectId;
+  if (moduleId) where.moduleId = moduleId;
   if (date) {
     const startOfDay = new Date(date as string);
     const endOfDay = new Date(startOfDay);
@@ -126,9 +149,10 @@ export const getLiveClasses = asyncHandler(async (req: AuthRequest, res: Respons
         subject: { select: { name: true, color: true } },
         teacher: { select: { name: true } },
         class: { select: { name: true, section: true } },
+        module: { select: { id: true, title: true } },
         _count: { select: { attendances: true } },
       },
-      orderBy: { startTime: 'asc' },
+      orderBy: { startTime: 'desc' },
       skip,
       take: limitNum,
     }),
