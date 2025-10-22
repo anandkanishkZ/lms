@@ -1053,7 +1053,7 @@ export default function UsersPage() {
                         <option value="">No Batch (Assign Later)</option>
                         {batches.map((batch) => (
                           <option key={batch.id} value={batch.id}>
-                            {batch.name} ({batch.status}) - {new Date(batch.startDate).getFullYear()} to {new Date(batch.endDate).getFullYear()}
+                            {batch.name} ({batch.status}) - {batch.startYear} to {batch.endYear}
                           </option>
                         ))}
                       </select>

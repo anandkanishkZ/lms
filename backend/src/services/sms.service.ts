@@ -110,9 +110,7 @@ Symbol No: ${data.symbolNo}
 Password: ${data.tempPassword}
 Login URL: ${data.loginUrl}
 
-// Please change your password after first login.
-
-// - Free Education In Nepal Campaign`;
+- Free Education In Nepal, Campaign`;
 
     return message;
   }
