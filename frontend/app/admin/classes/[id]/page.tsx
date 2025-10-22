@@ -29,6 +29,7 @@ import {
   type ClassStatistics,
 } from '@/services/class-api.service';
 import { AdminLayout } from '@/src/features/admin';
+import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 
 type TabType = 'overview' | 'teachers' | 'students' | 'statistics' | 'batches';
 

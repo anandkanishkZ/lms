@@ -679,9 +679,13 @@ class BatchService {
           select: {
             id: true,
             name: true,
+            firstName: true,
+            lastName: true,
             email: true,
             phone: true,
             symbolNo: true,
+            profileImage: true,
+            batchId: true,
             isActive: true,
             createdAt: true,
             classEnrollments: {
@@ -705,6 +709,13 @@ class BatchService {
           },
         }),
       ]);
+
+      console.log(`📊 Batch ${batchId} - Found ${students.length} students with enrollments:`, 
+        students.map(s => ({ 
+          name: s.name, 
+          enrollments: s.classEnrollments.length 
+        }))
+      );
 
       return {
         success: true,

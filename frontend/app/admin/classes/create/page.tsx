@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { BookOpen, ArrowLeft, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
 import { createClass } from '@/services/class-api.service';
 import { AdminLayout } from '@/src/features/admin';
+import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 
 // Validation schema
 const classSchema = z.object({
@@ -64,12 +65,12 @@ export default function CreateClassPage() {
       const response = await createClass(payload);
 
       if (response.success) {
-        alert('Class created successfully!');
+        showSuccessToast('Class created successfully!');
         router.push(`/admin/classes/${response.data?.id}`);
       }
     } catch (error: any) {
       console.error('Error creating class:', error);
-      alert(error.message || 'Failed to create class');
+      showErrorToast(error.message || 'Failed to create class');
     } finally {
       setSubmitting(false);
     }

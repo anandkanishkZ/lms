@@ -26,6 +26,8 @@ import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 const attachClassSchema = z.object({
   classId: z.string().min(1, 'Please select a class'),
   sequence: z.string().min(1, 'Sequence is required').transform(Number),
+  startDate: z.string().min(1, 'Start date is required'),
+  endDate: z.string().optional(),
 });
 
 type AttachClassFormData = z.infer<typeof attachClassSchema>;
@@ -126,6 +128,8 @@ export default function BatchClassesPage() {
       const response = await batchApiService.attachClassToBatch(batchId, {
         classId: data.classId,
         sequence: data.sequence,
+        startDate: data.startDate,
+        endDate: data.endDate,
       });
 
       if (response.success) {
@@ -373,6 +377,34 @@ export default function BatchClassesPage() {
                     <p className="text-xs text-gray-500 mt-1">
                       Determines the order of progression through classes
                     </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Start Date *
+                    </label>
+                    <input
+                      type="date"
+                      {...register('startDate')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.startDate && (
+                      <p className="text-red-500 text-sm mt-1">{errors.startDate.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      End Date (Optional)
+                    </label>
+                    <input
+                      type="date"
+                      {...register('endDate')}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    {errors.endDate && (
+                      <p className="text-red-500 text-sm mt-1">{errors.endDate.message}</p>
+                    )}
                   </div>
 
                   <div className="flex gap-3 pt-4">

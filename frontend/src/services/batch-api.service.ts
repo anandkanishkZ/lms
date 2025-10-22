@@ -88,6 +88,8 @@ export interface BatchFilters {
 export interface AttachClassData {
   classId: string;
   sequence: number;
+  startDate: string;
+  endDate?: string;
 }
 
 export interface UpdateStatusData {
@@ -284,8 +286,11 @@ class BatchApiService {
   /**
    * Get all students in batch
    */
-  async getBatchStudents(batchId: string): Promise<ApiResponse<any[]>> {
-    return this.makeRequest<any[]>(`/${batchId}/students`, {
+  async getBatchStudents(batchId: string, params?: { page?: number; limit?: number }): Promise<ApiResponse<any[]>> {
+    const page = params?.page || 1;
+    const limit = params?.limit || 100; // Get up to 100 students by default
+    
+    return this.makeRequest<any[]>(`/${batchId}/students?page=${page}&limit=${limit}`, {
       method: 'GET',
     });
   }

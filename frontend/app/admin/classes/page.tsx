@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { getAllClasses, deleteClass, toggleClassStatus, type Class } from '@/services/class-api.service';
 import { AdminLayout } from '@/src/features/admin';
+import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
 
 export default function ClassesPage() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function ClassesPage() {
       }
     } catch (error: any) {
       console.error('Error fetching classes:', error);
-      alert(error.message || 'Failed to fetch classes');
+      showErrorToast(error.message || 'Failed to fetch classes');
       setClasses([]); // Reset to empty array on error
     } finally {
       setLoading(false);
@@ -85,7 +86,7 @@ export default function ClassesPage() {
     try {
       const response = await deleteClass(classId, hardDelete);
       if (response.success) {
-        alert(response.message || 'Class deleted successfully');
+        showSuccessToast(response.message || 'Class deleted successfully');
         fetchClasses();
         setDeleteConfirm(null);
         setShowDeleteModal(false);
@@ -96,7 +97,7 @@ export default function ClassesPage() {
       }
     } catch (error: any) {
       console.error('Error deleting class:', error);
-      alert(error.message || 'Failed to delete class');
+      showErrorToast(error.message || 'Failed to delete class');
     }
   };
 
@@ -122,7 +123,7 @@ export default function ClassesPage() {
     if (confirmText === 'DELETE' && classToDelete) {
       handleDelete(classToDelete.id, true);
     } else {
-      alert('Please type DELETE exactly to confirm permanent deletion.');
+      showErrorToast('Please type DELETE exactly to confirm permanent deletion.');
     }
   };
 
@@ -138,12 +139,12 @@ export default function ClassesPage() {
     try {
       const response = await toggleClassStatus(classId);
       if (response.success) {
-        alert('Class status updated successfully');
+        showSuccessToast('Class status updated successfully');
         fetchClasses();
       }
     } catch (error: any) {
       console.error('Error toggling class status:', error);
-      alert(error.message || 'Failed to update class status');
+      showErrorToast(error.message || 'Failed to update class status');
     }
   };
 

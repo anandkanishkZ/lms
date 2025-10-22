@@ -19,15 +19,43 @@ import { AdminLayout } from '@/src/features/admin';
 import { batchApiService } from '@/src/services/batch-api.service';
 import { classEnrollmentApiService } from '@/src/services/classEnrollment-api.service';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
+import { adminApiService } from '@/src/features/admin';
 
 interface Student {
   id: string;
-  firstName: string;
-  lastName: string;
+  firstName: string | null;
+  lastName: string | null;
+  name?: string;
   symbolNo: string;
   email?: string;
   phone?: string;
+  profileImage?: string | null;
+  batchId?: string | null;
+  classEnrollments?: Array<{
+    id: string;
+    status: string;
+    class: {
+      id: string;
+      name: string;
+    };
+    completedAt?: string;
+  }>;
 }
+
+// Helper function to get student initials
+const getStudentInitials = (student: Student): string => {
+  if (student.firstName && student.lastName) {
+    return `${student.firstName.charAt(0)}${student.lastName.charAt(0)}`.toUpperCase();
+  }
+  if (student.name) {
+    const names = student.name.split(' ');
+    if (names.length >= 2) {
+      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+    }
+    return student.name.substring(0, 2).toUpperCase();
+  }
+  return 'ST';
+};
 
 interface EnrollmentInfo {
   studentId: string;
@@ -54,6 +82,7 @@ export default function BatchStudentsPage() {
   const fetchBatchStudents = async () => {
     try {
       setLoading(true);
+      
       const [batchResponse, studentsResponse] = await Promise.all([
         batchApiService.getBatchById(batchId),
         batchApiService.getBatchStudents(batchId),
@@ -66,24 +95,22 @@ export default function BatchStudentsPage() {
       if (studentsResponse.success && studentsResponse.data) {
         setStudents(studentsResponse.data);
 
-        // Fetch enrollment data for each student
+        // Process enrollment data from the response (already included in student data)
         const enrollmentMap = new Map<string, EnrollmentInfo>();
+        
         for (const student of studentsResponse.data) {
-          try {
-            const enrollmentResponse = await classEnrollmentApiService.getStudentEnrollments(student.id);
-            if (enrollmentResponse.success && enrollmentResponse.data) {
-              enrollmentMap.set(student.id, {
-                studentId: student.id,
-                enrollments: enrollmentResponse.data.map((e: any) => ({
-                  id: e.id,
-                  status: e.status,
-                  className: e.class?.name || 'Unknown',
-                  completedAt: e.completedAt,
-                })),
-              });
-            }
-          } catch (error) {
-            console.error(`Error fetching enrollments for student ${student.id}:`, error);
+          if (student.classEnrollments && student.classEnrollments.length > 0) {
+            const enrollments = student.classEnrollments.map((e: any) => ({
+              id: e.id,
+              status: e.status,
+              className: e.class?.name || 'Unknown',
+              completedAt: e.completedAt,
+            }));
+            
+            enrollmentMap.set(student.id, {
+              studentId: student.id,
+              enrollments,
+            });
           }
         }
         setEnrollmentData(enrollmentMap);
@@ -225,10 +252,33 @@ export default function BatchStudentsPage() {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-full flex items-center justify-center">
-                              <span className="text-blue-600 font-semibold">
-                                {student.firstName[0]}{student.lastName[0]}
-                              </span>
+                            <div className="h-10 w-10 flex-shrink-0 relative">
+                              {student.profileImage ? (
+                                <>
+                                  <img
+                                    src={adminApiService.getAvatarUrl(student.profileImage)}
+                                    alt={`${student.firstName} ${student.lastName}`}
+                                    className="h-10 w-10 rounded-full object-cover"
+                                    onError={(e) => {
+                                      console.error('❌ Failed to load avatar for student:', student.id, student.profileImage);
+                                      e.currentTarget.style.display = 'none';
+                                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                      if (fallback) fallback.style.display = 'flex';
+                                    }}
+                                  />
+                                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center hidden">
+                                    <span className="text-white text-sm font-semibold">
+                                      {getStudentInitials(student)}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                                  <span className="text-white text-sm font-semibold">
+                                    {getStudentInitials(student)}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                             <div className="ml-4">
                               <div className="font-medium text-gray-900">
