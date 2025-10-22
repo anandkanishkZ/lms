@@ -92,6 +92,7 @@ interface ApiUser {
     name: string;
     status: string;
   } | null;
+  profileImage: string | null;
   verified: boolean;
   isActive: boolean;
   isBlocked: boolean;
@@ -117,6 +118,21 @@ const statusColors = {
 };
 
 type TabType = 'students' | 'teachers' | 'admins';
+
+// Helper function to get user initials
+const getUserInitials = (user: ApiUser): string => {
+  if (user.firstName && user.lastName) {
+    return `${user.firstName.charAt(0)}${user.lastName.charAt(0)}`.toUpperCase();
+  }
+  if (user.name) {
+    const names = user.name.split(' ');
+    if (names.length >= 2) {
+      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
+    }
+    return user.name.substring(0, 2).toUpperCase();
+  }
+  return 'U';
+};
 
 export default function UsersPage() {
   const [activeTab, setActiveTab] = useState<TabType>('students');
@@ -792,10 +808,33 @@ export default function UsersPage() {
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0">
-                          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                            <User className="h-5 w-5 text-gray-500" />
-                          </div>
+                        <div className="h-10 w-10 flex-shrink-0 relative">
+                          {user.profileImage ? (
+                            <>
+                              <img
+                                src={adminApi.getAvatarUrl(user.profileImage)}
+                                alt={user.name}
+                                className="h-10 w-10 rounded-full object-cover"
+                                onError={(e) => {
+                                  console.error('❌ Failed to load avatar for user:', user.id, user.profileImage);
+                                  e.currentTarget.style.display = 'none';
+                                  const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                                  if (fallback) fallback.style.display = 'flex';
+                                }}
+                              />
+                              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center hidden">
+                                <span className="text-white text-sm font-semibold">
+                                  {getUserInitials(user)}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                              <span className="text-white text-sm font-semibold">
+                                {getUserInitials(user)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900">{user.name}</div>
@@ -1798,8 +1837,31 @@ export default function UsersPage() {
               {/* Header */}
               <div className="bg-gradient-to-r from-gray-700 to-gray-800 px-6 py-4 flex items-center justify-between rounded-t-2xl">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                    <MoreVertical className="w-5 h-5 text-white" />
+                  <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
+                    {selectedUser.profileImage ? (
+                      <>
+                        <img
+                          src={adminApi.getAvatarUrl(selectedUser.profileImage)}
+                          alt={selectedUser.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('❌ Failed to load avatar in actions modal for user:', selectedUser.id);
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                        <div className="w-full h-full bg-white bg-opacity-20 flex items-center justify-center hidden">
+                          <span className="text-white text-sm font-semibold">
+                            {getUserInitials(selectedUser)}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-white text-sm font-semibold">
+                        {getUserInitials(selectedUser)}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-white">User Actions</h2>
@@ -1978,8 +2040,31 @@ export default function UsersPage() {
               {/* Header */}
               <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between border-b border-blue-500 rounded-t-2xl">
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-white" />
+                  <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
+                    {selectedUser.profileImage ? (
+                      <>
+                        <img
+                          src={adminApi.getAvatarUrl(selectedUser.profileImage)}
+                          alt={selectedUser.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            console.error('❌ Failed to load avatar in modal for user:', selectedUser.id);
+                            e.currentTarget.style.display = 'none';
+                            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                        <div className="w-full h-full bg-white bg-opacity-20 flex items-center justify-center hidden">
+                          <span className="text-white text-lg font-semibold">
+                            {getUserInitials(selectedUser)}
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-white text-lg font-semibold">
+                        {getUserInitials(selectedUser)}
+                      </span>
+                    )}
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">User Details</h2>

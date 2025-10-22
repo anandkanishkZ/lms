@@ -74,6 +74,7 @@ export interface UserItem {
     name: string;
     status: string;
   } | null;
+  profileImage: string | null;
   verified: boolean;
   isActive: boolean;
   isBlocked: boolean;

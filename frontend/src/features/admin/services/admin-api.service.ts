@@ -143,6 +143,42 @@ class AdminApiService {
 
   // ==================== HELPERS ====================
 
+  /**
+   * Generate avatar URL for user profile images
+   * @param profileImage - The profile image path from the user object (e.g., "avatars/filename.jpg")
+   * @returns Full URL to the avatar image or empty string if no image
+   */
+  getAvatarUrl(profileImage: string | null): string {
+    if (!profileImage) {
+      console.log('🖼️ No profile image provided');
+      return '';
+    }
+
+    // If already a full URL, return as is
+    if (profileImage.startsWith('http')) {
+      console.log('🖼️ Profile image is already a full URL:', profileImage);
+      return profileImage;
+    }
+
+    // Extract filename from path (e.g., "avatars/filename.jpg" -> "filename.jpg")
+    const filename = profileImage.includes('/') 
+      ? profileImage.split('/').pop() 
+      : profileImage;
+
+    // Construct full URL using the API base URL
+    const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+    const avatarUrl = `${baseURL}/auth/avatars/${filename}`;
+
+    console.log('🖼️ Admin Avatar URL generated:', {
+      profileImage,
+      filename,
+      baseURL,
+      finalUrl: avatarUrl
+    });
+
+    return avatarUrl;
+  }
+
   isAuthenticated(): boolean {
     const state = store.getState().adminAuth;
     return !!state.accessToken && apiClient.isAuthenticated();

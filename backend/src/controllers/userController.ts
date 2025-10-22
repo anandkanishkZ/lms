@@ -374,6 +374,15 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
         school: true,
         department: true,
         experience: true,
+        batchId: true,
+        batch: {
+          select: {
+            id: true,
+            name: true,
+            status: true,
+          }
+        },
+        profileImage: true,
         verified: true,
         isActive: true,
         isBlocked: true,
