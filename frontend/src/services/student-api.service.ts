@@ -263,7 +263,14 @@ class StudentApiService {
     // Extract filename from path (e.g., "avatars/filename.jpg" -> "filename.jpg")
     const filename = profileImage.includes('/') ? profileImage.split('/').pop() : profileImage;
     // Use API endpoint for serving avatars with proper CORS headers
-    return `${this.axiosInstance.defaults.baseURL}/auth/avatars/${filename}`;
+    const avatarUrl = `${this.axiosInstance.defaults.baseURL}/auth/avatars/${filename}`;
+    console.log('🖼️ Avatar URL generated:', {
+      profileImage,
+      filename,
+      baseURL: this.axiosInstance.defaults.baseURL,
+      finalUrl: avatarUrl
+    });
+    return avatarUrl;
   }
 
   // Helper method to check if user is authenticated
