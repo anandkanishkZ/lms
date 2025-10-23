@@ -118,7 +118,7 @@ export default function ModuleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'topics' | 'resources' | 'liveclasses'>('topics');
+  const [activeTab, setActiveTab] = useState<'overview' | 'resources' | 'studymaterials' | 'tasks' | 'quiz' | 'challenges' | 'liveclasses'>('overview');
   const [resourceTypeFilter, setResourceTypeFilter] = useState<string>('all');
   const [resourceSearch, setResourceSearch] = useState('');
 
@@ -390,16 +390,25 @@ export default function ModuleDetailPage() {
 
   const completedLessons = topics.reduce((sum, topic) => sum + (topic.completedLessons || 0), 0);
   const progressPercentage = Math.round(enrollment.progress || 0);
+  const totalAssignments = topics.reduce((sum, topic) => {
+    const assignments = topic.lessons?.filter((l: any) => l.type === 'ASSIGNMENT') || [];
+    return sum + assignments.length;
+  }, 0);
+  const completedAssignments = topics.reduce((sum, topic) => {
+    const assignments = topic.lessons?.filter((l: any) => l.type === 'ASSIGNMENT' && l.isCompleted) || [];
+    return sum + assignments.length;
+  }, 0);
+  const assignmentPercentage = totalAssignments > 0 ? Math.round((completedAssignments / totalAssignments) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gray-50">
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <button
               onClick={() => router.push('/student/dashboard')}
-              className="hover:text-[#2563eb] transition flex items-center gap-1"
+              className="hover:text-[#1e40af] transition flex items-center gap-1"
             >
               <Home className="w-4 h-4" />
               <span>Dashboard</span>
@@ -410,513 +419,773 @@ export default function ModuleDetailPage() {
         </div>
       </div>
 
-      {/* Module Header */}
+      {/* Module Header - Campus 4.0 Style */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] text-white"
+        className="bg-gradient-to-br from-[#1e3a8a] via-[#1e40af] to-[#2563eb]"
       >
-        <div className="max-w-6xl mx-auto px-6 py-12">
-          <div className="flex items-start gap-8">
-            {/* Module Info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
-                  {module.subject.name}
-                </span>
-                <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
-                  {module.level}
-                </span>
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Category Badges */}
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <span className="px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-md text-white text-sm font-medium border border-white/20">
+              {module.subject.name}
+            </span>
+            <span className="px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-md text-white text-sm font-medium border border-white/20">
+              {module.level}
+            </span>
+            {module.totalTopics > 0 && (
+              <span className="px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-md text-white text-sm font-medium border border-white/20">
+                {module.totalTopics} Topics
+              </span>
+            )}
+          </div>
+
+          {/* Module Title */}
+          <h1 className="text-3xl md:text-4xl font-bold text-white mb-6">{module.title}</h1>
+
+          {/* Module Stats Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-3">
+                <Calendar className="w-8 h-8 text-white" />
+                <div>
+                  <div className="text-white/70 text-xs font-medium">Year One</div>
+                  <div className="text-white text-lg font-bold">{module.level}</div>
+                </div>
               </div>
-
-              <h1 className="text-4xl font-bold mb-4">{module.title}</h1>
-              
-              {module.description && (
-                <p className="text-white/90 text-lg mb-6 leading-relaxed">
-                  {module.description}
-                </p>
-              )}
-
-              {/* Meta Information */}
-              <div className="flex flex-wrap items-center gap-6 text-sm text-white/80 mb-6">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  <span>{module.teacher.name}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  <span>{module.totalTopics} Topics</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  <span>{module.totalLessons} Lessons</span>
-                </div>
-                {module.duration && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>{formatDuration(module.duration)}</span>
+            </div>
+            
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-3">
+                <Clock className="w-8 h-8 text-white" />
+                <div>
+                  <div className="text-white/70 text-xs font-medium">Duration</div>
+                  <div className="text-white text-lg font-bold">
+                    {module.duration ? `${Math.ceil(module.duration / 60)}h` : 'N/A'}
                   </div>
-                )}
-              </div>
-
-              {/* Progress Bar */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Your Progress</span>
-                  <span className="text-sm font-bold">{progressPercentage}%</span>
                 </div>
-                <div className="w-full bg-white/20 rounded-full h-3 overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progressPercentage}%` }}
-                    transition={{ duration: 1, delay: 0.3 }}
-                    className="bg-white h-full rounded-full shadow-lg"
-                  />
-                </div>
-                <p className="text-sm text-white/70 mt-2">
-                  {completedLessons} of {module.totalLessons} lessons completed
-                </p>
               </div>
-
-              {/* Continue Learning Button */}
-              <button
-                onClick={handleContinueLearning}
-                className="px-8 py-3 bg-white text-[#2563eb] rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg flex items-center gap-2"
-              >
-                <PlayCircle className="w-5 h-5" />
-                <span>Continue Learning</span>
-                <ArrowRight className="w-5 h-5" />
-              </button>
             </div>
 
-            {/* Progress Circle */}
-            <div className="hidden lg:block">
-              <div className="relative w-40 h-40">
-                <svg className="transform -rotate-90 w-40 h-40">
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="70"
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth="12"
-                    fill="none"
-                  />
-                  <motion.circle
-                    cx="80"
-                    cy="80"
-                    r="70"
-                    stroke="white"
-                    strokeWidth="12"
-                    fill="none"
-                    strokeLinecap="round"
-                    initial={{ strokeDashoffset: 440 }}
-                    animate={{ strokeDashoffset: 440 - (440 * progressPercentage) / 100 }}
-                    transition={{ duration: 1, delay: 0.5 }}
-                    strokeDasharray="440"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold">{progressPercentage}%</div>
-                    <div className="text-xs text-white/70">Complete</div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-8 h-8 text-white" />
+                <div>
+                  <div className="text-white/70 text-xs font-medium">Total Hours</div>
+                  <div className="text-white text-lg font-bold">
+                    {module.duration ? formatDuration(module.duration) : 'N/A'}
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
+              <div className="flex items-center gap-3">
+                <FileText className="w-8 h-8 text-white" />
+                <div>
+                  <div className="text-white/70 text-xs font-medium">Lessons</div>
+                  <div className="text-white text-lg font-bold">{module.totalLessons}</div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Continue Learning Button */}
+          <button
+            onClick={handleContinueLearning}
+            className="px-6 py-3 bg-white text-[#1e40af] rounded-lg font-semibold hover:bg-gray-100 transition shadow-lg flex items-center gap-2"
+          >
+            <PlayCircle className="w-5 h-5" />
+            <span>Continue Learning</span>
+            <ArrowRight className="w-5 h-5" />
+          </button>
         </div>
       </motion.div>
 
       {/* Course Content */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        {/* Tabs */}
-        <div className="flex items-center gap-1 mb-6 bg-white rounded-lg p-1 shadow-sm border border-gray-200">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`flex-1 px-4 py-2.5 rounded-md font-medium transition ${
-              activeTab === 'overview'
-                ? 'bg-[#2563eb] text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab('topics')}
-            className={`flex-1 px-4 py-2.5 rounded-md font-medium transition ${
-              activeTab === 'topics'
-                ? 'bg-[#2563eb] text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Topics & Lessons
-          </button>
-          <button
-            onClick={() => setActiveTab('resources')}
-            className={`flex-1 px-4 py-2.5 rounded-md font-medium transition ${
-              activeTab === 'resources'
-                ? 'bg-[#2563eb] text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Resources
-          </button>
-          <button
-            onClick={() => setActiveTab('liveclasses')}
-            className={`flex-1 px-4 py-2.5 rounded-md font-medium transition ${
-              activeTab === 'liveclasses'
-                ? 'bg-[#2563eb] text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Live Classes
-          </button>
-        </div>
-
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl p-8 shadow-sm"
-          >
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">About This Module</h2>
-            <p className="text-gray-600 leading-relaxed mb-6">
-              {module.description || 'No description available for this module.'}
-            </p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-sm text-gray-600 mb-1">Instructor</div>
-                <div className="font-semibold text-gray-900">{module.teacher.name}</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-sm text-gray-600 mb-1">Level</div>
-                <div className="font-semibold text-gray-900">{module.level}</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-sm text-gray-600 mb-1">Total Topics</div>
-                <div className="font-semibold text-gray-900">{module.totalTopics}</div>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-sm text-gray-600 mb-1">Total Lessons</div>
-                <div className="font-semibold text-gray-900">{module.totalLessons}</div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Topics Tab */}
-        {activeTab === 'topics' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            {topics.length === 0 ? (
-              <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-                <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">No content available</h3>
-                <p className="text-gray-600">This module doesn't have any topics or lessons yet.</p>
-              </div>
-            ) : (
-              <div className="space-y-4">{topics.map((topic, topicIndex) => (
-              <motion.div
-                key={topic.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: topicIndex * 0.1 }}
-                className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-200 hover:shadow-md transition"
-              >
-                {/* Topic Header */}
-                <button
-                  onClick={() => toggleTopic(topic.id)}
-                  className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="flex-shrink-0">
-                      {expandedTopics.includes(topic.id) ? (
-                        <ChevronDown className="w-6 h-6 text-gray-400" />
-                      ) : (
-                        <ChevronRight className="w-6 h-6 text-gray-400" />
-                      )}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Content Area */}
+          <div className="lg:col-span-2">
+            {/* Featured Video Section - Above Tabs */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-6"
+            >
+              <div className="bg-white rounded-xl overflow-hidden shadow-sm border-2 border-red-500">
+                <div className="aspect-video bg-gray-900 relative">
+                  {/* YouTube Video Embed - Intro to Algorithms */}
+                  <iframe
+                    className="w-full h-full"
+                    src="https://www.youtube.com/embed/6hfOvs8pY1k"
+                    title="Intro to Algorithms: Crash Course Computer Science #13"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
+                      <Youtube className="w-6 h-6 text-white" />
                     </div>
-                    
-                    <div className="text-left flex-1">
-                      <h3 className="font-bold text-lg text-gray-900 mb-1">
-                        {topicIndex + 1}. {topic.title}
-                      </h3>
-                      {topic.description && (
-                        <p className="text-sm text-gray-600 line-clamp-1">{topic.description}</p>
-                      )}
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                        <span>{topic.totalLessons} lessons</span>
-                        {topic.duration && <span>{formatDuration(topic.duration)}</span>}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900 mb-1">Intro to Algorithms: Crash Course Computer Science #13</h3>
+                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                        <div className="flex items-center gap-1">
+                          <PlayCircle className="w-4 h-4" />
+                          <span>Featured Video</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>12:35</span>
+                        </div>
                       </div>
                     </div>
+                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition text-sm font-medium">
+                      <Youtube className="w-4 h-4" />
+                      Watch on YouTube
+                    </button>
                   </div>
+                </div>
+              </div>
+            </motion.div>
 
-                  {/* Topic Progress */}
-                  <div className="flex items-center gap-4 ml-4">
-                    <div className="text-right hidden sm:block">
-                      <div className="text-sm font-medium text-gray-900">
-                        {topic.completedLessons || 0}/{topic.totalLessons} completed
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {Math.round(topic.progress || 0)}% complete
-                      </div>
-                    </div>
-                    <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden hidden md:block">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${topic.progress || 0}%` }}
-                        transition={{ duration: 0.5, delay: topicIndex * 0.1 + 0.2 }}
-                        className="h-full bg-[#2563eb] rounded-full"
-                      />
-                    </div>
-                  </div>
+            {/* Tabs - Campus 4.0 Style */}
+            <div className="bg-[#1e40af] rounded-xl shadow-sm mb-6 overflow-hidden">
+              <div className="flex items-center">
+                {/* Left Arrow */}
+                <button className="flex-shrink-0 px-4 py-4 text-white hover:bg-white/10 transition">
+                  <ChevronRight className="w-5 h-5 rotate-180" />
                 </button>
 
-                {/* Lessons List */}
-                <AnimatePresence>
-                  {expandedTopics.includes(topic.id) && topic.lessons && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className="border-t border-gray-200"
-                    >
-                      {topic.lessons.map((lesson: any, lessonIndex: number) => {
-                        const isCompleted = lesson.isCompleted || false;
-                        const isCurrent = lesson.id === currentLessonId;
-                        const isLocked = lesson.isLocked || false;
+                {/* Tab Buttons */}
+                <div className="flex items-center flex-1 overflow-x-auto scrollbar-hide">
+                  <button
+                    onClick={() => setActiveTab('overview')}
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
+                      activeTab === 'overview'
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Overview
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('resources')}
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
+                      activeTab === 'resources'
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Resources
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('studymaterials')}
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
+                      activeTab === 'studymaterials'
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Study Materials
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('tasks')}
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
+                      activeTab === 'tasks'
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Tasks
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('quiz')}
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
+                      activeTab === 'quiz'
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Quiz
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('challenges')}
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
+                      activeTab === 'challenges'
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Challenges
+                  </button>
+                </div>
 
-                        return (
-                          <motion.button
-                            key={lesson.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: lessonIndex * 0.05 }}
-                            onClick={() => handleLessonClick(lesson.id, isLocked)}
-                            disabled={isLocked}
-                            className={`w-full flex items-center gap-4 p-4 border-b last:border-b-0 transition ${
-                              isCurrent
-                                ? 'bg-[#2563eb]/5 border-l-4 border-l-[#2563eb]'
-                                : 'hover:bg-gray-50'
-                            } ${isLocked ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`}
-                          >
-                            {/* Completion Status */}
-                            <div className="flex-shrink-0">
-                              {isCompleted ? (
-                                <CheckCircle className="w-6 h-6 text-green-500" />
-                              ) : isLocked ? (
-                                <Lock className="w-6 h-6 text-gray-400" />
-                              ) : isCurrent ? (
-                                <div className="w-6 h-6 rounded-full border-4 border-[#2563eb] bg-[#2563eb]/20" />
-                              ) : (
-                                <div className="w-6 h-6 rounded-full border-2 border-gray-300" />
-                              )}
-                            </div>
-
-                            {/* Lesson Icon */}
-                            <div className={`flex-shrink-0 ${isCompleted ? 'text-green-600' : 'text-[#2563eb]'}`}>
-                              {getLessonIcon(lesson.type)}
-                            </div>
-
-                            {/* Lesson Title */}
-                            <div className="flex-1 text-left">
-                              <p className={`font-medium ${isCurrent ? 'text-[#2563eb]' : 'text-gray-900'}`}>
-                                {lesson.title}
-                              </p>
-                              {isCurrent && (
-                                <p className="text-xs text-[#2563eb] mt-1">← Continue from here</p>
-                              )}
-                            </div>
-
-                            {/* Lesson Type Badge */}
-                            <div className="hidden sm:block">
-                              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-md">
-                                {lesson.type}
-                              </span>
-                            </div>
-
-                            {/* Duration */}
-                            {lesson.duration && (
-                              <div className="flex items-center gap-1 text-sm text-gray-500 flex-shrink-0">
-                                <Clock className="w-4 h-4" />
-                                <span>{lesson.duration} min</span>
-                              </div>
-                            )}
-                          </motion.button>
-                        );
-                      })}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            ))}
-          </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* Resources Tab */}
-        {activeTab === 'resources' && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            {/* Filter Bar */}
-            <div className="bg-white rounded-xl p-4 shadow-sm mb-4 flex flex-col sm:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search resources..."
-                  value={resourceSearch}
-                  onChange={(e) => setResourceSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563eb] focus:border-transparent"
-                />
-              </div>
-              <div className="relative">
-                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <select
-                  value={resourceTypeFilter}
-                  onChange={(e) => setResourceTypeFilter(e.target.value)}
-                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563eb] focus:border-transparent appearance-none bg-white cursor-pointer"
-                >
-                  <option value="all">All Types</option>
-                  <option value="PDF">PDF</option>
-                  <option value="VIDEO">Video</option>
-                  <option value="DOCUMENT">Document</option>
-                  <option value="IMAGE">Image</option>
-                  <option value="LINK">Link</option>
-                  <option value="YOUTUBE">YouTube</option>
-                  <option value="AUDIO">Audio</option>
-                  <option value="OTHER">Other</option>
-                </select>
+                {/* Right Arrow */}
+                <button className="flex-shrink-0 px-4 py-4 text-white hover:bg-white/10 transition">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
-            {/* Resources Grid */}
-            {resourcesLoading ? (
-              <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#2563eb] mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading resources...</p>
-              </div>
-            ) : filteredResources.length === 0 ? (
-              <div className="bg-white rounded-xl p-12 text-center shadow-sm">
-                <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  {resourceSearch || resourceTypeFilter !== 'all' ? 'No resources found' : 'No resources available'}
-                </h3>
-                <p className="text-gray-600">
-                  {resourceSearch || resourceTypeFilter !== 'all' 
-                    ? 'Try adjusting your search or filters'
-                    : 'Your instructor hasn\'t added any resources yet.'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredResources.map((resource, index) => (
-                  <motion.div
-                    key={resource.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition"
-                  >
-                    {/* Resource Header */}
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="flex-shrink-0">
-                        {getResourceIcon(resource.type)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900 flex-1">
-                            {resource.title}
-                          </h3>
-                          {resource.isMandatory && (
-                            <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-md flex-shrink-0">
-                              MANDATORY
-                            </span>
-                          )}
-                        </div>
-                        {resource.description && (
-                          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                            {resource.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+            {/* Tab Content */}
+            
+            {/* Overview Tab */}
+            {activeTab === 'overview' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-6"
+              >
+                {/* Module Description */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Module/Subject Overview</h2>
+                  <p className="text-gray-700 leading-relaxed mb-8">
+                    {module.description || 'This module introduces the fundamentals of the subject that will underpin the technical and theoretical content of undergraduate degree courses. Students taking the module will develop core skills and understanding through comprehensive lessons and practical applications.'}
+                  </p>
 
-                    {/* Resource Metadata */}
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-4">
-                      <div className="flex items-center gap-1">
-                        <User className="w-4 h-4" />
-                        <span>{resource.uploader.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>{new Date(resource.createdAt).toLocaleDateString()}</span>
-                      </div>
-                      {resource.fileSize && (
-                        <div className="flex items-center gap-1">
-                          <FileText className="w-4 h-4" />
-                          <span>{formatFileSize(resource.fileSize)}</span>
-                        </div>
-                      )}
-                    </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Learning Outcome</h3>
+                  <div className="space-y-3 text-gray-700">
+                    <p>By the end of the module/subject, you will be able to ...</p>
+                    <ul className="list-disc list-inside space-y-2 ml-4">
+                      <li>Demonstrate understanding of core concepts and principles</li>
+                      <li>Apply learned techniques to solve practical problems</li>
+                      <li>Analyze complex scenarios using appropriate methodologies</li>
+                      <li>Communicate technical concepts effectively</li>
+                    </ul>
+                  </div>
+                </div>
 
-                    {/* Resource Stats */}
-                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4 pb-4 border-b border-gray-200">
-                      <div className="flex items-center gap-1">
-                        <Eye className="w-4 h-4" />
-                        <span>{resource.viewCount} views</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Download className="w-4 h-4" />
-                        <span>{resource.downloadCount} downloads</span>
-                      </div>
+                {/* Topics & Lessons Section */}
+                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
+                  <h3 className="text-xl font-bold text-gray-900 mb-4">Topics & Lessons</h3>
+                  {topics.length === 0 ? (
+                    <div className="text-center py-8">
+                      <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                      <p className="text-gray-600">No topics available yet.</p>
                     </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleViewResource(resource)}
-                        className="flex-1 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-[#1d4ed8] transition flex items-center justify-center gap-2 text-sm font-medium"
+                  ) : (
+                    <div className="space-y-3">{topics.map((topic, topicIndex) => (
+                      <motion.div
+                        key={topic.id}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: topicIndex * 0.05 }}
+                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
                       >
-                        <Eye className="w-4 h-4" />
-                        <span>View</span>
-                      </button>
-                      {resource.fileUrl && (
                         <button
-                          onClick={() => handleDownloadResource(resource)}
-                          className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center justify-center gap-2 text-sm font-medium"
+                          onClick={() => toggleTopic(topic.id)}
+                          className="w-full flex items-center justify-between hover:bg-gray-100 p-2 rounded transition"
                         >
-                          <Download className="w-4 h-4" />
-                          <span>Download</span>
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="flex-shrink-0">
+                              {expandedTopics.includes(topic.id) ? (
+                                <ChevronDown className="w-5 h-5 text-gray-600" />
+                              ) : (
+                                <ChevronRight className="w-5 h-5 text-gray-600" />
+                              )}
+                            </div>
+                            <h4 className="font-semibold text-gray-900 text-left">
+                              {topicIndex + 1}. {topic.title}
+                            </h4>
+                          </div>
+                          <span className="text-sm text-gray-500 ml-2">
+                            {topic.completedLessons || 0}/{topic.totalLessons}
+                          </span>
                         </button>
-                      )}
+
+                        {/* Lessons under Topic */}
+                        <AnimatePresence>
+                          {expandedTopics.includes(topic.id) && topic.lessons && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              className="mt-2 ml-8 space-y-1"
+                            >
+                              {topic.lessons.map((lesson: any) => (
+                                <button
+                                  key={lesson.id}
+                                  onClick={() => handleLessonClick(lesson.id, lesson.isLocked || false)}
+                                  disabled={lesson.isLocked}
+                                  className={`w-full flex items-center gap-2 p-2 rounded text-sm hover:bg-gray-100 transition ${
+                                    lesson.isCompleted ? 'text-green-600' : 'text-gray-700'
+                                  } ${lesson.isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                >
+                                  {lesson.isCompleted ? (
+                                    <CheckCircle className="w-4 h-4" />
+                                  ) : lesson.isLocked ? (
+                                    <Lock className="w-4 h-4" />
+                                  ) : (
+                                    <div className="w-4 h-4 rounded-full border-2 border-gray-400" />
+                                  )}
+                                  <span className="flex-1 text-left">{lesson.title}</span>
+                                  {lesson.duration && (
+                                    <span className="text-xs text-gray-500">{lesson.duration}min</span>
+                                  )}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    ))}</div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Study Materials Tab */}
+            {activeTab === 'studymaterials' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl p-8 shadow-sm border border-gray-200"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Study Materials</h2>
+                <div className="grid gap-4">
+                  {topics.map((topic) => (
+                    topic.lessons?.filter((l: any) => l.type === 'PDF' || l.type === 'TEXT').map((lesson: any) => (
+                      <button
+                        key={lesson.id}
+                        onClick={() => handleLessonClick(lesson.id, lesson.isLocked || false)}
+                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200"
+                      >
+                        <FileText className="w-10 h-10 text-[#1e40af]" />
+                        <div className="flex-1 text-left">
+                          <h3 className="font-semibold text-gray-900">{lesson.title}</h3>
+                          <p className="text-sm text-gray-600">{lesson.type}</p>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                    ))
+                  ))}
+                  {topics.every(t => !t.lessons?.some((l: any) => l.type === 'PDF' || l.type === 'TEXT')) && (
+                    <div className="text-center py-12">
+                      <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">No study materials available yet.</p>
                     </div>
-                  </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Tasks Tab */}
+            {activeTab === 'tasks' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl p-8 shadow-sm border border-gray-200"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Tasks & Assignments</h2>
+                <div className="grid gap-4">
+                  {topics.map((topic) => (
+                    topic.lessons?.filter((l: any) => l.type === 'ASSIGNMENT').map((lesson: any) => (
+                      <button
+                        key={lesson.id}
+                        onClick={() => handleLessonClick(lesson.id, lesson.isLocked || false)}
+                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200"
+                      >
+                        <CheckSquare className="w-10 h-10 text-[#1e40af]" />
+                        <div className="flex-1 text-left">
+                          <h3 className="font-semibold text-gray-900">{lesson.title}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            {lesson.isCompleted ? (
+                              <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">Completed</span>
+                            ) : (
+                              <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-700 rounded">Pending</span>
+                            )}
+                          </div>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                    ))
+                  ))}
+                  {topics.every(t => !t.lessons?.some((l: any) => l.type === 'ASSIGNMENT')) && (
+                    <div className="text-center py-12">
+                      <CheckSquare className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">No assignments available yet.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Quiz Tab */}
+            {activeTab === 'quiz' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl p-8 shadow-sm border border-gray-200"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Quizzes</h2>
+                <div className="grid gap-4">
+                  {topics.map((topic) => (
+                    topic.lessons?.filter((l: any) => l.type === 'QUIZ').map((lesson: any) => (
+                      <button
+                        key={lesson.id}
+                        onClick={() => handleLessonClick(lesson.id, lesson.isLocked || false)}
+                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200"
+                      >
+                        <HelpCircle className="w-10 h-10 text-[#1e40af]" />
+                        <div className="flex-1 text-left">
+                          <h3 className="font-semibold text-gray-900">{lesson.title}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            {lesson.isCompleted ? (
+                              <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">Completed</span>
+                            ) : (
+                              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">Available</span>
+                            )}
+                            {lesson.duration && (
+                              <span className="text-xs text-gray-500">{lesson.duration} min</span>
+                            )}
+                          </div>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-gray-400" />
+                      </button>
+                    ))
+                  ))}
+                  {topics.every(t => !t.lessons?.some((l: any) => l.type === 'QUIZ')) && (
+                    <div className="text-center py-12">
+                      <HelpCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">No quizzes available yet.</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+
+            {/* Challenges Tab */}
+            {activeTab === 'challenges' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-xl p-8 shadow-sm border border-gray-200"
+              >
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">Challenges</h2>
+                <div className="text-center py-12">
+                  <Award className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Coming Soon!</h3>
+                  <p className="text-gray-600">Challenge activities will be available soon.</p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Resources Tab */}
+            {activeTab === 'resources' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                {/* Filter Bar */}
+                <div className="bg-white rounded-xl p-4 shadow-sm mb-4 border border-gray-200">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search resources..."
+                        value={resourceSearch}
+                        onChange={(e) => setResourceSearch(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e40af] focus:border-transparent"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      <select
+                        value={resourceTypeFilter}
+                        onChange={(e) => setResourceTypeFilter(e.target.value)}
+                        className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1e40af] focus:border-transparent appearance-none bg-white cursor-pointer"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="PDF">PDF</option>
+                        <option value="VIDEO">Video</option>
+                        <option value="DOCUMENT">Document</option>
+                        <option value="IMAGE">Image</option>
+                        <option value="LINK">Link</option>
+                        <option value="YOUTUBE">YouTube</option>
+                        <option value="AUDIO">Audio</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Resources Grid */}
+                {resourcesLoading ? (
+                  <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-[#1e40af] mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading resources...</p>
+                  </div>
+                ) : filteredResources.length === 0 ? (
+                  <div className="bg-white rounded-xl p-12 text-center shadow-sm border border-gray-200">
+                    <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      {resourceSearch || resourceTypeFilter !== 'all' ? 'No resources found' : 'No resources available'}
+                    </h3>
+                    <p className="text-gray-600">
+                      {resourceSearch || resourceTypeFilter !== 'all' 
+                        ? 'Try adjusting your search or filters'
+                        : 'Your instructor hasn\'t added any resources yet.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4">
+                    {filteredResources.map((resource, index) => (
+                      <motion.div
+                        key={resource.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-md transition"
+                      >
+                        <div className="flex items-start gap-4">
+                          <div className="flex-shrink-0">
+                            {getResourceIcon(resource.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-2 mb-2">
+                              <h3 className="font-semibold text-gray-900 flex-1">
+                                {resource.title}
+                              </h3>
+                              {resource.isMandatory && (
+                                <span className="px-2 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-md flex-shrink-0">
+                                  MANDATORY
+                                </span>
+                              )}
+                            </div>
+                            {resource.description && (
+                              <p className="text-sm text-gray-600 mb-3">
+                                {resource.description}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 mb-3">
+                              <div className="flex items-center gap-1">
+                                <User className="w-4 h-4" />
+                                <span>{resource.uploader.name}</span>
+                              </div>
+                              {resource.fileSize && (
+                                <div className="flex items-center gap-1">
+                                  <FileText className="w-4 h-4" />
+                                  <span>{formatFileSize(resource.fileSize)}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center gap-1">
+                                <Eye className="w-4 h-4" />
+                                <span>{resource.viewCount} views</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleViewResource(resource)}
+                                className="px-4 py-2 bg-[#1e40af] text-white rounded-lg hover:bg-[#1e3a8a] transition flex items-center gap-2 text-sm font-medium"
+                              >
+                                <Eye className="w-4 h-4" />
+                                <span>View</span>
+                              </button>
+                              {resource.fileUrl && (
+                                <button
+                                  onClick={() => handleDownloadResource(resource)}
+                                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2 text-sm font-medium"
+                                >
+                                  <Download className="w-4 h-4" />
+                                  <span>Download</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Live Classes Tab */}
+            {activeTab === 'liveclasses' && module && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <StudentLiveClassesTab 
+                  moduleId={module.id} 
+                  moduleName={module.title}
+                />
+              </motion.div>
+            )}
+          </div>
+
+          {/* Right Sidebar */}
+          <div className="lg:col-span-1 space-y-6">
+            {/* Lecturer Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            >
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Lecturer</h3>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 to-red-500 flex items-center justify-center text-white text-2xl font-bold">
+                  {module.teacher.name.split(' ').map((n: string) => n[0]).join('')}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-gray-900">{module.teacher.name}</h4>
+                  <p className="text-sm text-gray-600">Module/Subject Leader</p>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  <span>Teacher ID: {module.teacher.id.substring(0, 8)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Award className="w-4 h-4" />
+                  <span>Exp. 4 Years</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Overall Progress */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            >
+              <h3 className="text-lg font-bold text-gray-900 mb-6">Overall Progress</h3>
+              
+              {/* Progress Circles */}
+              <div className="grid grid-cols-2 gap-6">
+                {/* Lessons Completed */}
+                <div className="text-center">
+                  <div className="relative inline-flex items-center justify-center mb-3">
+                    <svg className="w-24 h-24 transform -rotate-90">
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="#fee2e2"
+                        strokeWidth="8"
+                        fill="none"
+                      />
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="#ef4444"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 40 * progressPercentage / 100} ${2 * Math.PI * 40}`}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xl font-bold text-gray-900">{progressPercentage}%</span>
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium text-gray-700">Lessons Completed</p>
+                </div>
+
+                {/* Assignments Completed */}
+                <div className="text-center">
+                  <div className="relative inline-flex items-center justify-center mb-3">
+                    <svg className="w-24 h-24 transform -rotate-90">
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="#d1fae5"
+                        strokeWidth="8"
+                        fill="none"
+                      />
+                      <circle
+                        cx="48"
+                        cy="48"
+                        r="40"
+                        stroke="#10b981"
+                        strokeWidth="8"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 40 * assignmentPercentage / 100} ${2 * Math.PI * 40}`}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-xl font-bold text-gray-900">{assignmentPercentage}%</span>
+                    </div>
+                  </div>
+                  <p className="text-sm font-medium text-gray-700">Assignments Completed</p>
+                </div>
+              </div>
+
+              {/* Stats Summary */}
+              <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-2xl font-bold text-red-500">{completedLessons}</div>
+                  <div className="text-xs text-gray-600 mt-1">Lessons<br/>Completed</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-green-500">{completedAssignments}</div>
+                  <div className="text-xs text-gray-600 mt-1">Assignments<br/>Completed</div>
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-purple-500">88%</div>
+                  <div className="text-xs text-gray-600 mt-1">Attendance</div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Rate This Module */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            >
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Rate This Module/Subject</h3>
+              <div className="flex justify-center gap-2 mb-4">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    className="text-gray-300 hover:text-yellow-400 transition"
+                  >
+                    <Award className="w-8 h-8" fill="currentColor" />
+                  </button>
                 ))}
               </div>
-            )}
-          </motion.div>
-        )}
+              <p className="text-xs text-center text-gray-600">
+                Share your experience with this module
+              </p>
+            </motion.div>
 
-        {/* Live Classes Tab */}
-        {activeTab === 'liveclasses' && module && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <StudentLiveClassesTab 
-              moduleId={module.id} 
-              moduleName={module.title}
-            />
-          </motion.div>
-        )}
+            {/* Bottom Stats Bar - Campus 4.0 Style */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
+            >
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <div className="text-3xl font-bold text-red-500">{completedLessons}</div>
+                  <div className="text-sm text-gray-600 mt-1">Lessons<br/>Completed</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-green-500">{completedAssignments}</div>
+                  <div className="text-sm text-gray-600 mt-1">Assignments<br/>Completed</div>
+                </div>
+                <div>
+                  <div className="text-3xl font-bold text-purple-600">22</div>
+                  <div className="text-sm text-gray-600 mt-1">Classes<br/>Attended</div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   );
