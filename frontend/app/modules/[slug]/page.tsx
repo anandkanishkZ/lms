@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -121,6 +121,7 @@ export default function ModuleDetailPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'resources' | 'studymaterials' | 'tasks' | 'quiz' | 'challenges' | 'liveclasses'>('overview');
   const [resourceTypeFilter, setResourceTypeFilter] = useState<string>('all');
   const [resourceSearch, setResourceSearch] = useState('');
+  const tabContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (slug) {
@@ -246,6 +247,20 @@ export default function ModuleDetailPage() {
       );
     } catch (error) {
       console.error('Failed to track resource access:', error);
+    }
+  };
+
+  // Scroll tabs left
+  const scrollTabsLeft = () => {
+    if (tabContainerRef.current) {
+      tabContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+    }
+  };
+
+  // Scroll tabs right
+  const scrollTabsRight = () => {
+    if (tabContainerRef.current) {
+      tabContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
     }
   };
 
@@ -423,11 +438,11 @@ export default function ModuleDetailPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-gradient-to-br from-[#1e3a8a] via-[#1e40af] to-[#2563eb]"
+        className="bg-[rgb(4,53,162)]"
       >
         <div className="max-w-7xl mx-auto px-6 py-8">
           {/* Category Badges */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <span className="px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-md text-white text-sm font-medium border border-white/20">
               {module.subject.name}
             </span>
@@ -444,50 +459,30 @@ export default function ModuleDetailPage() {
           {/* Module Title */}
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-6">{module.title}</h1>
 
-          {/* Module Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="flex items-center gap-3">
-                <Calendar className="w-8 h-8 text-white" />
-                <div>
-                  <div className="text-white/70 text-xs font-medium">Year One</div>
-                  <div className="text-white text-lg font-bold">{module.level}</div>
-                </div>
-              </div>
+          {/* Module Stats - Simple Text */}
+          <div className="flex flex-wrap items-center gap-6 mb-6 text-white">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-white/80" />
+              <span className="text-sm font-medium">Year One</span>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="flex items-center gap-3">
-                <Clock className="w-8 h-8 text-white" />
-                <div>
-                  <div className="text-white/70 text-xs font-medium">Duration</div>
-                  <div className="text-white text-lg font-bold">
-                    {module.duration ? `${Math.ceil(module.duration / 60)}h` : 'N/A'}
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-white/80" />
+              <span className="text-sm font-medium">
+                {module.duration ? `${Math.ceil(module.duration / 60)} weeks` : '4 weeks'}
+              </span>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="flex items-center gap-3">
-                <BookOpen className="w-8 h-8 text-white" />
-                <div>
-                  <div className="text-white/70 text-xs font-medium">Total Hours</div>
-                  <div className="text-white text-lg font-bold">
-                    {module.duration ? formatDuration(module.duration) : 'N/A'}
-                  </div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-white/80" />
+              <span className="text-sm font-medium">
+                {module.duration ? formatDuration(module.duration) : '10 Hours'}
+              </span>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-              <div className="flex items-center gap-3">
-                <FileText className="w-8 h-8 text-white" />
-                <div>
-                  <div className="text-white/70 text-xs font-medium">Lessons</div>
-                  <div className="text-white text-lg font-bold">{module.totalLessons}</div>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-white/80" />
+              <span className="text-sm font-medium">{module.totalLessons} Lessons</span>
             </div>
           </div>
 
@@ -514,7 +509,7 @@ export default function ModuleDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mb-6"
             >
-              <div className="bg-white rounded-xl overflow-hidden shadow-sm border-2 border-red-500">
+              <div className="rounded-xl overflow-hidden shadow-sm border-2 border-red-500">
                 <div className="aspect-video bg-gray-900 relative">
                   {/* YouTube Video Embed - Intro to Algorithms */}
                   <iframe
@@ -525,43 +520,23 @@ export default function ModuleDetailPage() {
                     allowFullScreen
                   ></iframe>
                 </div>
-                <div className="p-4 bg-gray-50 border-t border-gray-200">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
-                      <Youtube className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-1">Intro to Algorithms: Crash Course Computer Science #13</h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <PlayCircle className="w-4 h-4" />
-                          <span>Featured Video</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          <span>12:35</span>
-                        </div>
-                      </div>
-                    </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition text-sm font-medium">
-                      <Youtube className="w-4 h-4" />
-                      Watch on YouTube
-                    </button>
-                  </div>
-                </div>
               </div>
             </motion.div>
 
             {/* Tabs - Campus 4.0 Style */}
-            <div className="bg-[#1e40af] rounded-xl shadow-sm mb-6 overflow-hidden">
+            <div className="bg-[rgb(4,53,162)] rounded-xl shadow-sm mb-6 overflow-hidden">
               <div className="flex items-center">
                 {/* Left Arrow */}
-                <button className="flex-shrink-0 px-4 py-4 text-white hover:bg-white/10 transition">
+                <button 
+                  onClick={scrollTabsLeft}
+                  className="flex-shrink-0 px-4 py-4 text-white hover:bg-white/10 transition"
+                  aria-label="Scroll tabs left"
+                >
                   <ChevronRight className="w-5 h-5 rotate-180" />
                 </button>
 
                 {/* Tab Buttons */}
-                <div className="flex items-center flex-1 overflow-x-auto scrollbar-hide">
+                <div ref={tabContainerRef} className="flex items-center flex-1 overflow-x-auto scrollbar-hide">
                   <button
                     onClick={() => setActiveTab('overview')}
                     className={`px-6 py-4 font-medium transition whitespace-nowrap ${
@@ -622,10 +597,24 @@ export default function ModuleDetailPage() {
                   >
                     Challenges
                   </button>
+                  <button
+                    onClick={() => setActiveTab('liveclasses')}
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
+                      activeTab === 'liveclasses'
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Live Classes
+                  </button>
                 </div>
 
                 {/* Right Arrow */}
-                <button className="flex-shrink-0 px-4 py-4 text-white hover:bg-white/10 transition">
+                <button 
+                  onClick={scrollTabsRight}
+                  className="flex-shrink-0 px-4 py-4 text-white hover:bg-white/10 transition"
+                  aria-label="Scroll tabs right"
+                >
                   <ChevronRight className="w-5 h-5" />
                 </button>
               </div>
