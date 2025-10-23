@@ -81,6 +81,10 @@ export function LiveClassCard({ liveClass, onEdit, onDelete, onView }: LiveClass
   };
 
   const getDuration = () => {
+    if (!liveClass.endTime) {
+      return null; // No duration if endTime is not set
+    }
+    
     const start = new Date(liveClass.startTime);
     const end = new Date(liveClass.endTime);
     const diffMs = end.getTime() - start.getTime();
@@ -216,9 +220,14 @@ export function LiveClassCard({ liveClass, onEdit, onDelete, onView }: LiveClass
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-gray-400" />
                 <span>
-                  {formatTime(liveClass.startTime)} - {formatTime(liveClass.endTime)}
+                  {formatTime(liveClass.startTime)}
+                  {liveClass.endTime && (
+                    <>
+                      {' '}- {formatTime(liveClass.endTime)}
+                      <span className="text-xs text-gray-500 ml-1">({getDuration()})</span>
+                    </>
+                  )}
                 </span>
-                <span className="text-xs text-gray-500">({getDuration()})</span>
               </div>
               {liveClass._count && (
                 <div className="flex items-center gap-2">

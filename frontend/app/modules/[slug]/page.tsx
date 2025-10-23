@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import moduleApiService from '@/src/services/module-api.service';
 import { studentApiService, type ModuleEnrollment } from '@/src/services/student-api.service';
+import { StudentLiveClassesTab } from './components/StudentLiveClassesTab';
 
 // Types
 interface Module {
@@ -117,7 +118,7 @@ export default function ModuleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'topics' | 'resources'>('topics');
+  const [activeTab, setActiveTab] = useState<'overview' | 'topics' | 'resources' | 'liveclasses'>('topics');
   const [resourceTypeFilter, setResourceTypeFilter] = useState<string>('all');
   const [resourceSearch, setResourceSearch] = useState('');
 
@@ -560,6 +561,16 @@ export default function ModuleDetailPage() {
           >
             Resources
           </button>
+          <button
+            onClick={() => setActiveTab('liveclasses')}
+            className={`flex-1 px-4 py-2.5 rounded-md font-medium transition ${
+              activeTab === 'liveclasses'
+                ? 'bg-[#2563eb] text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            Live Classes
+          </button>
         </div>
 
         {/* Overview Tab */}
@@ -891,6 +902,19 @@ export default function ModuleDetailPage() {
                 ))}
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* Live Classes Tab */}
+        {activeTab === 'liveclasses' && module && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <StudentLiveClassesTab 
+              moduleId={module.id} 
+              moduleName={module.title}
+            />
           </motion.div>
         )}
       </div>
