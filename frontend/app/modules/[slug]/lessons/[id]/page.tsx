@@ -534,71 +534,111 @@ export default function LessonDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-4">
-            {/* Breadcrumb */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600 mb-3">
-              <button
-                onClick={() => router.push('/student/dashboard')}
-                className="hover:text-blue-600 transition-colors flex items-center"
-              >
-                <Home className="w-4 h-4 mr-1" />
-                Dashboard
-              </button>
-              <ChevronRight className="w-4 h-4" />
-              <button
-                onClick={() => router.push(`/modules/${slug}`)}
-                className="hover:text-blue-600 transition-colors"
-              >
-                {module.title}
-              </button>
-              <ChevronRight className="w-4 h-4" />
-              <span className="text-gray-900 font-medium truncate max-w-xs">{lesson.title}</span>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Breadcrumb */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <button
+              onClick={() => router.push('/student/dashboard')}
+              className="hover:text-[#1e40af] transition flex items-center gap-1"
+            >
+              <Home className="w-4 h-4" />
+              <span>Dashboard</span>
+            </button>
+            <ChevronRight className="w-4 h-4" />
+            <button
+              onClick={() => router.push(`/modules/${slug}`)}
+              className="hover:text-[#1e40af] transition"
+            >
+              {module.title}
+            </button>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-gray-900 font-medium">{lesson.title}</span>
+          </div>
+        </div>
+      </div>
 
-            {/* Lesson Header */}
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-3 mb-2">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    {getLessonIcon(lesson.type)}
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">{lesson.title}</h1>
-                    <div className="flex items-center space-x-4 mt-1">
-                      {lesson.topic && <span className="text-sm text-gray-600">{lesson.topic.title}</span>}
-                      {lesson.duration && (
-                        <>
-                          {lesson.topic && <span className="text-gray-400">•</span>}
-                          <div className="flex items-center space-x-1 text-sm text-gray-600">
-                            <Clock className="w-4 h-4" />
-                            <span>{lesson.duration} min</span>
-                          </div>
-                        </>
-                      )}
-                      {isCompleted && (
-                        <>
-                          <span className="text-gray-400">•</span>
-                          <div className="flex items-center space-x-1 text-sm text-green-600">
-                            <CheckCircle className="w-4 h-4" />
-                            <span>Completed</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
+      {/* Lesson Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-gray-100 rounded-lg">
+                {getLessonIcon(lesson.type)}
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{lesson.title}</h1>
+                <div className="flex items-center gap-4 text-gray-600">
+                  {lesson.topic && (
+                    <span className="text-sm font-medium">{lesson.topic.title}</span>
+                  )}
+                  {lesson.duration && (
+                    <>
+                      {lesson.topic && <span>•</span>}
+                      <div className="flex items-center gap-1 text-sm">
+                        <Clock className="w-4 h-4" />
+                        <span>{lesson.duration} min</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-              {/* Mark Complete Button */}
-              {!isCompleted && (
+      {/* Navigation Tabs - Campus 4.0 Style */}
+      <div className="bg-[rgb(4,53,162)] sticky top-0 z-40 shadow-md">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex items-center justify-between">
+            {/* Left: Navigation Tabs */}
+            <div className="flex items-center gap-2">
+              <button
+                className="px-6 py-4 font-medium text-white bg-white/20 border-b-2 border-white transition"
+              >
+                Lesson
+              </button>
+              <button
+                className="px-6 py-4 font-medium text-white/80 hover:text-white hover:bg-white/10 transition"
+                onClick={() => {/* Add task functionality if needed */}}
+              >
+                Task
+              </button>
+              <button
+                className="px-6 py-4 font-medium text-white/80 hover:text-white hover:bg-white/10 transition"
+                onClick={() => {/* Add additional resources functionality if needed */}}
+              >
+                Additional Resources
+              </button>
+            </div>
+
+            {/* Right: Go to Module & Mark as Complete Buttons */}
+            <div className="flex items-center gap-3 py-2">
+              {/* Go to Module/Subject Button */}
+              <button
+                onClick={() => router.push(`/modules/${slug}`)}
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 backdrop-blur-md text-white rounded-lg hover:bg-white/20 transition-all font-semibold border border-white/20 hover:shadow-lg"
+                style={{
+                  backdropFilter: 'blur(10px)',
+                  WebkitBackdropFilter: 'blur(10px)',
+                }}
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Go to Module/Subject</span>
+              </button>
+
+              {/* Mark as Complete Button */}
+              {!isCompleted ? (
                 <button
                   onClick={handleMarkComplete}
                   disabled={markingComplete}
-                  className="ml-4 flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-6 py-2.5 bg-green-600/90 backdrop-blur-md text-white rounded-lg hover:bg-green-700/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-lg border border-white/20 hover:shadow-xl hover:scale-105"
+                  style={{
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                  }}
                 >
                   {markingComplete ? (
                     <>
@@ -612,6 +652,17 @@ export default function LessonDetailPage() {
                     </>
                   )}
                 </button>
+              ) : (
+                <div 
+                  className="flex items-center gap-2 px-6 py-2.5 bg-green-100/80 backdrop-blur-md text-green-700 rounded-lg border border-green-300/50 font-semibold shadow-lg"
+                  style={{
+                    backdropFilter: 'blur(10px)',
+                    WebkitBackdropFilter: 'blur(10px)',
+                  }}
+                >
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Completed</span>
+                </div>
               )}
             </div>
           </div>
@@ -619,12 +670,18 @@ export default function LessonDetailPage() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Lesson Title Section */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            Lesson {lesson.orderIndex + 1}: {lesson.title}
+          </h2>
+        </div>
+
         {/* Lesson Description */}
         {lesson.description && (
-          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">About this lesson</h2>
-            <p className="text-gray-700">{lesson.description}</p>
+          <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 rounded-r-lg p-6">
+            <p className="text-gray-700 leading-relaxed">{lesson.description}</p>
           </div>
         )}
 
@@ -633,56 +690,86 @@ export default function LessonDetailPage() {
           {renderLessonContent()}
         </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex items-center justify-between gap-4 mb-8">
-          {previousLesson ? (
-            <button
-              onClick={() => router.push(`/modules/${slug}/lessons/${previousLesson.id}`)}
-              className="flex items-center space-x-2 px-6 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors group"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
-              <div className="text-left">
-                <div className="text-xs text-gray-500">Previous</div>
-                <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
-                  {previousLesson.title}
-                </div>
-              </div>
-            </button>
-          ) : (
-            <div></div>
-          )}
+        {/* Attachments Section */}
+        {lesson.attachments && lesson.attachments.length > 0 && (
+          <div className="mb-8 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Attachments</h3>
+            <div className="grid gap-3">
+              {lesson.attachments.map((attachment) => (
+                <a
+                  key={attachment.id}
+                  href={attachment.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200"
+                >
+                  <FileText className="w-10 h-10 text-blue-600" />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900">{attachment.title}</h4>
+                    {attachment.fileType && (
+                      <p className="text-sm text-gray-600">{attachment.fileType}</p>
+                    )}
+                  </div>
+                  <Download className="w-5 h-5 text-gray-400" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
-          <button
-            onClick={() => router.push(`/modules/${slug}`)}
-            className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Back to Module
-          </button>
+        {/* Content spacing for sticky footer */}
+        <div className="h-32"></div>
+      </div>
 
-          {nextLesson ? (
-            <button
-              onClick={() => router.push(`/modules/${slug}/lessons/${nextLesson.id}`)}
-              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors group"
-            >
-              <div className="text-right">
-                <div className="text-xs text-blue-100">Next</div>
-                <div className="text-sm font-medium truncate max-w-xs">
-                  {nextLesson.title}
+      {/* Sticky Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t-2 border-gray-200 shadow-2xl z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          {/* Previous/Next Lesson Navigation */}
+          <div className="flex items-center justify-between gap-4">
+            {/* Left: Previous Button */}
+            {previousLesson ? (
+              <button
+                onClick={() => router.push(`/modules/${slug}/lessons/${previousLesson.id}`)}
+                className="flex items-center gap-3 px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors group"
+              >
+                <ChevronLeft className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+                <div className="text-left">
+                  <div className="text-xs text-gray-500 uppercase">Previous</div>
+                  <div className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">
+                    {previousLesson.title}
+                  </div>
                 </div>
-              </div>
-              <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-          ) : isCompleted ? (
-            <button
-              onClick={() => router.push(`/modules/${slug}`)}
-              className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              <CheckCircle className="w-5 h-5" />
-              <span>Course Complete!</span>
-            </button>
-          ) : (
-            <div></div>
-          )}
+              </button>
+            ) : (
+              <div></div>
+            )}
+
+            {/* Right: Next Button or Module Complete */}
+            {nextLesson ? (
+              <button
+                onClick={() => router.push(`/modules/${slug}/lessons/${nextLesson.id}`)}
+                className="flex items-center gap-3 px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors group"
+              >
+                <div className="text-right">
+                  <div className="text-xs text-gray-500 uppercase">Next</div>
+                  <div className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">
+                    {nextLesson.title}
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+              </button>
+            ) : isCompleted ? (
+              <button
+                onClick={() => router.push(`/modules/${slug}`)}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <CheckCircle className="w-5 h-5" />
+                <span className="font-semibold">Module Complete!</span>
+              </button>
+            ) : (
+              <div></div>
+            )}
+          </div>
         </div>
       </div>
     </div>

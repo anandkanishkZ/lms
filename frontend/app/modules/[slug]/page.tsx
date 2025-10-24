@@ -31,7 +31,9 @@ import {
   Video,
   Link as LinkIcon,
   Archive,
-  Code
+  Code,
+  Plus,
+  Minus
 } from 'lucide-react';
 import moduleApiService from '@/src/services/module-api.service';
 import { studentApiService, type ModuleEnrollment } from '@/src/services/student-api.service';
@@ -565,7 +567,7 @@ export default function ModuleDetailPage() {
                         : 'text-white/80 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    Study Materials
+                    Topics & Lessons
                   </button>
                   <button
                     onClick={() => setActiveTab('tasks')}
@@ -727,38 +729,97 @@ export default function ModuleDetailPage() {
               </motion.div>
             )}
 
-            {/* Study Materials Tab */}
+            {/* Topics/Lessons Tab */}
             {activeTab === 'studymaterials' && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl p-8 shadow-sm border border-gray-200"
+                className="space-y-4"
               >
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Study Materials</h2>
-                <div className="grid gap-4">
-                  {topics.map((topic) => (
-                    topic.lessons?.filter((l: any) => l.type === 'PDF' || l.type === 'TEXT').map((lesson: any) => (
+                {topics.length === 0 ? (
+                  <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200 text-center">
+                    <BookOpen className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No topics available yet.</p>
+                  </div>
+                ) : (
+                  topics.map((topic, topicIndex) => (
+                    <motion.div
+                      key={topic.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: topicIndex * 0.05 }}
+                      className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+                    >
+                      {/* Topic Header */}
                       <button
-                        key={lesson.id}
-                        onClick={() => handleLessonClick(lesson.id, lesson.isLocked || false)}
-                        className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition border border-gray-200"
+                        onClick={() => toggleTopic(topic.id)}
+                        className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition"
                       >
-                        <FileText className="w-10 h-10 text-[#1e40af]" />
-                        <div className="flex-1 text-left">
-                          <h3 className="font-semibold text-gray-900">{lesson.title}</h3>
-                          <p className="text-sm text-gray-600">{lesson.type}</p>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {topic.title}
+                        </h3>
+                        <div className="flex-shrink-0">
+                          {expandedTopics.includes(topic.id) ? (
+                            <Minus className="w-5 h-5 text-gray-600" />
+                          ) : (
+                            <Plus className="w-5 h-5 text-gray-600" />
+                          )}
                         </div>
-                        <ArrowRight className="w-5 h-5 text-gray-400" />
                       </button>
-                    ))
-                  ))}
-                  {topics.every(t => !t.lessons?.some((l: any) => l.type === 'PDF' || l.type === 'TEXT')) && (
-                    <div className="text-center py-12">
-                      <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                      <p className="text-gray-600">No study materials available yet.</p>
-                    </div>
-                  )}
-                </div>
+
+                      {/* Lessons List */}
+                      <AnimatePresence>
+                        {expandedTopics.includes(topic.id) && topic.lessons && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="border-t border-gray-200"
+                          >
+                            {topic.lessons.map((lesson: any, lessonIndex: number) => (
+                              <button
+                                key={lesson.id}
+                                onClick={() => handleLessonClick(lesson.id, lesson.isLocked || false)}
+                                disabled={lesson.isLocked}
+                                className={`w-full flex items-center gap-4 px-6 py-4 hover:bg-gray-50 transition border-b border-gray-100 last:border-b-0 ${
+                                  lesson.isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                                }`}
+                              >
+                                {/* Play Icon */}
+                                <div className="flex-shrink-0">
+                                  {lesson.isCompleted ? (
+                                    <CheckCircle className="w-5 h-5 text-green-600" />
+                                  ) : lesson.isLocked ? (
+                                    <Lock className="w-5 h-5 text-gray-400" />
+                                  ) : (
+                                    <PlayCircle className="w-5 h-5 text-gray-400" />
+                                  )}
+                                </div>
+
+                                {/* Lesson Number and Title */}
+                                <div className="flex items-center gap-3 flex-1 text-left">
+                                  <span className="text-sm font-medium text-gray-600">
+                                    Lesson: {lessonIndex + 1}
+                                  </span>
+                                  <span className="text-base font-semibold text-gray-900">
+                                    {lesson.title}
+                                  </span>
+                                </div>
+
+                                {/* Duration (if available) */}
+                                {lesson.duration && (
+                                  <span className="text-sm text-gray-500">
+                                    {lesson.duration}min
+                                  </span>
+                                )}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  ))
+                )}
               </motion.div>
             )}
 
