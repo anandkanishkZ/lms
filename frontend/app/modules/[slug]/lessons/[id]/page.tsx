@@ -79,6 +79,7 @@ export default function LessonDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const [markingComplete, setMarkingComplete] = useState(false);
+  const [enrollmentId, setEnrollmentId] = useState<string | null>(null);
   const [previousLesson, setPreviousLesson] = useState<{ id: string; title: string } | null>(null);
   const [nextLesson, setNextLesson] = useState<{ id: string; title: string } | null>(null);
 
@@ -104,12 +105,15 @@ export default function LessonDetailPage() {
 
       // Check if enrolled
       const enrollments = await studentApiService.getMyEnrollments();
-      const isEnrolled = enrollments.some((e) => e.moduleId === moduleData.id);
+      const userEnrollment = enrollments.find((e) => e.moduleId === moduleData.id);
 
-      if (!isEnrolled) {
+      if (!userEnrollment) {
         router.push('/student/dashboard');
         return;
       }
+      
+      // Store enrollment ID for progress tracking
+      setEnrollmentId(userEnrollment.id);
 
       // Fetch lesson details
       const lessonData = await moduleApiService.getLessonById(lessonId);
@@ -131,8 +135,8 @@ export default function LessonDetailPage() {
       // Find previous and next lessons
       findAdjacentLessons(lessonData as any as LessonData, topicsWithLessons as any as TopicData[]);
 
-      // Check if lesson is completed
-      checkLessonCompletion(lessonId);
+      // Check if lesson is completed using the enrollment ID
+      checkLessonCompletion(lessonId, userEnrollment.id);
 
     } catch (error: any) {
       console.error('Failed to fetch lesson data:', error);
@@ -187,11 +191,11 @@ export default function LessonDetailPage() {
     }
   };
 
-  const checkLessonCompletion = async (lessonId: string) => {
+  const checkLessonCompletion = async (lessonId: string, enrollmentIdParam: string) => {
     try {
       const token = localStorage.getItem('student_token');
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/progress/lessons/${lessonId}/status`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/progress/lessons/${lessonId}?enrollmentId=${enrollmentIdParam}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -209,7 +213,7 @@ export default function LessonDetailPage() {
   };
 
   const handleMarkComplete = async () => {
-    if (!lesson || markingComplete) return;
+    if (!lesson || markingComplete || !enrollmentId) return;
 
     try {
       setMarkingComplete(true);
@@ -222,6 +226,9 @@ export default function LessonDetailPage() {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          body: JSON.stringify({
+            enrollmentId: enrollmentId
+          }),
         }
       );
 
@@ -235,7 +242,8 @@ export default function LessonDetailPage() {
           }, 1000);
         }
       } else {
-        console.error('Failed to mark lesson as complete');
+        const errorData = await response.json();
+        console.error('Failed to mark lesson as complete:', errorData);
       }
     } catch (error) {
       console.error('Error marking lesson as complete:', error);
