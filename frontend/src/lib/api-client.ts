@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { API_CONFIG } from '@/src/config/api.config';
+import { API_CONFIG, AUTH_CONFIG, getCurrentUserType } from '@/src/config/api.config';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -181,24 +181,32 @@ class ApiClient {
   // Token Management
   private getAccessToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('adminToken');
+    const userType = getCurrentUserType();
+    const tokenKey = AUTH_CONFIG[userType].tokenKey;
+    return localStorage.getItem(tokenKey);
   }
 
   private getRefreshToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('adminRefreshToken');
+    const userType = getCurrentUserType();
+    const refreshTokenKey = AUTH_CONFIG[userType].refreshTokenKey;
+    return localStorage.getItem(refreshTokenKey);
   }
 
   private setAccessToken(token: string): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem('adminToken', token);
+    const userType = getCurrentUserType();
+    const tokenKey = AUTH_CONFIG[userType].tokenKey;
+    localStorage.setItem(tokenKey, token);
   }
 
   private clearAuth(): void {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminRefreshToken');
-    localStorage.removeItem('adminUser');
+    const userType = getCurrentUserType();
+    const config = AUTH_CONFIG[userType];
+    localStorage.removeItem(config.tokenKey);
+    localStorage.removeItem(config.refreshTokenKey);
+    localStorage.removeItem(config.userKey);
   }
 
   // Public method for external use

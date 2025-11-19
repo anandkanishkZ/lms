@@ -39,6 +39,7 @@ import moduleApiService from '@/src/services/module-api.service';
 import { studentApiService, type ModuleEnrollment } from '@/src/services/student-api.service';
 import { StudentLiveClassesTab } from './components/StudentLiveClassesTab';
 import { StudentFeaturedVideo } from '@/src/components/StudentFeaturedVideo';
+import ModuleRating from '@/src/components/ModuleRating';
 
 // Types
 interface Module {
@@ -121,7 +122,7 @@ export default function ModuleDetailPage() {
   const [loading, setLoading] = useState(true);
   const [resourcesLoading, setResourcesLoading] = useState(false);
   const [currentLessonId, setCurrentLessonId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'resources' | 'studymaterials' | 'tasks' | 'quiz' | 'challenges' | 'liveclasses'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'resources' | 'studymaterials' | 'tasks' | 'quiz' | 'challenges' | 'liveclasses' | 'ratings'>('overview');
   const [resourceTypeFilter, setResourceTypeFilter] = useState<string>('all');
   const [resourceSearch, setResourceSearch] = useState('');
   const tabContainerRef = useRef<HTMLDivElement>(null);
@@ -599,6 +600,16 @@ export default function ModuleDetailPage() {
                   >
                     Live Classes
                   </button>
+                  <button
+                    onClick={() => setActiveTab('ratings')}
+                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
+                      activeTab === 'ratings'
+                        ? 'bg-white/20 text-white'
+                        : 'text-white/80 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    Ratings & Reviews
+                  </button>
                 </div>
 
                 {/* Right Arrow */}
@@ -980,6 +991,20 @@ export default function ModuleDetailPage() {
                 />
               </motion.div>
             )}
+
+            {/* Ratings & Reviews Tab */}
+            {activeTab === 'ratings' && module && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <ModuleRating 
+                  moduleId={module.id} 
+                  currentUserRole="STUDENT"
+                  currentUserId={enrollment?.studentId}
+                />
+              </motion.div>
+            )}
           </div>
 
           {/* Right Sidebar */}
@@ -1102,28 +1127,7 @@ export default function ModuleDetailPage() {
               </div>
             </motion.div>
 
-            {/* Rate This Module */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-            >
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Rate This Module/Subject</h3>
-              <div className="flex justify-center gap-2 mb-4">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    className="text-gray-300 hover:text-yellow-400 transition"
-                  >
-                    <Award className="w-8 h-8" fill="currentColor" />
-                  </button>
-                ))}
-              </div>
-              <p className="text-xs text-center text-gray-600">
-                Share your experience with this module
-              </p>
-            </motion.div>
+
 
             {/* Bottom Stats Bar - Campus 4.0 Style */}
             <motion.div

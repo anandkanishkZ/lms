@@ -13,6 +13,15 @@ import {
   getFeaturedModules,
   incrementViewCount,
 } from '../controllers/moduleController';
+import {
+  submitReview,
+  getMyReview,
+  getModuleReviews,
+  getModuleRatingStats,
+  deleteReview,
+  toggleReviewVisibility,
+  getTeacherModuleReviews
+} from '../controllers/moduleReviewController';
 import { authenticateToken, authorizeRoles } from '../middlewares/auth';
 
 const router = express.Router();
@@ -42,5 +51,16 @@ router.post('/:id/submit', authenticateToken, authorizeRoles('TEACHER', 'ADMIN')
 router.post('/:id/approve', authenticateToken, authorizeRoles('ADMIN'), approveModule);
 router.post('/:id/publish', authenticateToken, authorizeRoles('ADMIN'), publishModule);
 router.post('/:id/reject', authenticateToken, authorizeRoles('ADMIN'), rejectModule);
+
+// Rating/Review routes (Student access)
+router.post('/:id/reviews', authenticateToken, authorizeRoles('STUDENT'), submitReview);
+router.get('/:id/reviews/my', authenticateToken, authorizeRoles('STUDENT'), getMyReview);
+router.get('/:id/reviews', authenticateToken, getModuleReviews);
+router.get('/:id/reviews/stats', authenticateToken, getModuleRatingStats);
+router.delete('/:id/reviews/my', authenticateToken, authorizeRoles('STUDENT'), deleteReview);
+
+// Teacher/Admin review management routes
+router.get('/:id/reviews/teacher', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), getTeacherModuleReviews);
+router.patch('/:id/reviews/:reviewId/toggle', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), toggleReviewVisibility);
 
 export default router;

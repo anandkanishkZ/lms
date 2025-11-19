@@ -40,6 +40,7 @@ import { TopicsLessonsTab } from './components/TopicsLessonsTab';
 import { ResourceActionsModal } from './components/ResourceActionsModal';
 import { LiveClassTab } from './components/LiveClassTab';
 import FeaturedVideoManager from './components/FeaturedVideoManager';
+import TeacherModuleReviews from './components/TeacherModuleReviews';
 
 interface Module {
   id: string;
@@ -87,7 +88,7 @@ interface Resource {
   };
 }
 
-type TabType = 'overview' | 'resources' | 'topics' | 'liveclasses';
+type TabType = 'overview' | 'resources' | 'topics' | 'liveclasses' | 'reviews';
 
 export default function TeacherModuleDetailPage() {
   const params = useParams();
@@ -304,6 +305,16 @@ export default function TeacherModuleDetailPage() {
             >
               Live Classes
             </button>
+            <button
+              onClick={() => setActiveTab('reviews')}
+              className={`px-4 py-2 font-medium transition-colors ${
+                activeTab === 'reviews'
+                  ? 'text-[#2563eb] border-b-2 border-[#2563eb]'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Reviews & Ratings
+            </button>
           </div>
         </div>
       </div>
@@ -363,6 +374,17 @@ export default function TeacherModuleDetailPage() {
               subjectId={module.subjectId}
               classId={module.classId}
             />
+          )}
+
+          {activeTab === 'reviews' && (
+            <motion.div
+              key="reviews"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <TeacherModuleReviews moduleId={moduleId} />
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
