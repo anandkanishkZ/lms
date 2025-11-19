@@ -228,45 +228,45 @@ class AdminApiService {
 
   getAccessToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem(AUTH_CONFIG.tokenKey);
+    return localStorage.getItem(AUTH_CONFIG.admin.tokenKey);
   }
 
   getRefreshToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem(AUTH_CONFIG.refreshTokenKey);
+    return localStorage.getItem(AUTH_CONFIG.admin.refreshTokenKey);
   }
 
   setTokens(accessToken: string, refreshToken: string): void {
     if (typeof window === 'undefined') return;
-    console.log('💾 Storing tokens in localStorage:', AUTH_CONFIG.tokenKey);
-    localStorage.setItem(AUTH_CONFIG.tokenKey, accessToken);
-    localStorage.setItem(AUTH_CONFIG.refreshTokenKey, refreshToken);
+    console.log('💾 Storing tokens in localStorage:', AUTH_CONFIG.admin.tokenKey);
+    localStorage.setItem(AUTH_CONFIG.admin.tokenKey, accessToken);
+    localStorage.setItem(AUTH_CONFIG.admin.refreshTokenKey, refreshToken);
     console.log('✅ Tokens stored successfully');
   }
 
   setAccessToken(accessToken: string): void {
     if (typeof window === 'undefined') return;
-    localStorage.setItem(AUTH_CONFIG.tokenKey, accessToken);
+    localStorage.setItem(AUTH_CONFIG.admin.tokenKey, accessToken);
   }
 
   getUser(): AdminUser | null {
     if (typeof window === 'undefined') return null;
-    const userStr = localStorage.getItem(AUTH_CONFIG.userKey);
+    const userStr = localStorage.getItem(AUTH_CONFIG.admin.userKey);
     return userStr ? JSON.parse(userStr) : null;
   }
 
   setUser(user: AdminUser): void {
     if (typeof window === 'undefined') return;
-    console.log('💾 Storing user in localStorage:', AUTH_CONFIG.userKey);
-    localStorage.setItem(AUTH_CONFIG.userKey, JSON.stringify(user));
+    console.log('💾 Storing user in localStorage:', AUTH_CONFIG.admin.userKey);
+    localStorage.setItem(AUTH_CONFIG.admin.userKey, JSON.stringify(user));
     console.log('✅ User stored successfully');
   }
 
   clearAuth(): void {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem(AUTH_CONFIG.tokenKey);
-    localStorage.removeItem(AUTH_CONFIG.refreshTokenKey);
-    localStorage.removeItem(AUTH_CONFIG.userKey);
+    localStorage.removeItem(AUTH_CONFIG.admin.tokenKey);
+    localStorage.removeItem(AUTH_CONFIG.admin.refreshTokenKey);
+    localStorage.removeItem(AUTH_CONFIG.admin.userKey);
   }
 
   isAuthenticated(): boolean {

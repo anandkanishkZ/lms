@@ -4,7 +4,7 @@
  */
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError, AxiosResponse } from 'axios';
-import { API_CONFIG, AUTH_CONFIG } from '@/src/config/api.config';
+import { API_CONFIG, AUTH_CONFIG, getCurrentUserType } from '@/src/config/api.config';
 
 // ==================== TYPES ====================
 
@@ -23,33 +23,43 @@ export interface TokenRefreshResponse {
 // ==================== TOKEN MANAGEMENT ====================
 
 class TokenManager {
+  private getUserConfig() {
+    const userType = getCurrentUserType();
+    return AUTH_CONFIG[userType];
+  }
+
   getAccessToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem(AUTH_CONFIG.tokenKey);
+    const config = this.getUserConfig();
+    return localStorage.getItem(config.tokenKey);
   }
 
   getRefreshToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem(AUTH_CONFIG.refreshTokenKey);
+    const config = this.getUserConfig();
+    return localStorage.getItem(config.refreshTokenKey);
   }
 
   setAccessToken(token: string): void {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(AUTH_CONFIG.tokenKey, token);
+      const config = this.getUserConfig();
+      localStorage.setItem(config.tokenKey, token);
     }
   }
 
   setRefreshToken(token: string): void {
     if (typeof window !== 'undefined') {
-      localStorage.setItem(AUTH_CONFIG.refreshTokenKey, token);
+      const config = this.getUserConfig();
+      localStorage.setItem(config.refreshTokenKey, token);
     }
   }
 
   clearTokens(): void {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem(AUTH_CONFIG.tokenKey);
-      localStorage.removeItem(AUTH_CONFIG.refreshTokenKey);
-      localStorage.removeItem(AUTH_CONFIG.userKey);
+      const config = this.getUserConfig();
+      localStorage.removeItem(config.tokenKey);
+      localStorage.removeItem(config.refreshTokenKey);
+      localStorage.removeItem(config.userKey);
     }
   }
 
@@ -197,9 +207,12 @@ class ApiClient {
       throw new Error('No refresh token available');
     }
 
+    const userType = getCurrentUserType();
+    const refreshEndpoint = `/${userType}/auth/refresh`;
+
     try {
       const response = await this.axiosInstance.post<TokenRefreshResponse>(
-        '/admin/auth/refresh',
+        refreshEndpoint,
         { refreshToken },
         { skipRefresh: true } as ApiClientConfig
       );

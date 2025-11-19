@@ -39,6 +39,7 @@ import { showSuccessToast, showErrorToast, showInfoToast } from '@/src/utils/toa
 import { TopicsLessonsTab } from './components/TopicsLessonsTab';
 import { ResourceActionsModal } from './components/ResourceActionsModal';
 import { LiveClassTab } from './components/LiveClassTab';
+import FeaturedVideoManager from './components/FeaturedVideoManager';
 
 interface Module {
   id: string;
@@ -309,18 +310,27 @@ export default function TeacherModuleDetailPage() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <AnimatePresence mode="wait">{activeTab === 'overview' && (
+        <AnimatePresence mode="wait">
+          {activeTab === 'overview' && (
             <motion.div
               key="overview"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="bg-white rounded-lg p-6"
+              className="space-y-6"
             >
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">
-                {module.description || 'No description available.'}
-              </p>
+              {/* Featured Video Manager */}
+              <FeaturedVideoManager
+                moduleId={moduleId}
+              />
+              
+              {/* Module Description */}
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Module Description</h2>
+                <p className="text-gray-700 whitespace-pre-wrap">
+                  {module.description || 'No description available.'}
+                </p>
+              </div>
             </motion.div>
           )}
 

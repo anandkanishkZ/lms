@@ -38,6 +38,7 @@ import {
 import moduleApiService from '@/src/services/module-api.service';
 import { studentApiService, type ModuleEnrollment } from '@/src/services/student-api.service';
 import { StudentLiveClassesTab } from './components/StudentLiveClassesTab';
+import { StudentFeaturedVideo } from '@/src/components/StudentFeaturedVideo';
 
 // Types
 interface Module {
@@ -511,18 +512,7 @@ export default function ModuleDetailPage() {
               animate={{ opacity: 1, y: 0 }}
               className="mb-6"
             >
-              <div className="rounded-xl overflow-hidden shadow-sm border-2 border-red-500">
-                <div className="aspect-video bg-gray-900 relative">
-                  {/* YouTube Video Embed - Intro to Algorithms */}
-                  <iframe
-                    className="w-full h-full"
-                    src="https://www.youtube.com/embed/6hfOvs8pY1k"
-                    title="Intro to Algorithms: Crash Course Computer Science #13"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </div>
-              </div>
+              <StudentFeaturedVideo moduleId={module?.id || ''} />
             </motion.div>
 
             {/* Tabs - Campus 4.0 Style */}
@@ -648,83 +638,6 @@ export default function ModuleDetailPage() {
                       <li>Communicate technical concepts effectively</li>
                     </ul>
                   </div>
-                </div>
-
-                {/* Topics & Lessons Section */}
-                <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-200">
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">Topics & Lessons</h3>
-                  {topics.length === 0 ? (
-                    <div className="text-center py-8">
-                      <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <p className="text-gray-600">No topics available yet.</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">{topics.map((topic, topicIndex) => (
-                      <motion.div
-                        key={topic.id}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: topicIndex * 0.05 }}
-                        className="bg-gray-50 rounded-lg p-4 border border-gray-200"
-                      >
-                        <button
-                          onClick={() => toggleTopic(topic.id)}
-                          className="w-full flex items-center justify-between hover:bg-gray-100 p-2 rounded transition"
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <div className="flex-shrink-0">
-                              {expandedTopics.includes(topic.id) ? (
-                                <ChevronDown className="w-5 h-5 text-gray-600" />
-                              ) : (
-                                <ChevronRight className="w-5 h-5 text-gray-600" />
-                              )}
-                            </div>
-                            <h4 className="font-semibold text-gray-900 text-left">
-                              {topicIndex + 1}. {topic.title}
-                            </h4>
-                          </div>
-                          <span className="text-sm text-gray-500 ml-2">
-                            {topic.completedLessons || 0}/{topic.totalLessons}
-                          </span>
-                        </button>
-
-                        {/* Lessons under Topic */}
-                        <AnimatePresence>
-                          {expandedTopics.includes(topic.id) && topic.lessons && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="mt-2 ml-8 space-y-1"
-                            >
-                              {topic.lessons.map((lesson: any) => (
-                                <button
-                                  key={lesson.id}
-                                  onClick={() => handleLessonClick(lesson.id, lesson.isLocked || false)}
-                                  disabled={lesson.isLocked}
-                                  className={`w-full flex items-center gap-2 p-2 rounded text-sm hover:bg-gray-100 transition ${
-                                    lesson.isCompleted ? 'text-green-600' : 'text-gray-700'
-                                  } ${lesson.isLocked ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                >
-                                  {lesson.isCompleted ? (
-                                    <CheckCircle className="w-4 h-4" />
-                                  ) : lesson.isLocked ? (
-                                    <Lock className="w-4 h-4" />
-                                  ) : (
-                                    <div className="w-4 h-4 rounded-full border-2 border-gray-400" />
-                                  )}
-                                  <span className="flex-1 text-left">{lesson.title}</span>
-                                  {lesson.duration && (
-                                    <span className="text-xs text-gray-500">{lesson.duration}min</span>
-                                  )}
-                                </button>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </motion.div>
-                    ))}</div>
-                  )}
                 </div>
               </motion.div>
             )}

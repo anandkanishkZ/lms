@@ -36,6 +36,7 @@ import subjectRoutes from './routes/subjects';
 import classRoutes from './routes/classes';
 import resourceRoutes from './routes/resources';
 import uploadRoutes from './routes/upload';
+import featuredVideoRoutes from './routes/featuredVideoRoutes';
 
 // Import middlewares
 import { authenticateToken } from './middlewares/auth';
@@ -184,6 +185,7 @@ app.use('/api/v1/subjects', subjectRoutes);
 app.use('/api/v1/classes', classRoutes);
 app.use('/api/v1/resources', resourceRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1', featuredVideoRoutes);
 
 // 404 handler
 app.use('*', (req: Request, res: Response) => {

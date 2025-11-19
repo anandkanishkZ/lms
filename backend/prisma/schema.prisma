@@ -227,13 +227,17 @@ model User {
   resourceAccessLogs ResourceAccessLog[] @relation("ResourceAccess")
 
   // Batch and Graduation system relations
-  batchId                    String?
-  batch                      Batch?              @relation("StudentBatch", fields: [batchId], references: [id])
-  batchesCreated             Batch[]             @relation("BatchCreator")
-  classEnrollments           ClassEnrollment[]   @relation("StudentClassEnrollments")
-  classEnrollmentsCreated    ClassEnrollment[]   @relation("ClassEnrollmentCreator")
-  graduations                Graduation[]        @relation("StudentGraduations")
-  graduationsCreated         Graduation[]        @relation("GraduationCreator")
+  batchId                 String?
+  batch                   Batch?            @relation("StudentBatch", fields: [batchId], references: [id])
+  batchesCreated          Batch[]           @relation("BatchCreator")
+  classEnrollments        ClassEnrollment[] @relation("StudentClassEnrollments")
+  classEnrollmentsCreated ClassEnrollment[] @relation("ClassEnrollmentCreator")
+  graduations             Graduation[]      @relation("StudentGraduations")
+  graduationsCreated      Graduation[]      @relation("GraduationCreator")
+
+  // New unified enrollment system (Option 2 - Hybrid)
+  subjectEnrollments        SubjectEnrollment[] @relation("StudentSubjectEnrollments")
+  subjectEnrollmentsCreated SubjectEnrollment[] @relation("SubjectEnrollmentCreator")
 
   @@map("users")
 }
@@ -297,6 +301,9 @@ model Class {
   classBatches     ClassBatch[]
   classEnrollments ClassEnrollment[]
 
+  // New unified enrollment system
+  subjectEnrollments SubjectEnrollment[] @relation("ClassSubjectEnrollments")
+
   @@unique([name, section])
   @@map("classes")
 }
@@ -319,6 +326,9 @@ model Subject {
   exams       Exam[]
   results     Result[]
   modules     Module[]
+
+  // New unified enrollment system
+  subjectEnrollments SubjectEnrollment[] @relation("SubjectEnrollments")
 
   @@map("subjects")
 }
@@ -365,7 +375,7 @@ model LiveClass {
   subjectId    String
   teacherId    String
   classId      String
-  moduleId     String?         // Optional: Link to module for course-specific live classes
+  moduleId     String? // Optional: Link to module for course-specific live classes
   youtubeUrl   String?
   meetingLink  String?
   startTime    DateTime
@@ -689,6 +699,9 @@ model Module {
   classId         String?
   teacherId       String
   thumbnailUrl    String?
+  featuredVideoUrl String?    // Featured video URL set by teacher (YouTube, etc.)
+  featuredVideoTitle String? // Title for the featured video
+  featuredVideoDescription String? // Description for the featured video
   level           String?      @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
   duration        Int? // Total duration in minutes
   totalTopics     Int          @default(0)
@@ -712,7 +725,7 @@ model Module {
   reviews         ModuleReview[]
   activityHistory ActivityHistory[]
   resources       ModuleResource[]
-  liveClasses     LiveClass[]        // Live classes associated with this module
+  liveClasses     LiveClass[] // Live classes associated with this module
 
   @@index([subjectId])
   @@index([teacherId])
@@ -1069,6 +1082,9 @@ model Batch {
   classEnrollments ClassEnrollment[]
   graduations      Graduation[]
 
+  // New unified enrollment system
+  subjectEnrollments SubjectEnrollment[] @relation("BatchSubjectEnrollments")
+
   @@index([status])
   @@index([startYear, endYear])
   @@index([createdBy])
@@ -1101,16 +1117,16 @@ model ClassBatch {
 }
 
 model ClassEnrollment {
-  id         String    @id @default(cuid())
-  studentId  String
-  classId    String
-  batchId    String
-  enrolledAt DateTime  @default(now())
-  enrolledBy String // Admin who enrolled
+  id          String    @id @default(cuid())
+  studentId   String
+  classId     String
+  batchId     String
+  enrolledAt  DateTime  @default(now())
+  enrolledBy  String // Admin who enrolled
   completedAt DateTime?
 
   // Academic tracking
-  isCompleted Boolean @default(false)
+  isCompleted Boolean  @default(false)
   isPassed    Boolean?
   finalGrade  Grade?
   finalMarks  Float?
@@ -1160,8 +1176,8 @@ model Graduation {
   awardedAt DateTime?
 
   // Metadata
-  remarks  String?
-  honors   String? // "With Distinction", "With Honors", etc.
+  remarks   String?
+  honors    String? // "With Distinction", "With Honors", etc.
   createdBy String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1176,4 +1192,68 @@ model Graduation {
   @@index([studentId])
   @@index([graduationDate])
   @@map("graduations")
+}
+
+// ============================================
+// UNIFIED SUBJECT ENROLLMENT SYSTEM (OPTION 2 - HYBRID)
+// ============================================
+
+model SubjectEnrollment {
+  id String @id @default(cuid())
+
+  // Core relationships (following photo model)
+  studentId String
+  subjectId String
+  classId   String
+  batchId   String
+
+  // Relations
+  student User    @relation("StudentSubjectEnrollments", fields: [studentId], references: [id], onDelete: Cascade)
+  subject Subject @relation("SubjectEnrollments", fields: [subjectId], references: [id], onDelete: Cascade)
+  class   Class   @relation("ClassSubjectEnrollments", fields: [classId], references: [id], onDelete: Cascade)
+  batch   Batch   @relation("BatchSubjectEnrollments", fields: [batchId], references: [id], onDelete: Cascade)
+
+  // Enrollment metadata
+  enrolledBy  String // Admin who enrolled the student
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+
+  // Academic tracking
+  isActive    Boolean  @default(true)
+  isCompleted Boolean  @default(false)
+  isPassed    Boolean?
+
+  // Performance metrics
+  grade      Grade?
+  finalMarks Float?
+  totalMarks Float?
+  percentage Float?
+  attendance Float? // Percentage (0-100)
+
+  // Progress tracking
+  lastAccessed    DateTime?
+  totalClasses    Int?      @default(0)
+  attendedClasses Int?      @default(0)
+
+  // Additional data
+  remarks String?
+
+  // Audit trail
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations to enrollment creator
+  enrolledByUser User @relation("SubjectEnrollmentCreator", fields: [enrolledBy], references: [id])
+
+  // Unique constraint: One enrollment per student-subject-class-batch combination
+  @@unique([studentId, subjectId, classId, batchId])
+  // Indexes for performance
+  @@index([studentId])
+  @@index([batchId])
+  @@index([classId])
+  @@index([subjectId])
+  @@index([isActive])
+  @@index([enrolledAt])
+  @@index([completedAt])
+  @@map("subject_enrollments")
 }

@@ -10,8 +10,29 @@ export const SUPABASE_CONFIG = {
 } as const;
 
 export const AUTH_CONFIG = {
-  tokenKey: 'adminToken',
-  refreshTokenKey: 'adminRefreshToken',
-  userKey: 'adminUser',
+  admin: {
+    tokenKey: 'adminToken',
+    refreshTokenKey: 'adminRefreshToken',
+    userKey: 'adminUser',
+  },
+  teacher: {
+    tokenKey: 'teacher_token',
+    refreshTokenKey: 'teacher_refresh_token',
+    userKey: 'teacher_user',
+  },
+  student: {
+    tokenKey: 'student_token',
+    refreshTokenKey: 'student_refresh_token',
+    userKey: 'student_user',
+  },
   tokenRefreshInterval: 45 * 60 * 1000,
 } as const;
+
+// Helper to get current user type based on URL
+export const getCurrentUserType = (): 'admin' | 'teacher' | 'student' => {
+  if (typeof window === 'undefined') return 'admin';
+  const path = window.location.pathname;
+  if (path.startsWith('/teacher')) return 'teacher';
+  if (path.startsWith('/student')) return 'student';
+  return 'admin';
+};
