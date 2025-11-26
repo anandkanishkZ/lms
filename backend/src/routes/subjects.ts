@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
-import * as adminAuth from '../middlewares/adminAuth';
+import { authenticateToken, authorizeRoles } from '../middlewares/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
  * GET /api/subjects
  * Get all subjects for dropdown lists
  */
-router.get('/', adminAuth.authenticateAdmin, async (req, res) => {
+router.get('/', authenticateToken, authorizeRoles('ADMIN', 'TEACHER'), async (req, res) => {
   try {
     const subjects = await prisma.subject.findMany({
       select: {
