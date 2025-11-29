@@ -265,13 +265,14 @@ export const getExamById = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Check if student has already attempted
+    // Check if student has an incomplete attempt (for resuming)
     let studentAttempt = null;
     if (userRole === 'STUDENT') {
       studentAttempt = await prisma.studentExamAttempt.findFirst({
         where: {
           examId: id,
           studentId: userId,
+          isCompleted: false, // Only return incomplete attempts
         },
         include: {
           answers: {
@@ -715,27 +716,20 @@ export const startExamAttempt = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Check existing attempts
-    const existingAttempts = await prisma.studentExamAttempt.count({
-      where: {
-        examId,
-        studentId,
-      },
-    });
-
-    if (existingAttempts >= exam.maxAttempts) {
-      return res.status(400).json({
-        success: false,
-        message: `Maximum attempts (${exam.maxAttempts}) reached`,
-      });
-    }
-
-    // Check if there's an incomplete attempt
+    // First, check if there's an incomplete attempt (highest priority)
     const incompleteAttempt = await prisma.studentExamAttempt.findFirst({
       where: {
         examId,
         studentId,
         isCompleted: false,
+      },
+      include: {
+        answers: {
+          include: {
+            question: true,
+            selectedOption: true,
+          },
+        },
       },
     });
 
@@ -743,7 +737,26 @@ export const startExamAttempt = async (req: AuthRequest, res: Response) => {
       return res.json({
         success: true,
         message: 'Resuming existing attempt',
-        data: incompleteAttempt,
+        data: {
+          attempt: incompleteAttempt,
+          exam,
+        },
+      });
+    }
+
+    // Check completed attempts count
+    const completedAttempts = await prisma.studentExamAttempt.count({
+      where: {
+        examId,
+        studentId,
+        isCompleted: true,
+      },
+    });
+
+    if (completedAttempts >= exam.maxAttempts) {
+      return res.status(400).json({
+        success: false,
+        message: `Maximum attempts (${exam.maxAttempts}) reached`,
       });
     }
 
@@ -752,7 +765,7 @@ export const startExamAttempt = async (req: AuthRequest, res: Response) => {
       data: {
         examId,
         studentId,
-        attemptNumber: existingAttempts + 1,
+        attemptNumber: completedAttempts + 1,
         ipAddress,
         userAgent,
         deviceInfo,
@@ -1054,6 +1067,44 @@ export const gradeAnswer = async (req: AuthRequest, res: Response) => {
     const { marksAwarded, feedback, isCorrect } = req.body;
     const gradedBy = req.user!.userId;
 
+    // Validate marks awarded
+    if (marksAwarded === null || marksAwarded === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Marks awarded is required',
+      });
+    }
+
+    if (typeof marksAwarded !== 'number' || marksAwarded < 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Marks awarded must be a non-negative number',
+      });
+    }
+
+    // Get the answer with question details to validate marks
+    const existingAnswer = await prisma.studentAnswer.findUnique({
+      where: { id: answerId },
+      include: {
+        question: true,
+      },
+    });
+
+    if (!existingAnswer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Answer not found',
+      });
+    }
+
+    // Validate marks don't exceed question marks
+    if (marksAwarded > existingAnswer.question.marks) {
+      return res.status(400).json({
+        success: false,
+        message: `Marks awarded cannot exceed question marks (${existingAnswer.question.marks})`,
+      });
+    }
+
     const answer = await prisma.studentAnswer.update({
       where: { id: answerId },
       data: {
@@ -1067,7 +1118,11 @@ export const gradeAnswer = async (req: AuthRequest, res: Response) => {
     const attempt = await prisma.studentExamAttempt.findUnique({
       where: { id: answer.attemptId },
       include: {
-        answers: true,
+        answers: {
+          include: {
+            question: true,
+          },
+        },
       },
     });
 
@@ -1077,7 +1132,7 @@ export const gradeAnswer = async (req: AuthRequest, res: Response) => {
       if (allGraded) {
         // Calculate total score
         const totalScore = attempt.answers.reduce((sum, a) => sum + (a.marksAwarded || 0), 0);
-        const maxScore = attempt.answers.reduce((sum, a) => sum + (a.question as any).marks, 0);
+        const maxScore = attempt.answers.reduce((sum, a) => sum + a.question.marks, 0);
 
         await prisma.studentExamAttempt.update({
           where: { id: attempt.id },
@@ -1100,6 +1155,11 @@ export const gradeAnswer = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error grading answer:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+    });
     res.status(500).json({
       success: false,
       message: 'Failed to grade answer',

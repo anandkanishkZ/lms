@@ -107,13 +107,25 @@ export default function GradeExamPage() {
 
     try {
       setGrading(true);
-      await examApiService.gradeAnswer(answerId, gradeData[answerId]);
+      const response = await examApiService.gradeAnswer(answerId, gradeData[answerId]);
+      
+      if (!response) {
+        throw new Error('No response received from server');
+      }
+      
       showSuccessToast('Grade saved successfully');
 
       // Reload attempts to get updated data
       await loadExamAndAttempts();
     } catch (error: any) {
       console.error('Error saving grade:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        answerId,
+        gradeData: gradeData[answerId],
+      });
       showErrorToast(error.message || 'Failed to save grade');
     } finally {
       setGrading(false);

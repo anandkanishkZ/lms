@@ -20,6 +20,7 @@ import {
 import Link from 'next/link';
 import { examApiService, type Exam } from '@/src/services/exam-api.service';
 import { showErrorToast } from '@/src/utils/toast.util';
+import StudentLayout from '@/src/components/student/StudentLayout';
 
 type ExamTab = 'upcoming' | 'active' | 'completed';
 
@@ -140,10 +141,9 @@ export default function StudentExamsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-        <div className="max-w-7xl mx-auto">
+      <StudentLayout title="My Exams" subtitle="View and take your scheduled exams">
+        <div className="p-6">
           <div className="animate-pulse space-y-6">
-            <div className="h-12 bg-gray-200 rounded-lg w-1/3"></div>
             <div className="h-16 bg-gray-200 rounded-lg"></div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -152,32 +152,13 @@ export default function StudentExamsPage() {
             </div>
           </div>
         </div>
-      </div>
+      </StudentLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-                <ClipboardCheck className="w-8 h-8 text-white" />
-              </div>
-              My Exams
-            </h1>
-            <p className="text-gray-600 mt-1">
-              View and take your scheduled exams
-            </p>
-          </div>
-        </motion.div>
-
+    <StudentLayout title="My Exams" subtitle="View and take your scheduled exams">
+      <div className="p-6 space-y-6">
         {/* Stats Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -420,6 +401,6 @@ export default function StudentExamsPage() {
           </motion.div>
         )}
       </div>
-    </div>
+    </StudentLayout>
   );
 }

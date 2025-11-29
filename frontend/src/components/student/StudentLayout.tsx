@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence } from 'framer-motion';
 import StudentSidebar from './StudentSidebar';
 import StudentTopbar from './StudentTopbar';
 import { studentApiService, StudentProfile } from '@/src/services/student-api.service';
@@ -95,16 +94,14 @@ export default function StudentLayout({ children, title, subtitle }: StudentLayo
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Sidebar */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <StudentSidebar 
-            student={student} 
-            stats={stats}
-            onLogout={handleLogout}
-            isOpen={isSidebarOpen}
-          />
-        )}
-      </AnimatePresence>
+      {isSidebarOpen && (
+        <StudentSidebar 
+          student={student} 
+          stats={stats}
+          onLogout={handleLogout}
+          isOpen={isSidebarOpen}
+        />
+      )}
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden">

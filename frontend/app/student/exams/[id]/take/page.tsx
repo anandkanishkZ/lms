@@ -16,6 +16,8 @@ import {
   Send,
   Eye,
   Image as ImageIcon,
+  CheckCircle2,
+  Trophy,
 } from 'lucide-react';
 import {
   examApiService,
@@ -46,6 +48,7 @@ export default function TakeExamPage() {
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [autoSaving, setAutoSaving] = useState(false);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
@@ -113,14 +116,34 @@ export default function TakeExamPage() {
         }
       } else {
         // Start new attempt
-        const { attempt: newAttempt, exam: examDetails } =
-          await examApiService.startExamAttempt(examId);
-        setExam(examDetails);
-        setAttempt(newAttempt);
+        const response = await examApiService.startExamAttempt(examId);
+        
+        // Validate response structure
+        if (!response || !response.attempt || !response.exam) {
+          console.error('Invalid response from startExamAttempt:', response);
+          throw new Error('Invalid response from server. Please try again.');
+        }
+
+        setExam(response.exam);
+        setAttempt(response.attempt);
       }
     } catch (error: any) {
       console.error('Error starting exam:', error);
-      showErrorToast(error.message || 'Failed to start exam');
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+      });
+      
+      // Extract error message from response
+      let errorMessage = 'Failed to start exam';
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      showErrorToast(errorMessage);
       router.push('/student/exams');
     } finally {
       setLoading(false);
@@ -235,14 +258,20 @@ export default function TakeExamPage() {
       // Submit exam
       await examApiService.submitExamAttempt(exam.id, attempt.id);
 
-      showSuccessToast('Exam submitted successfully!');
-      router.push(`/student/exams/${exam.id}/result`);
+      // Close submit confirmation modal
+      setShowSubmitModal(false);
+      
+      // Show success modal
+      setShowSuccessModal(true);
+
+      // Redirect after 3 seconds
+      setTimeout(() => {
+        router.push('/student/exams');
+      }, 3000);
     } catch (error: any) {
       console.error('Error submitting exam:', error);
       showErrorToast(error.message || 'Failed to submit exam');
-    } finally {
       setSubmitting(false);
-      setShowSubmitModal(false);
     }
   };
 
@@ -654,6 +683,81 @@ export default function TakeExamPage() {
                     </>
                   )}
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Success Modal */}
+      <AnimatePresence>
+        {showSuccessModal && (
+          <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 20 }}
+              className="bg-white rounded-2xl p-8 max-w-md w-full text-center relative overflow-hidden"
+            >
+              {/* Celebration Background Effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 opacity-50"></div>
+              
+              <div className="relative z-10">
+                {/* Success Icon with Animation */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  className="mx-auto mb-6"
+                >
+                  <div className="w-24 h-24 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
+                    <CheckCircle2 className="w-14 h-14 text-white" strokeWidth={2.5} />
+                  </div>
+                </motion.div>
+
+                {/* Success Message */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
+                  <h2 className="text-3xl font-bold text-gray-900 mb-3">
+                    Exam Submitted Successfully! 🎉
+                  </h2>
+                  <p className="text-gray-600 mb-6">
+                    Your answers have been recorded. Your teacher will review and grade your exam soon.
+                  </p>
+
+                  {/* Exam Info */}
+                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 mb-6 border border-blue-100">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Trophy className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-semibold text-gray-900">{exam?.title}</h3>
+                    </div>
+                    <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
+                      <span className="flex items-center gap-1">
+                        <FileText className="w-4 h-4" />
+                        {exam?.questions.length} Questions
+                      </span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Check className="w-4 h-4 text-green-600" />
+                        {answeredCount} Answered
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Redirect Message */}
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                    className="flex items-center justify-center gap-2 text-sm text-gray-500"
+                  >
+                    <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Redirecting to exam list...</span>
+                  </motion.div>
+                </motion.div>
               </div>
             </motion.div>
           </div>

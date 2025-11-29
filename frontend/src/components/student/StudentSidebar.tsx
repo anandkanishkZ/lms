@@ -11,6 +11,7 @@ import {
   ClipboardList,
   BarChart3,
   BookText,
+  ClipboardCheck,
 } from 'lucide-react';
 import { StudentProfile, studentApiService } from '@/src/services/student-api.service';
 import { useState } from 'react';
@@ -53,6 +54,7 @@ export default function StudentSidebar({ student, stats, onLogout, isOpen }: Stu
 
   const navItems: NavItem[] = [
     { id: 'learnings', icon: BookOpen, label: 'My Courses', badge: stats.enrolled, path: '/student/dashboard' },
+    { id: 'exams', icon: ClipboardCheck, label: 'Exams', badge: null, path: '/student/exams' },
     { id: 'assignments', icon: ClipboardList, label: 'Assignments', badge: null, path: '/student/assignments' },
     { id: 'results', icon: BarChart3, label: 'Progress & Results', badge: null, path: '/student/results' },
     { id: 'resources', icon: BookText, label: 'Resources', badge: null, path: '/student/resources' },
@@ -63,13 +65,8 @@ export default function StudentSidebar({ student, stats, onLogout, isOpen }: Stu
   if (!isOpen) return null;
 
   return (
-    <motion.aside
-      initial={{ x: -320 }}
-      animate={{ x: 0 }}
-      exit={{ x: -320 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="w-72 bg-white border-r border-gray-200 flex flex-col shadow-sm"
-    >
+    <aside className="w-72 bg-white border-r border-gray-200 flex flex-col shadow-sm h-screen sticky top-0">
+
       {/* Logo & Brand */}
       <div className="px-6 py-5 border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -211,6 +208,6 @@ export default function StudentSidebar({ student, stats, onLogout, isOpen }: Stu
           <span>Logout</span>
         </button>
       </div>
-    </motion.aside>
+    </aside>
   );
 }
