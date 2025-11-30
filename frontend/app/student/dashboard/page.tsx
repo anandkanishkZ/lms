@@ -126,34 +126,28 @@ export default function StudentDashboardPage() {
       subtitle="View your courses and exams at a glance"
     >
       <div className="p-6 space-y-8">
-        {/* Exam Section - Priority Placement */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <ClipboardCheck className="w-6 h-6 text-orange-600" />
+        {/* Exam Section - Only show if there are active or upcoming exams */}
+        {!loadingExams && (activeExams.length > 0 || upcomingExams.length > 0) && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <ClipboardCheck className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Exams</h2>
+                  <p className="text-sm text-gray-600">Active and upcoming assessments</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Exams</h2>
-                <p className="text-sm text-gray-600">Active and upcoming assessments</p>
-              </div>
+              <button
+                onClick={() => router.push('/student/exams')}
+                className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors text-sm font-medium"
+              >
+                View All Exams
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
-            <button
-              onClick={() => router.push('/student/exams')}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors text-sm font-medium"
-            >
-              View All Exams
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
 
-          {loadingExams ? (
-            <div className="bg-white rounded-xl p-8 border border-gray-200">
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
-              </div>
-            </div>
-          ) : (
             <>
               {/* Active Exams - Urgent */}
               {activeExams.length > 0 && (
@@ -239,35 +233,14 @@ export default function StudentDashboardPage() {
                   </div>
                 </div>
               )}
-
-              {/* No Exams State */}
-              {activeExams.length === 0 && upcomingExams.length === 0 && (
-                <div className="bg-white rounded-xl p-12 text-center border border-gray-200">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <ClipboardCheck className="w-8 h-8 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Active or Upcoming Exams</h3>
-                  <p className="text-gray-600 mb-4">
-                    {completedExams.length > 0
-                      ? 'You have completed all available exams. Check back later for new assessments.'
-                      : 'No exams scheduled yet. Your teacher will notify you when exams are available.'}
-                  </p>
-                  {completedExams.length > 0 && (
-                    <button
-                      onClick={() => router.push('/student/exams')}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm font-medium"
-                    >
-                      View Completed Exams
-                    </button>
-                  )}
-                </div>
-              )}
             </>
-          )}
-        </div>
+          </div>
+        )}
 
-        {/* Divider */}
-        <div className="border-t border-gray-200"></div>
+        {/* Divider - Only show if exams section is visible */}
+        {!loadingExams && (activeExams.length > 0 || upcomingExams.length > 0) && (
+          <div className="border-t border-gray-200"></div>
+        )}
 
         {/* Courses Section */}
         <div>
