@@ -20,6 +20,7 @@ import { studentApiService, ModuleEnrollment } from '@/src/services/student-api.
 import { examApiService, type Exam } from '@/src/services/exam-api.service';
 import { showErrorToast } from '@/src/utils/toast.util';
 import StudentLayout from '@/src/components/student/StudentLayout';
+import NoticeBoard from '@/src/components/notices/NoticeBoard';
 
 export default function StudentDashboardPage() {
   const router = useRouter();
@@ -241,6 +242,17 @@ export default function StudentDashboardPage() {
         {!loadingExams && (activeExams.length > 0 || upcomingExams.length > 0) && (
           <div className="border-t border-gray-200"></div>
         )}
+
+        {/* Notice Board Section */}
+        <div>
+          <NoticeBoard 
+            limit={3}
+            title="📢 Notices & Announcements"
+          />
+        </div>
+
+        {/* Divider */}
+        <div className="border-t border-gray-200"></div>
 
         {/* Courses Section */}
         <div>

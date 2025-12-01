@@ -247,9 +247,12 @@ model User {
   subjectEnrollmentsCreated SubjectEnrollment[] @relation("SubjectEnrollmentCreator")
 
   // Exam system relations
-  questionsCreated  Question[]            @relation("QuestionCreator")
-  examAttempts      StudentExamAttempt[]  @relation("StudentExamAttempts")
+  questionsCreated   Question[]           @relation("QuestionCreator")
+  examAttempts       StudentExamAttempt[] @relation("StudentExamAttempts")
   examAttemptsGraded StudentExamAttempt[] @relation("ExamAttemptsGraded")
+
+  // Notice system relations
+  noticeReads NoticeRead[] @relation("NoticeReads")
 
   @@map("users")
 }
@@ -496,24 +499,50 @@ model Routine {
 model Notice {
   id            String         @id @default(cuid())
   title         String
-  content       String
+  content       String         @db.Text // Support long content
   category      NoticeCategory @default(GENERAL)
   priority      Priority       @default(MEDIUM)
   attachmentUrl String?
-  classId       String? // null = global notice
-  publishedBy   String
+  isPinned      Boolean        @default(false) // Pin important notices
   isPublished   Boolean        @default(false)
   publishedAt   DateTime?
   expiresAt     DateTime?
   viewCount     Int            @default(0)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+
+  // Targeting options (null = global/all)
+  classId    String? // Target specific class
+  batchId    String? // Target specific batch
+  moduleId   String? // Target specific module
+  targetRole Role? // Target specific role (ADMIN, TEACHER, STUDENT)
+
+  // Creator info
+  publishedBy String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  class           Class? @relation(fields: [classId], references: [id])
-  publishedByUser User   @relation("PublishedByUser", fields: [publishedBy], references: [id])
+  class           Class?       @relation(fields: [classId], references: [id])
+  batch           Batch?       @relation(fields: [batchId], references: [id])
+  module          Module?      @relation(fields: [moduleId], references: [id])
+  publishedByUser User         @relation("PublishedByUser", fields: [publishedBy], references: [id])
+  readBy          NoticeRead[] // Track who has read this notice
 
   @@map("notices")
+}
+
+// Track notice reads for notification management
+model NoticeRead {
+  id       String   @id @default(cuid())
+  noticeId String
+  userId   String
+  readAt   DateTime @default(now())
+
+  // Relations
+  notice Notice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+  user   User   @relation("NoticeReads", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([noticeId, userId]) // User can only read a notice once
+  @@map("notice_reads")
 }
 
 // ============================================
@@ -521,53 +550,53 @@ model Notice {
 // ============================================
 
 model Exam {
-  id           String     @id @default(cuid())
-  title        String
-  description  String?    @db.Text // Support long descriptions with Nepali text
-  subjectId    String
-  classId      String?
-  batchId      String? // Optional: Target specific batch
-  type         ExamType   @default(QUIZ)
-  status       ExamStatus @default(UPCOMING)
-  
+  id          String     @id @default(cuid())
+  title       String
+  description String?    @db.Text // Support long descriptions with Nepali text
+  subjectId   String
+  classId     String?
+  batchId     String? // Optional: Target specific batch
+  type        ExamType   @default(QUIZ)
+  status      ExamStatus @default(UPCOMING)
+
   // Scheduling
-  startTime    DateTime
-  endTime      DateTime
-  duration     Int? // in minutes - optional, can use endTime - startTime
-  
+  startTime DateTime
+  endTime   DateTime
+  duration  Int? // in minutes - optional, can use endTime - startTime
+
   // Marks Configuration
   totalMarks   Int?
   passingMarks Int?
-  
+
   // Instructions and Settings
-  instructions          String?   @db.Text
-  allowLateSubmission   Boolean   @default(false)
-  shuffleQuestions      Boolean   @default(false)
-  showResultsImmediately Boolean  @default(false)
-  allowReview           Boolean   @default(true) // Allow students to review after submission
-  maxAttempts           Int       @default(1)
-  
+  instructions           String? @db.Text
+  allowLateSubmission    Boolean @default(false)
+  shuffleQuestions       Boolean @default(false)
+  showResultsImmediately Boolean @default(false)
+  allowReview            Boolean @default(true) // Allow students to review after submission
+  maxAttempts            Int     @default(1)
+
   // Legacy external exam support
-  examLink     String? // For Google Form or external exam links (backward compatibility)
-  isExternal   Boolean @default(false)
-  
+  examLink   String? // For Google Form or external exam links (backward compatibility)
+  isExternal Boolean @default(false)
+
   // Metadata
-  createdBy    String
-  publishedAt  DateTime?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdBy   String
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  subject         Subject               @relation(fields: [subjectId], references: [id])
-  class           Class?                @relation(fields: [classId], references: [id])
-  createdByUser   User                  @relation("ExamCreatedBy", fields: [createdBy], references: [id])
-  questions       ExamQuestion[]
-  attempts        StudentExamAttempt[]
-  results         Result[]
-  certificates    Certificate[]
-  
+  subject       Subject              @relation(fields: [subjectId], references: [id])
+  class         Class?               @relation(fields: [classId], references: [id])
+  createdByUser User                 @relation("ExamCreatedBy", fields: [createdBy], references: [id])
+  questions     ExamQuestion[]
+  attempts      StudentExamAttempt[]
+  results       Result[]
+  certificates  Certificate[]
+
   // Legacy submission support (backward compatibility)
-  submissions     ExamSubmission[]
+  submissions ExamSubmission[]
 
   @@index([subjectId])
   @@index([classId])
@@ -582,35 +611,35 @@ model Question {
   questionText     String       @db.Text // Supports Nepali Unicode
   questionTextHtml String?      @db.Text // Rich text HTML version
   questionType     QuestionType
-  
+
   // For file upload type questions
   allowMultipleFiles Boolean @default(true)
   maxFiles           Int     @default(5)
   acceptedFileTypes  String? // comma-separated: "image/jpeg,image/png,application/pdf"
   maxFileSizeMB      Int     @default(10)
-  
+
   // Marks
-  marks            Float    @default(0)
-  negativeMarks    Float?   @default(0)
-  
+  marks         Float  @default(0)
+  negativeMarks Float? @default(0)
+
   // Optional explanation/solution
-  explanation      String?  @db.Text
-  explanationHtml  String?  @db.Text
-  
+  explanation     String? @db.Text
+  explanationHtml String? @db.Text
+
   // Question metadata
-  difficulty       String?  // EASY, MEDIUM, HARD
-  tags             String[] // Searchable tags
-  
+  difficulty String? // EASY, MEDIUM, HARD
+  tags       String[] // Searchable tags
+
   // Audit
-  createdBy        String
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  createdByUser    User                  @relation("QuestionCreator", fields: [createdBy], references: [id])
-  options          QuestionOption[]
-  examQuestions    ExamQuestion[]
-  studentAnswers   StudentAnswer[]
+  createdByUser  User             @relation("QuestionCreator", fields: [createdBy], references: [id])
+  options        QuestionOption[]
+  examQuestions  ExamQuestion[]
+  studentAnswers StudentAnswer[]
 
   @@index([questionType])
   @@index([createdBy])
@@ -628,7 +657,7 @@ model QuestionOption {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  question      Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
   studentAnswers StudentAnswer[]
 
   @@index([questionId])
@@ -636,15 +665,15 @@ model QuestionOption {
 }
 
 model ExamQuestion {
-  id           String   @id @default(cuid())
-  examId       String
-  questionId   String
-  orderIndex   Int      @default(0)
-  marks        Float? // Override question marks if needed
-  isOptional   Boolean  @default(false)
-  sectionName  String? // Optional: Group questions into sections
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String   @id @default(cuid())
+  examId      String
+  questionId  String
+  orderIndex  Int      @default(0)
+  marks       Float? // Override question marks if needed
+  isOptional  Boolean  @default(false)
+  sectionName String? // Optional: Group questions into sections
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
@@ -657,46 +686,46 @@ model ExamQuestion {
 }
 
 model StudentExamAttempt {
-  id              String    @id @default(cuid())
-  examId          String
-  studentId       String
-  attemptNumber   Int       @default(1)
-  
+  id            String @id @default(cuid())
+  examId        String
+  studentId     String
+  attemptNumber Int    @default(1)
+
   // Timing
-  startedAt       DateTime  @default(now())
-  submittedAt     DateTime?
-  timeSpentSeconds Int?     // Total time spent
-  
+  startedAt        DateTime  @default(now())
+  submittedAt      DateTime?
+  timeSpentSeconds Int? // Total time spent
+
   // Status
-  isCompleted     Boolean   @default(false)
-  isLate          Boolean   @default(false)
-  
+  isCompleted Boolean @default(false)
+  isLate      Boolean @default(false)
+
   // Scoring (calculated after grading)
-  totalScore      Float?
-  maxScore        Float?
-  percentage      Float?
-  grade           Grade?
-  isPassed        Boolean?
-  
+  totalScore Float?
+  maxScore   Float?
+  percentage Float?
+  grade      Grade?
+  isPassed   Boolean?
+
   // Grading status
-  isGraded        Boolean   @default(false)
-  gradedAt        DateTime?
-  gradedBy        String? // Teacher who graded
-  
+  isGraded Boolean   @default(false)
+  gradedAt DateTime?
+  gradedBy String? // Teacher who graded
+
   // Technical metadata
-  ipAddress       String?
-  userAgent       String?
-  deviceInfo      String?
-  
+  ipAddress  String?
+  userAgent  String?
+  deviceInfo String?
+
   // Audit
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  exam            Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
-  student         User           @relation("StudentExamAttempts", fields: [studentId], references: [id], onDelete: Cascade)
-  gradedByUser    User?          @relation("ExamAttemptsGraded", fields: [gradedBy], references: [id])
-  answers         StudentAnswer[]
+  exam         Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student      User            @relation("StudentExamAttempts", fields: [studentId], references: [id], onDelete: Cascade)
+  gradedByUser User?           @relation("ExamAttemptsGraded", fields: [gradedBy], references: [id])
+  answers      StudentAnswer[]
 
   @@unique([examId, studentId, attemptNumber])
   @@index([examId])
@@ -706,28 +735,28 @@ model StudentExamAttempt {
 }
 
 model StudentAnswer {
-  id              String    @id @default(cuid())
-  attemptId       String
-  questionId      String
-  
+  id         String @id @default(cuid())
+  attemptId  String
+  questionId String
+
   // Answer data based on question type
-  selectedOptionId String?  // For MCQ
+  selectedOptionId String? // For MCQ
   textAnswer       String?  @db.Text // For short/long answer
   uploadedFiles    String[] // Array of file URLs for file upload questions
-  
+
   // Grading
-  isCorrect       Boolean?
-  marksAwarded    Float?   @default(0)
-  feedback        String?  @db.Text // Teacher feedback
-  
+  isCorrect    Boolean?
+  marksAwarded Float?   @default(0)
+  feedback     String?  @db.Text // Teacher feedback
+
   // Metadata
-  answeredAt      DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  answeredAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  attempt         StudentExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  question        Question          @relation(fields: [questionId], references: [id])
-  selectedOption  QuestionOption?   @relation(fields: [selectedOptionId], references: [id])
+  attempt        StudentExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question       Question           @relation(fields: [questionId], references: [id])
+  selectedOption QuestionOption?    @relation(fields: [selectedOptionId], references: [id])
 
   @@unique([attemptId, questionId])
   @@index([attemptId])
@@ -893,30 +922,30 @@ model FileUpload {
 // ============================================
 
 model Module {
-  id              String       @id @default(cuid())
-  title           String
-  slug            String       @unique
-  description     String?
-  subjectId       String
-  classId         String?
-  teacherId       String
-  thumbnailUrl    String?
-  featuredVideoUrl String?    // Featured video URL set by teacher (YouTube, etc.)
-  featuredVideoTitle String? // Title for the featured video
+  id                       String       @id @default(cuid())
+  title                    String
+  slug                     String       @unique
+  description              String?
+  subjectId                String
+  classId                  String?
+  teacherId                String
+  thumbnailUrl             String?
+  featuredVideoUrl         String? // Featured video URL set by teacher (YouTube, etc.)
+  featuredVideoTitle       String? // Title for the featured video
   featuredVideoDescription String? // Description for the featured video
-  level           String?      @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
-  duration        Int? // Total duration in minutes
-  totalTopics     Int          @default(0)
-  totalLessons    Int          @default(0)
-  status          ModuleStatus @default(DRAFT)
-  isFeatured      Boolean      @default(false)
-  isPublic        Boolean      @default(false)
-  viewCount       Int          @default(0)
-  enrollmentCount Int          @default(0)
-  avgRating       Float?       @default(0)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  publishedAt     DateTime?
+  level                    String?      @default("BEGINNER") // BEGINNER, INTERMEDIATE, ADVANCED
+  duration                 Int? // Total duration in minutes
+  totalTopics              Int          @default(0)
+  totalLessons             Int          @default(0)
+  status                   ModuleStatus @default(DRAFT)
+  isFeatured               Boolean      @default(false)
+  isPublic                 Boolean      @default(false)
+  viewCount                Int          @default(0)
+  enrollmentCount          Int          @default(0)
+  avgRating                Float?       @default(0)
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+  publishedAt              DateTime?
 
   // Relations
   subject         Subject            @relation(fields: [subjectId], references: [id])
@@ -928,6 +957,7 @@ model Module {
   activityHistory ActivityHistory[]
   resources       ModuleResource[]
   liveClasses     LiveClass[] // Live classes associated with this module
+  notices         Notice[] // Notices targeted to this module
 
   @@index([subjectId])
   @@index([teacherId])
@@ -1283,6 +1313,7 @@ model Batch {
   students         User[]            @relation("StudentBatch")
   classEnrollments ClassEnrollment[]
   graduations      Graduation[]
+  notices          Notice[] // Notices targeted to this batch
 
   // New unified enrollment system
   subjectEnrollments SubjectEnrollment[] @relation("BatchSubjectEnrollments")

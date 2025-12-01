@@ -4,6 +4,7 @@ import './globals.css'
 import { Providers } from '@/src/features/common/components/Providers'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { Toaster } from 'sonner'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -44,6 +45,7 @@ export default function RootLayout({
             theme="light"
             className="mt-16"
           />
+          <Toaster richColors position="top-right" />
         </Providers>
       </body>
     </html>
