@@ -166,7 +166,7 @@ export default function StudentNoticeCard({ notice, onMarkAsRead }: StudentNotic
               </AnimatePresence>
 
               {/* Action Buttons */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   onClick={toggleExpand}
                   className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium transition-colors"
@@ -184,13 +184,20 @@ export default function StudentNoticeCard({ notice, onMarkAsRead }: StudentNotic
                   )}
                 </button>
 
-                {!notice.isRead && (
+                {!notice.isRead ? (
                   <button
                     onClick={handleMarkAsRead}
                     className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors"
                   >
                     Mark as read
                   </button>
+                ) : (
+                  <span className="px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm font-medium flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Read
+                  </span>
                 )}
               </div>
             </div>
@@ -286,13 +293,20 @@ export default function StudentNoticeCard({ notice, onMarkAsRead }: StudentNotic
 
               {/* Modal Footer */}
               <div className="p-6 border-t bg-gray-50 flex items-center justify-between">
-                {!notice.isRead && (
+                {!notice.isRead ? (
                   <button
                     onClick={handleMarkAsRead}
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                   >
                     Mark as read
                   </button>
+                ) : (
+                  <span className="px-4 py-2 bg-green-100 text-green-700 rounded-lg font-medium flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Already Read
+                  </span>
                 )}
                 <button
                   onClick={() => setShowModal(false)}
