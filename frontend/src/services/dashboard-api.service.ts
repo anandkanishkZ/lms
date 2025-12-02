@@ -62,15 +62,23 @@ export const dashboardApiService = {
    * Get dashboard statistics
    */
   async getStats(): Promise<DashboardStats> {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const response = await fetch(`${API_BASE_URL}/analytics/dashboard/stats`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch dashboard stats');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('Dashboard stats error:', errorData);
+      throw new Error(errorData.message || `Failed to fetch dashboard stats (${response.status})`);
     }
 
     const result = await response.json();
@@ -81,15 +89,22 @@ export const dashboardApiService = {
    * Get enrollment growth data
    */
   async getEnrollmentGrowth(): Promise<EnrollmentGrowthData[]> {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const response = await fetch(`${API_BASE_URL}/analytics/dashboard/enrollment-growth`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch enrollment growth data');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch enrollment growth data (${response.status})`);
     }
 
     const result = await response.json();
@@ -100,15 +115,22 @@ export const dashboardApiService = {
    * Get course distribution data
    */
   async getCourseDistribution(): Promise<CourseDistribution[]> {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const response = await fetch(`${API_BASE_URL}/analytics/dashboard/course-distribution`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch course distribution');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch course distribution (${response.status})`);
     }
 
     const result = await response.json();
@@ -119,15 +141,22 @@ export const dashboardApiService = {
    * Get recent activity
    */
   async getRecentActivity(): Promise<RecentActivity[]> {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const response = await fetch(`${API_BASE_URL}/analytics/dashboard/recent-activity`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch recent activity');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch recent activity (${response.status})`);
     }
 
     const result = await response.json();
@@ -138,15 +167,22 @@ export const dashboardApiService = {
    * Get activity chart data
    */
   async getActivityChart(): Promise<ActivityChartData[]> {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem('adminToken');
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const response = await fetch(`${API_BASE_URL}/analytics/dashboard/activity-chart`, {
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch activity chart data');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to fetch activity chart data (${response.status})`);
     }
 
     const result = await response.json();

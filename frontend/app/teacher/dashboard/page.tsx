@@ -22,13 +22,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { teacherApiService } from '@/src/services/teacher-api.service';
-
-interface DashboardStats {
-  totalModules: number;
-  totalStudents: number;
-  activeClasses: number;
-  completionRate: number;
-}
+import { 
+  teacherDashboardApiService, 
+  TeacherDashboardStats, 
+  UpcomingClass, 
+  TeacherActivity,
+  ModulePerformance 
+} from '@/src/services/teacher-dashboard-api.service';
+import { toast } from 'sonner';
 
 interface RecentActivity {
   id: string;
@@ -40,24 +41,13 @@ interface RecentActivity {
   color: string;
 }
 
-interface UpcomingClass {
-  id: string;
-  title: string;
-  module: string;
-  time: string;
-  date: string;
-  students: number;
-}
-
 export default function TeacherDashboardPage() {
   const router = useRouter();
   const [teacher, setTeacher] = useState<any>(null);
-  const [stats, setStats] = useState<DashboardStats>({
-    totalModules: 0,
-    totalStudents: 0,
-    activeClasses: 0,
-    completionRate: 0,
-  });
+  const [stats, setStats] = useState<TeacherDashboardStats | null>(null);
+  const [upcomingClasses, setUpcomingClasses] = useState<UpcomingClass[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [modulePerformance, setModulePerformance] = useState<ModulePerformance[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -69,88 +59,55 @@ export default function TeacherDashboardPage() {
       const userData = teacherApiService.getCurrentUser();
       setTeacher(userData);
 
-      // Mock data - Replace with actual API calls
-      setStats({
-        totalModules: 12,
-        totalStudents: 245,
-        activeClasses: 8,
-        completionRate: 87,
+      // Load all dashboard data in parallel
+      const [statsData, classesData, activityData, performanceData] = await Promise.all([
+        teacherDashboardApiService.getStats(),
+        teacherDashboardApiService.getUpcomingClasses(5),
+        teacherDashboardApiService.getRecentActivity(10),
+        teacherDashboardApiService.getModulePerformance(),
+      ]);
+
+      setStats(statsData);
+      setUpcomingClasses(classesData);
+      
+      // Transform activity data to match UI format
+      const transformedActivities: RecentActivity[] = activityData.map(activity => {
+        let icon = FileText;
+        let color = 'blue';
+        
+        if (activity.type === 'submission') {
+          icon = FileText;
+          color = 'blue';
+        } else if (activity.type === 'enrollment') {
+          icon = Users;
+          color = 'green';
+        } else if (activity.type === 'class') {
+          icon = Video;
+          color = 'purple';
+        }
+        
+        return {
+          id: activity.id,
+          type: activity.type as 'submission' | 'enrollment' | 'class' | 'message',
+          title: activity.title,
+          description: activity.description,
+          timestamp: activity.timestamp,
+          icon,
+          color,
+        };
       });
+      
+      setRecentActivities(transformedActivities);
+      setModulePerformance(performanceData);
     } catch (error) {
       console.error('Error loading dashboard:', error);
+      toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
   };
 
-  // Mock data - Replace with actual API data
-  const recentActivities: RecentActivity[] = [
-    {
-      id: '1',
-      type: 'submission',
-      title: 'New Assignment Submission',
-      description: 'John Doe submitted "Introduction to React" assignment',
-      timestamp: '5 minutes ago',
-      icon: FileText,
-      color: 'blue',
-    },
-    {
-      id: '2',
-      type: 'enrollment',
-      title: 'New Student Enrollment',
-      description: 'Sarah Smith enrolled in "Advanced JavaScript"',
-      timestamp: '1 hour ago',
-      icon: Users,
-      color: 'green',
-    },
-    {
-      id: '3',
-      type: 'class',
-      title: 'Class Completed',
-      description: 'Live session for "React Hooks" completed successfully',
-      timestamp: '2 hours ago',
-      icon: Video,
-      color: 'purple',
-    },
-    {
-      id: '4',
-      type: 'message',
-      title: 'New Message',
-      description: 'Mike Johnson sent you a message about exam schedule',
-      timestamp: '3 hours ago',
-      icon: MessageSquare,
-      color: 'orange',
-    },
-  ];
-
-  const upcomingClasses: UpcomingClass[] = [
-    {
-      id: '1',
-      title: 'Introduction to TypeScript',
-      module: 'Web Development',
-      time: '10:00 AM',
-      date: 'Today',
-      students: 32,
-    },
-    {
-      id: '2',
-      title: 'React State Management',
-      module: 'Frontend Development',
-      time: '2:00 PM',
-      date: 'Today',
-      students: 28,
-    },
-    {
-      id: '3',
-      title: 'Node.js Fundamentals',
-      module: 'Backend Development',
-      time: '11:00 AM',
-      date: 'Tomorrow',
-      students: 25,
-    },
-  ];
-
-  if (loading) {
+  if (loading || !stats) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -203,9 +160,8 @@ export default function TeacherDashboardPage() {
             <div>
               <p className="text-sm text-gray-600 font-medium">My Modules</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalModules}</p>
-              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                <TrendingUp className="w-4 h-4" />
-                <span>+2 this month</span>
+              <p className="text-sm text-gray-500 mt-2">
+                {stats.publishedModules} published
               </p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -224,9 +180,11 @@ export default function TeacherDashboardPage() {
             <div>
               <p className="text-sm text-gray-600 font-medium">Total Students</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalStudents}</p>
-              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
+              <p className={`text-sm mt-2 flex items-center gap-1 ${
+                stats.enrollmentChange.type === 'increase' ? 'text-green-600' : 'text-red-600'
+              }`}>
                 <TrendingUp className="w-4 h-4" />
-                <span>+18 this month</span>
+                <span>{stats.enrollmentChange.type === 'increase' ? '+' : ''}{stats.enrollmentChange.value} this month</span>
               </p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -243,11 +201,11 @@ export default function TeacherDashboardPage() {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Active Classes</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.activeClasses}</p>
+              <p className="text-sm text-gray-600 font-medium">Classes Today</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.todayClasses}</p>
               <p className="text-sm text-blue-600 mt-2 flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                <span>3 today</span>
+                <span>{upcomingClasses.length} upcoming</span>
               </p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
@@ -264,11 +222,10 @@ export default function TeacherDashboardPage() {
         >
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm text-gray-600 font-medium">Completion Rate</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.completionRate}%</p>
-              <p className="text-sm text-green-600 mt-2 flex items-center gap-1">
-                <TrendingUp className="w-4 h-4" />
-                <span>+5% from last month</span>
+              <p className="text-sm text-gray-600 font-medium">Pending Grading</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">{stats.pendingGrading}</p>
+              <p className="text-sm text-orange-600 mt-2">
+                Assignments to review
               </p>
             </div>
             <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
@@ -308,37 +265,65 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
           <div className="p-6 space-y-4">
-            {upcomingClasses.map((cls, index) => (
-              <motion.div
-                key={cls.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 + index * 0.1 }}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">{cls.title}</h3>
-                  <p className="text-sm text-gray-600 mt-1">{cls.module}</p>
-                  <div className="flex items-center gap-4 mt-2">
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      {cls.time}
-                    </span>
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      {cls.date}
-                    </span>
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                      <Users className="w-4 h-4" />
-                      {cls.students} students
-                    </span>
-                  </div>
-                </div>
-                <button className="ml-4 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-                  Start Class
-                </button>
-              </motion.div>
-            ))}
+            {upcomingClasses.length > 0 ? (
+              upcomingClasses.map((cls, index) => {
+                const startTime = new Date(cls.startTime);
+                const timeStr = startTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                const dateStr = startTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                
+                return (
+                  <motion.div
+                    key={cls.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6 + index * 0.1 }}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{cls.title}</h3>
+                      {cls.description && (
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-1">{cls.description}</p>
+                      )}
+                      <div className="flex flex-wrap items-center gap-4 mt-2">
+                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {timeStr}
+                        </span>
+                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                          <Calendar className="w-4 h-4" />
+                          {dateStr}
+                        </span>
+                        <span className="text-sm text-gray-500 flex items-center gap-1">
+                          <BookOpen className="w-4 h-4" />
+                          {cls.subject}
+                        </span>
+                        {cls.attendanceCount > 0 && (
+                          <span className="text-sm text-green-600 flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" />
+                            {cls.attendanceCount} attended
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {cls.meetingLink && (
+                      <a
+                        href={cls.meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-4 px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                      >
+                        Join Class
+                      </a>
+                    )}
+                  </motion.div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <Calendar className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No upcoming classes scheduled</p>
+              </div>
+            )}
           </div>
         </motion.div>
 
