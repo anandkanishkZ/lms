@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Bell, FileText, Calendar, PartyPopper, Megaphone } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import { Badge } from '@/src/components/ui/badge';
 import {
@@ -23,11 +23,20 @@ interface NoticeBellProps {
   noticesPagePath?: string;
 }
 
-const categoryIcons = {
-  EXAM: '📝',
-  EVENT: '🎉',
-  HOLIDAY: '🏖️',
-  GENERAL: '📢',
+const CategoryIcon = ({ category }: { category: string }) => {
+  const iconProps = { className: "w-4 h-4", strokeWidth: 2 };
+  
+  switch (category) {
+    case 'EXAM':
+      return <FileText {...iconProps} className="w-4 h-4 text-orange-600" />;
+    case 'EVENT':
+      return <PartyPopper {...iconProps} className="w-4 h-4 text-purple-600" />;
+    case 'HOLIDAY':
+      return <Calendar {...iconProps} className="w-4 h-4 text-green-600" />;
+    case 'GENERAL':
+    default:
+      return <Megaphone {...iconProps} className="w-4 h-4 text-blue-600" />;
+  }
 };
 
 export default function NoticeBell({ onViewAll, noticesPagePath }: NoticeBellProps) {
@@ -35,7 +44,41 @@ export default function NoticeBell({ onViewAll, noticesPagePath }: NoticeBellPro
   const [recentNotices, setRecentNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(false);
   const [isAuthChecked, setIsAuthChecked] = useState(false);
+  const previousCountRef = useRef<number>(0);
   const router = useRouter();
+
+  // Play notification sound using Web Audio API
+  const playNotificationSound = () => {
+    try {
+      // Try to play audio file first
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.5;
+      audio.play().catch(() => {
+        // Fallback: Generate a simple notification beep using Web Audio API
+        try {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 800; // Frequency in Hz
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 0.5);
+        } catch (err) {
+          console.log('Audio notification not available');
+        }
+      });
+    } catch (error) {
+      console.log('Sound notification not available');
+    }
+  };
 
   useEffect(() => {
     // Delay initial check to ensure auth is loaded
@@ -71,7 +114,18 @@ export default function NoticeBell({ onViewAll, noticesPagePath }: NoticeBellPro
     
     try {
       const data = await noticeApi.getUnreadCount();
-      setUnreadCount(data.unreadCount);
+      const newCount = data.unreadCount;
+      
+      // Play sound if new notices arrived (count increased)
+      if (previousCountRef.current > 0 && newCount > previousCountRef.current) {
+        playNotificationSound();
+        toast.success(`${newCount - previousCountRef.current} new notice(s) received!`, {
+          icon: '🔔',
+        });
+      }
+      
+      previousCountRef.current = newCount;
+      setUnreadCount(newCount);
     } catch (error: any) {
       // Handle token expiration or auth errors silently
       if (error.response?.status === 401) {
@@ -170,7 +224,11 @@ export default function NoticeBell({ onViewAll, noticesPagePath }: NoticeBellPro
           <div className="p-4 text-center text-sm text-gray-500">Loading...</div>
         ) : recentNotices.length === 0 ? (
           <div className="p-8 text-center">
-            <div className="text-4xl mb-2">🔔</div>
+            <div className="flex items-center justify-center mb-2">
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                <Bell className="w-6 h-6 text-gray-400" />
+              </div>
+            </div>
             <p className="text-sm text-gray-500">No new notifications</p>
           </div>
         ) : (
@@ -182,7 +240,9 @@ export default function NoticeBell({ onViewAll, noticesPagePath }: NoticeBellPro
                 onClick={() => handleViewNotice(notice)}
               >
                 <div className="flex items-start gap-2 w-full">
-                  <span className="text-lg">{categoryIcons[notice.category]}</span>
+                  <div className="mt-0.5">
+                    <CategoryIcon category={notice.category} />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-sm font-semibold text-gray-900 truncate flex-1">

@@ -19,6 +19,14 @@ import {
   Pin,
   Eye,
   EyeOff,
+  FileText,
+  PartyPopper,
+  Megaphone,
+  Palmtree,
+  AlertTriangle,
+  ChevronUp,
+  Minus,
+  CircleAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import noticeApi, { 
@@ -54,6 +62,22 @@ interface NoticeFormProps {
   onSuccess?: () => void;
   onCancel?: () => void;
 }
+
+// Category configuration with icons
+const categoryConfig = {
+  [NoticeCategory.GENERAL]: { label: 'General', icon: Megaphone, color: 'text-blue-600' },
+  [NoticeCategory.EXAM]: { label: 'Exam', icon: FileText, color: 'text-orange-600' },
+  [NoticeCategory.EVENT]: { label: 'Event', icon: PartyPopper, color: 'text-purple-600' },
+  [NoticeCategory.HOLIDAY]: { label: 'Holiday', icon: Palmtree, color: 'text-green-600' },
+};
+
+// Priority configuration with icons
+const priorityConfig = {
+  [NoticePriority.LOW]: { label: 'Low', icon: Minus, color: 'text-gray-500' },
+  [NoticePriority.MEDIUM]: { label: 'Medium', icon: ChevronUp, color: 'text-blue-600' },
+  [NoticePriority.HIGH]: { label: 'High', icon: AlertTriangle, color: 'text-orange-600' },
+  [NoticePriority.URGENT]: { label: 'Urgent', icon: CircleAlert, color: 'text-red-600' },
+};
 
 export default function NoticeForm({ notice, mode, onSuccess, onCancel }: NoticeFormProps) {
   const router = useRouter();
@@ -111,11 +135,16 @@ export default function NoticeForm({ notice, mode, onSuccess, onCancel }: Notice
           // Teachers don't get batch options
           setBatches([]);
         } else {
-          // Admins: TODO - Implement API calls to fetch all classes, batches, modules
-          // For now, leaving empty for admins (will be implemented later)
-          setClasses([]);
-          setBatches([]);
-          setModules([]);
+          // Admins: Load all classes, batches, and modules
+          const [allClasses, allBatches, allModules] = await Promise.all([
+            noticeApi.getAllClasses(),
+            noticeApi.getAllBatches(),
+            noticeApi.getAllModules(),
+          ]);
+          
+          setClasses(allClasses);
+          setBatches(allBatches);
+          setModules(allModules);
         }
       } catch (error: any) {
         console.error('Failed to load targeting options:', error);
@@ -233,30 +262,52 @@ export default function NoticeForm({ notice, mode, onSuccess, onCancel }: Notice
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Category <span className="text-red-500">*</span>
             </label>
-            <select
-              {...register('category')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value={NoticeCategory.GENERAL}>📢 General</option>
-              <option value={NoticeCategory.EXAM}>📝 Exam</option>
-              <option value={NoticeCategory.EVENT}>🎉 Event</option>
-              <option value={NoticeCategory.HOLIDAY}>🏖️ Holiday</option>
-            </select>
+            <div className="relative">
+              <select
+                {...register('category')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+              >
+                {Object.entries(categoryConfig).map(([key, config]) => (
+                  <option key={key} value={key}>
+                    {config.label}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                {(() => {
+                  const category = watch('category');
+                  const Icon = categoryConfig[category]?.icon || Megaphone;
+                  const color = categoryConfig[category]?.color || 'text-gray-600';
+                  return <Icon className={`w-4 h-4 ${color}`} />;
+                })()}
+              </div>
+            </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Priority <span className="text-red-500">*</span>
             </label>
-            <select
-              {...register('priority')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value={NoticePriority.LOW}>Low</option>
-              <option value={NoticePriority.MEDIUM}>Medium</option>
-              <option value={NoticePriority.HIGH}>High</option>
-              <option value={NoticePriority.URGENT}>🚨 Urgent</option>
-            </select>
+            <div className="relative">
+              <select
+                {...register('priority')}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none"
+              >
+                {Object.entries(priorityConfig).map(([key, config]) => (
+                  <option key={key} value={key}>
+                    {config.label}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                {(() => {
+                  const priority = watch('priority');
+                  const Icon = priorityConfig[priority]?.icon || ChevronUp;
+                  const color = priorityConfig[priority]?.color || 'text-gray-600';
+                  return <Icon className={`w-4 h-4 ${color}`} />;
+                })()}
+              </div>
+            </div>
           </div>
         </div>
 

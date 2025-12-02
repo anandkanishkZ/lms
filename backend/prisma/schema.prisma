@@ -252,7 +252,8 @@ model User {
   examAttemptsGraded StudentExamAttempt[] @relation("ExamAttemptsGraded")
 
   // Notice system relations
-  noticeReads NoticeRead[] @relation("NoticeReads")
+  noticeReads              NoticeRead[]             @relation("NoticeReads")
+  notificationPreferences  NotificationPreference?  @relation("UserNotificationPreferences")
 
   @@map("users")
 }
@@ -505,8 +506,11 @@ model Notice {
   attachmentUrl String?
   isPinned      Boolean        @default(false) // Pin important notices
   isPublished   Boolean        @default(false)
+  isActive      Boolean        @default(true) // Soft delete support
   publishedAt   DateTime?
   expiresAt     DateTime?
+  scheduledFor  DateTime? // For scheduling future notices
+  actionUrl     String? // Deep link to relevant page
   viewCount     Int            @default(0)
 
   // Targeting options (null = global/all)
@@ -527,22 +531,52 @@ model Notice {
   publishedByUser User         @relation("PublishedByUser", fields: [publishedBy], references: [id])
   readBy          NoticeRead[] // Track who has read this notice
 
+  @@index([isPublished, isActive, expiresAt])
+  @@index([classId, isPublished, isActive])
+  @@index([batchId, isPublished, isActive])
+  @@index([moduleId, isPublished, isActive])
+  @@index([publishedBy])
   @@map("notices")
 }
 
 // Track notice reads for notification management
 model NoticeRead {
-  id       String   @id @default(cuid())
-  noticeId String
-  userId   String
-  readAt   DateTime @default(now())
+  id             String   @id @default(cuid())
+  noticeId       String
+  userId         String
+  readAt         DateTime @default(now())
+  deliveryStatus String   @default("delivered") // delivered, pending, failed
 
   // Relations
   notice Notice @relation(fields: [noticeId], references: [id], onDelete: Cascade)
   user   User   @relation("NoticeReads", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([noticeId, userId]) // User can only read a notice once
+  @@index([userId, readAt])
   @@map("notice_reads")
+}
+
+// Notification preferences for users
+model NotificationPreference {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  emailEnabled       Boolean  @default(true)
+  inAppEnabled       Boolean  @default(true)
+  pushEnabled        Boolean  @default(true)
+  examNotifications  Boolean  @default(true)
+  eventNotifications Boolean  @default(true)
+  generalNotifications Boolean @default(true)
+  urgentOnly         Boolean  @default(false)
+  quietHoursEnabled  Boolean  @default(false)
+  quietHoursStart    String? // Format: "22:00"
+  quietHoursEnd      String? // Format: "08:00"
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Relations
+  user User @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
 }
 
 // ============================================

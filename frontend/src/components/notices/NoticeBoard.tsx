@@ -10,8 +10,9 @@ import NoticeCard from './NoticeCard';
 import NoticeDetailModal from './NoticeDetailModal';
 import { noticeApi, Notice, NoticeCategory, NoticePriority, NoticeFilters } from '@/services/notice-api.service';
 import { getCurrentUserRole } from '@/utils/auth';
-import { Filter, Plus, Search, X } from 'lucide-react';
+import { Filter, Plus, Search, X, CheckCheck, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { NoticeErrorBoundary } from './NoticeErrorBoundary';
 
 interface NoticeBoardProps {
   classId?: string;
@@ -39,7 +40,9 @@ export default function NoticeBoard({
   const [loading, setLoading] = useState(true);
   const [selectedNotice, setSelectedNotice] = useState<Notice | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [currentUserRole, setCurrentUserRole] = useState<'ADMIN' | 'TEACHER' | 'STUDENT' | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<'ADMIN' | 'TEACHER' | 'STUDENT' | undefined>(undefined);
+  const [markingAllAsRead, setMarkingAllAsRead] = useState(false);
+  const [actionErrors, setActionErrors] = useState<Record<string, string>>({});
   
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,23 +129,70 @@ export default function NoticeBoard({
   };
 
   const handleMarkAsRead = async (noticeId: string) => {
+    // Optimistic UI update
+    const previousNotices = [...notices];
+    setNotices((prev) =>
+      prev.map((notice) => (notice.id === noticeId ? { ...notice, isRead: true } : notice))
+    );
+    setActionErrors((prev) => ({ ...prev, [noticeId]: '' }));
+
     try {
       await noticeApi.markAsRead(noticeId);
-      setNotices((prev) =>
-        prev.map((notice) => (notice.id === noticeId ? { ...notice, isRead: true } : notice))
-      );
-      toast.success('Notice marked as read');
+      toast.success('Marked as read');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to mark as read');
+      // Rollback on error
+      setNotices(previousNotices);
+      const errorMsg = error.message || 'Failed to mark as read';
+      setActionErrors((prev) => ({ ...prev, [noticeId]: errorMsg }));
+      toast.error(errorMsg);
     }
   };
 
   const handleDeleteNotice = async (noticeId: string) => {
-    // Remove notice from state immediately for optimistic UI
+    // Optimistic UI update
+    const previousNotices = [...notices];
     setNotices((prev) => prev.filter((notice) => notice.id !== noticeId));
+    setActionErrors((prev) => ({ ...prev, [noticeId]: '' }));
+    
     // Close modal if this notice is currently displayed
     if (selectedNotice?.id === noticeId) {
       setSelectedNotice(null);
+    }
+
+    try {
+      await noticeApi.deleteNotice(noticeId);
+      toast.success('Notice deleted successfully');
+    } catch (error: any) {
+      // Rollback on error
+      setNotices(previousNotices);
+      const errorMsg = error.message || 'Failed to delete notice';
+      setActionErrors((prev) => ({ ...prev, [noticeId]: errorMsg }));
+      toast.error(errorMsg);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadNotices = notices.filter((n) => !n.isRead);
+    if (unreadNotices.length === 0) {
+      toast.info('All notices are already marked as read');
+      return;
+    }
+
+    setMarkingAllAsRead(true);
+    const previousNotices = [...notices];
+
+    // Optimistic UI update
+    setNotices((prev) => prev.map((notice) => ({ ...notice, isRead: true })));
+
+    try {
+      await noticeApi.markAllAsRead();
+      toast.success(`Marked ${unreadNotices.length} notices as read`);
+    } catch (error: any) {
+      // Rollback on error
+      setNotices(previousNotices);
+      toast.error(error.message || 'Failed to mark all as read');
+    } finally {
+      setMarkingAllAsRead(false);
     }
   };
 
@@ -172,7 +222,7 @@ export default function NoticeBoard({
   const unreadCount = notices.filter((n) => !n.isRead).length;
 
   return (
-    <>
+    <NoticeErrorBoundary>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -185,6 +235,21 @@ export default function NoticeBoard({
               )}
             </div>
             <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  disabled={markingAllAsRead}
+                >
+                  {markingAllAsRead ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCheck className="w-4 h-4 mr-2" />
+                  )}
+                  Mark All as Read
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -325,6 +390,6 @@ export default function NoticeBoard({
           onMarkAsRead={handleMarkAsRead}
         />
       )}
-    </>
+    </NoticeErrorBoundary>
   );
 }

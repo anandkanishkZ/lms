@@ -95,7 +95,7 @@ export default function TeacherEditNoticePage() {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <NoticeForm
             mode="edit"
-            initialData={notice}
+            notice={notice}
             onSuccess={() => router.push('/teacher/notifications')}
           />
         </div>

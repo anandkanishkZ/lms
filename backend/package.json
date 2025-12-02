@@ -8,7 +8,6 @@
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "dev:watch": "nodemon --exec ts-node src/server.ts",
-
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:push": "prisma db push",
@@ -42,8 +41,8 @@
     "csv-parser": "^3.0.0",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "express-rate-limit": "^7.1.5",
-    "express-validator": "^7.0.1",
+    "express-rate-limit": "^7.5.1",
+    "express-validator": "^7.3.1",
     "firebase-admin": "^11.11.1",
     "helmet": "^7.1.0",
     "joi": "^17.11.0",
