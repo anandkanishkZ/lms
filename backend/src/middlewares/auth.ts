@@ -147,5 +147,10 @@ export const optionalAuth = async (
   }
 };
 
+// Convenient alias for role-based authorization
+export const requireRole = (roles: Role[]) => {
+  return authorizeRoles(...roles);
+};
+
 // Alias for authenticateToken (commonly used name)
 export const authenticate = authenticateToken;
