@@ -26,7 +26,6 @@ import {
   AlertTriangle,
   ChevronUp,
   Minus,
-  CircleAlert,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import noticeApi, { 
@@ -76,7 +75,7 @@ const priorityConfig = {
   [NoticePriority.LOW]: { label: 'Low', icon: Minus, color: 'text-gray-500' },
   [NoticePriority.MEDIUM]: { label: 'Medium', icon: ChevronUp, color: 'text-blue-600' },
   [NoticePriority.HIGH]: { label: 'High', icon: AlertTriangle, color: 'text-orange-600' },
-  [NoticePriority.URGENT]: { label: 'Urgent', icon: CircleAlert, color: 'text-red-600' },
+  [NoticePriority.URGENT]: { label: 'Urgent', icon: AlertCircle, color: 'text-red-600' },
 };
 
 export default function NoticeForm({ notice, mode, onSuccess, onCancel }: NoticeFormProps) {

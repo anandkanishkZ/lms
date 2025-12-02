@@ -56,7 +56,9 @@ export default function NoticeBoard({
     if (typeof window !== 'undefined') {
       // Determine current user role using the centralized utility
       const role = getCurrentUserRole();
-      setCurrentUserRole(role);
+      if (role) {
+        setCurrentUserRole(role);
+      }
       
       fetchNotices();
     }

@@ -7,7 +7,7 @@ export const handleValidationErrors = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
-): void => {
+): void | Response => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
@@ -17,7 +17,7 @@ export const handleValidationErrors = (
         field: err.type === 'field' ? err.path : undefined,
         message: err.msg,
       })),
-    });
+    }) as any;
   }
   next();
 };

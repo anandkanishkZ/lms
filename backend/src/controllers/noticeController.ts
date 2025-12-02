@@ -822,7 +822,6 @@ export const getTeacherModules = async (req: AuthRequest, res: Response) => {
         id: true,
         title: true,
         slug: true,
-        isPublished: true,
       },
       orderBy: {
         title: 'asc',
