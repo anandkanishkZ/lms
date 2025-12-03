@@ -189,6 +189,37 @@ export default function TeacherModulesPage() {
     }
   };
 
+  const handleDeleteModule = async (moduleId: string) => {
+    if (!confirm('Are you sure you want to delete this module? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setActionLoading(moduleId);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/modules/${moduleId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('teacher_token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        showSuccessToast('Module deleted successfully');
+        loadModules();
+      } else {
+        showErrorToast(result.message || 'Failed to delete module');
+      }
+    } catch (error) {
+      console.error('Error deleting module:', error);
+      showErrorToast('Failed to delete module');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const getStatusBadge = (status: Module['status']) => {
     const badges = {
       DRAFT: { color: 'bg-gray-100 text-gray-700', icon: FileText, text: 'Draft' },
