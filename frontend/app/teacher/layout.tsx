@@ -12,7 +12,12 @@ import {
   Home,
   BookOpen,
   Bell,
-  ClipboardCheck
+  ClipboardCheck,
+  Users,
+  BarChart3,
+  Calendar,
+  Settings,
+  HelpCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import { teacherApiService } from '@/src/services/teacher-api.service';
@@ -22,6 +27,8 @@ interface TeacherMenuItem {
   icon: typeof Home;
   label: string;
   href: string;
+  badge?: string;
+  disabled?: boolean;
 }
 
 const TEACHER_MENU_ITEMS: TeacherMenuItem[] = [
@@ -29,6 +36,11 @@ const TEACHER_MENU_ITEMS: TeacherMenuItem[] = [
   { icon: BookOpen, label: 'My Modules', href: '/teacher/modules' },
   { icon: ClipboardCheck, label: 'Exams', href: '/teacher/exams' },
   { icon: Bell, label: 'Notifications', href: '/teacher/notifications' },
+  { icon: Users, label: 'Students', href: '/teacher/students', badge: 'Coming Soon', disabled: true },
+  { icon: BarChart3, label: 'Analytics', href: '/teacher/analytics', badge: 'Under Development', disabled: true },
+  { icon: Calendar, label: 'Schedule', href: '/teacher/schedule', badge: 'Coming Soon', disabled: true },
+  { icon: Settings, label: 'Settings', href: '/teacher/settings' },
+  { icon: HelpCircle, label: 'Help', href: '/teacher/help', badge: 'Coming Soon', disabled: true },
 ];
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
@@ -158,6 +170,54 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
             {TEACHER_MENU_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
+              const isDisabled = item.disabled;
+              
+              const menuContent = (
+                <>
+                  {isActive && !isDisabled && (
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#2563eb] to-blue-700 rounded-r-full" />
+                  )}
+                  
+                  <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${
+                    isDisabled ? 'text-gray-400' : isActive ? 'text-[#2563eb]' : ''
+                  }`} />
+                  
+                  {!isCollapsed && (
+                    <span className={`font-medium truncate flex-1 ${
+                      isDisabled ? 'text-gray-400' : ''
+                    }`}>
+                      {item.label}
+                    </span>
+                  )}
+                  
+                  {!isCollapsed && item.badge && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-semibold whitespace-nowrap">
+                      {item.badge}
+                    </span>
+                  )}
+                  
+                  {/* Tooltip for collapsed state */}
+                  {isCollapsed && (
+                    <div className="absolute left-full ml-4 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap shadow-lg">
+                      {item.label}
+                      {item.badge && (
+                        <span className="block text-xs text-amber-300 mt-1">{item.badge}</span>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+              
+              if (isDisabled) {
+                return (
+                  <div
+                    key={item.label}
+                    className="block w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-150 group relative text-gray-400 cursor-not-allowed border border-transparent opacity-60"
+                  >
+                    {menuContent}
+                  </div>
+                );
+              }
               
               return (
                 <Link
@@ -169,24 +229,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
                       : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 hover:border-gray-200 border border-transparent'
                   }`}
                 >
-                  {isActive && (
-                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-[#2563eb] to-blue-700 rounded-r-full" />
-                  )}
-                  
-                  <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-[#2563eb]' : ''}`} />
-                  
-                  {!isCollapsed && (
-                    <span className="font-medium truncate">
-                      {item.label}
-                    </span>
-                  )}
-                  
-                  {/* Tooltip for collapsed state */}
-                  {isCollapsed && (
-                    <div className="absolute left-full ml-4 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap shadow-lg">
-                      {item.label}
-                    </div>
-                  )}
+                  {menuContent}
                 </Link>
               );
             })}
