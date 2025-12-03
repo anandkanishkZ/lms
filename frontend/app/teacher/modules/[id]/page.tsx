@@ -63,6 +63,11 @@ interface Module {
   enrollmentCount: number;
   totalTopics: number;
   totalLessons: number;
+  rejectedBy?: string | null;
+  rejectedAt?: string | null;
+  rejectionReason?: string | null;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
 }
 
 interface Resource {
@@ -326,8 +331,86 @@ export default function TeacherModuleDetailPage() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Rejection Notice Alert */}
+      {module.rejectionReason && (
+        <div className="bg-red-50 border-b border-red-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-3"
+            >
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-red-900 mb-1">Module Rejected by Admin</h4>
+                <p className="text-sm text-red-800 mb-2">{module.rejectionReason}</p>
+                {module.rejectedAt && (
+                  <p className="text-xs text-red-600">
+                    Rejected on {new Date(module.rejectedAt).toLocaleDateString()} at {new Date(module.rejectedAt).toLocaleTimeString()}
+                  </p>
+                )}
+                <button
+                  onClick={() => router.push(`/teacher/modules/${moduleId}/edit`)}
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit & Resubmit Module
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending Approval Notice */}
+      {module.status === 'PENDING_APPROVAL' && (
+        <div className="bg-orange-50 border-b border-orange-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-3"
+            >
+              <Clock className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-orange-900 mb-1">Pending Admin Approval</h4>
+                <p className="text-sm text-orange-800">
+                  Your module is currently under review by admin. You'll be notified once it's approved or if changes are needed.
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
+
+      {/* Approved Notice */}
+      {(module.status === 'APPROVED' || module.status === 'PUBLISHED') && module.approvedAt && (
+        <div className="bg-green-50 border-b border-green-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-start gap-3"
+            >
+              <Check className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-semibold text-green-900 mb-1">Module Approved</h4>
+                <p className="text-sm text-green-800">
+                  Your module has been approved and is {module.status === 'PUBLISHED' ? 'now live for students' : 'ready to publish'}.
+                </p>
+                {module.approvedAt && (
+                  <p className="text-xs text-green-600 mt-1">
+                    Approved on {new Date(module.approvedAt).toLocaleDateString()} at {new Date(module.approvedAt).toLocaleTimeString()}
+                  </p>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <AnimatePresence mode="wait">
           {activeTab === 'overview' && (
             <motion.div

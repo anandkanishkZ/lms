@@ -117,9 +117,8 @@ export default function ModuleApprovalsPage() {
       description="Review and approve module submissions from teachers"
     >
       <div className="p-6">
-
-      {/* Stats Cards */}
-      {stats && (
+        {/* Stats Cards */}
+        {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -385,6 +384,7 @@ export default function ModuleApprovalsPage() {
           </motion.div>
         </div>
       )}
+      </div>
     </AdminLayout>
   );
 }

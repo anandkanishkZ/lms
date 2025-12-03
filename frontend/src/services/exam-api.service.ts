@@ -112,6 +112,7 @@ export interface StudentExamAttempt {
     email: string;
     symbolNo: string | null;
   };
+  exam?: Exam;
   answers?: StudentAnswer[];
 }
 
