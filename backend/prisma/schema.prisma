@@ -221,6 +221,8 @@ model User {
 
   // Module system relations
   modulesCreated       Module[]           @relation("ModuleTeacher")
+  modulesApproved      Module[]           @relation("ModuleApprover")
+  modulesRejected      Module[]           @relation("ModuleRejecter")
   enrollmentsAsStudent ModuleEnrollment[] @relation("StudentEnrollments")
   enrollmentsCreated   ModuleEnrollment[] @relation("EnrollmentCreator")
   topicProgress        TopicProgress[]
@@ -977,6 +979,11 @@ model Module {
   viewCount                Int          @default(0)
   enrollmentCount          Int          @default(0)
   avgRating                Float?       @default(0)
+  approvedBy               String? // Admin who approved the module
+  approvedAt               DateTime? // When the module was approved
+  rejectedBy               String? // Admin who rejected the module
+  rejectedAt               DateTime? // When the module was rejected
+  rejectionReason          String? // Reason for rejection
   createdAt                DateTime     @default(now())
   updatedAt                DateTime     @updatedAt
   publishedAt              DateTime?
@@ -985,6 +992,8 @@ model Module {
   subject         Subject            @relation(fields: [subjectId], references: [id])
   class           Class?             @relation(fields: [classId], references: [id])
   teacher         User               @relation("ModuleTeacher", fields: [teacherId], references: [id])
+  approver        User?              @relation("ModuleApprover", fields: [approvedBy], references: [id])
+  rejecter        User?              @relation("ModuleRejecter", fields: [rejectedBy], references: [id])
   topics          Topic[]
   enrollments     ModuleEnrollment[]
   reviews         ModuleReview[]
@@ -996,6 +1005,8 @@ model Module {
   @@index([subjectId])
   @@index([teacherId])
   @@index([status])
+  @@index([approvedBy])
+  @@index([rejectedBy])
   @@map("modules")
 }
 

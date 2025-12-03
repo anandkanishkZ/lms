@@ -221,7 +221,14 @@ export default function TeacherModuleDetailPage() {
               <h1 className="text-2xl font-bold text-gray-900">{module.title}</h1>
               <p className="text-sm text-gray-600 mt-1">{module.subject?.name}</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push(`/teacher/modules/${moduleId}/edit`)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <Edit className="w-4 h-4" />
+                <span className="text-sm font-medium">Edit Module</span>
+              </button>
               <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(module.status)}`}>
                 {module.status.replace('_', ' ')}
               </span>

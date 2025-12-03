@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus } from 'lucide-react';
+import { Plus, CheckCircle, Clock } from 'lucide-react';
 import { AdminLayout } from '@/src/features/admin';
 import { ModuleListTemplate } from '@/src/features/modules';
 import { Button } from '@/src/components/ui/button';
 import { moduleApi } from '@/src/services/module-api.service';
 import { showErrorToast } from '@/src/utils/toast.util';
+import { moduleApprovalApiService } from '@/src/services/module-approval-api.service';
 
 // Transform Module API response to ModuleCardData
 const transformModuleToCardData = (module: any) => ({
@@ -37,6 +38,17 @@ export default function AdminModulesPage() {
   const [totalModules, setTotalModules] = useState(0);
   const [filters, setFilters] = useState<any>({});
   const [currentPage, setCurrentPage] = useState(1);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Fetch pending approvals count
+  const fetchPendingCount = async () => {
+    try {
+      const stats = await moduleApprovalApiService.getStats();
+      setPendingCount(stats.pending);
+    } catch (error) {
+      console.error('Failed to fetch pending approvals:', error);
+    }
+  };
 
   // Fetch modules from API
   const fetchModules = async (filterParams = {}) => {
@@ -63,6 +75,7 @@ export default function AdminModulesPage() {
   // Load modules on mount
   useEffect(() => {
     fetchModules(filters);
+    fetchPendingCount();
   }, [currentPage]);
 
   const handleModuleClick = (moduleId: string) => {
@@ -120,13 +133,30 @@ export default function AdminModulesPage() {
               Manage all modules, subjects, and learning content
             </p>
           </div>
-          <Button
-            onClick={handleCreateModule}
-            className="flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Create Module
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* Pending Approvals Button */}
+            {pendingCount > 0 && (
+              <Button
+                onClick={() => router.push('/admin/modules/approvals')}
+                variant="outline"
+                className="flex items-center gap-2 border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-600 relative"
+              >
+                <Clock className="h-4 w-4" />
+                Pending Approvals
+                <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center animate-pulse">
+                  {pendingCount}
+                </span>
+              </Button>
+            )}
+            
+            <Button
+              onClick={handleCreateModule}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Module
+            </Button>
+          </div>
         </div>
 
         {/* Module List */}
