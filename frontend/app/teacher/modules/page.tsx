@@ -231,106 +231,129 @@ export default function TeacherModulesPage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100"
+        className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden border border-gray-200"
       >
         {/* Thumbnail */}
-        <div className="relative h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="relative h-40 bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
           {module.thumbnailUrl ? (
             <img src={module.thumbnailUrl} alt={module.title} className="w-full h-full object-cover" />
           ) : (
-            <BookOpen className="w-16 h-16 text-[#2563eb] opacity-50" />
+            <BookOpen className="w-12 h-12 text-blue-400" />
           )}
-          <div className="absolute top-3 right-3 flex gap-2">
+          <div className="absolute top-3 left-3">
             {getStatusBadge(module.status)}
+          </div>
+          <div className="absolute top-3 right-3">
+            {getLevelBadge(module.level)}
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-5">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">{module.title}</h3>
-              {module.subject && (
-                <p className="text-sm text-gray-600">{module.subject.name}</p>
-              )}
+        <div className="p-4">
+          <div className="mb-3">
+            <Link 
+              href={`/teacher/modules/${module.id}`}
+              className="block group"
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-2 group-hover:text-blue-600 transition-colors cursor-pointer">
+                {module.title}
+              </h3>
+            </Link>
+            {module.subject && (
+              <p className="text-sm text-gray-500">{module.subject.name}</p>
+            )}
+          </div>
+
+          {module.description && (
+            <p className="text-sm text-gray-600 mb-3 line-clamp-2">{module.description}</p>
+          )}
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+              <FileText className="w-3.5 h-3.5" />
+              <span>{module.totalTopics} Topics</span>
             </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+              <Users className="w-3.5 h-3.5" />
+              <span>{module.enrollmentCount} Students</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+              <Star className="w-3.5 h-3.5" />
+              <span>{module.avgRating?.toFixed(1) || '0.0'}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-gray-600">
+              <Eye className="w-3.5 h-3.5" />
+              <span>{module.viewCount} Views</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/teacher/modules/${module.id}`}
+              className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium text-center"
+            >
+              View
+            </Link>
+            <Link
+              href={`/teacher/modules/${module.id}/edit`}
+              className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium text-center"
+            >
+              Edit
+            </Link>
             <div className="relative">
               <button
-                onClick={() => setShowMenu(!showMenu)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu(!showMenu);
+                }}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <MoreVertical className="w-5 h-5 text-gray-600" />
+                <MoreVertical className="w-4 h-4 text-gray-600" />
               </button>
 
               <AnimatePresence>
                 {showMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-10"
-                  >
-                    <Link
-                      href={`/teacher/modules/${module.id}`}
-                      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-gray-700 transition-colors"
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10" 
+                      onClick={() => setShowMenu(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                      className="absolute right-0 top-full mt-2 w-44 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-20"
                     >
-                      <Eye className="w-4 h-4" />
-                      <span className="text-sm">View Details</span>
-                    </Link>
-                    <Link
-                      href={`/teacher/modules/${module.id}/edit`}
-                      className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-gray-700 transition-colors"
-                    >
-                      <Edit className="w-4 h-4" />
-                      <span className="text-sm">Edit Content</span>
-                    </Link>
-                    {module.status === 'DRAFT' && (
+                      {module.status === 'DRAFT' && (
+                        <button
+                          onClick={() => {
+                            handleSubmitForApproval(module.id);
+                            setShowMenu(false);
+                          }}
+                          disabled={actionLoading === module.id}
+                          className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 text-gray-700 transition-colors w-full text-left text-sm"
+                        >
+                          <Send className="w-4 h-4" />
+                          <span>Submit for Approval</span>
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleSubmitForApproval(module.id)}
+                        onClick={() => {
+                          handleDeleteModule(module.id);
+                          setShowMenu(false);
+                        }}
                         disabled={actionLoading === module.id}
-                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 text-gray-700 transition-colors w-full text-left"
+                        className="flex items-center gap-2 px-3 py-2 hover:bg-red-50 text-red-600 transition-colors w-full text-left text-sm"
                       >
-                        <Send className="w-4 h-4" />
-                        <span className="text-sm">Submit for Approval</span>
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete</span>
                       </button>
-                    )}
-                  </motion.div>
+                    </motion.div>
+                  </>
                 )}
               </AnimatePresence>
-            </div>
-          </div>
-
-          {module.description && (
-            <p className="text-sm text-gray-600 mb-4 line-clamp-2">{module.description}</p>
-          )}
-
-          {/* Level Badge */}
-          <div className="mb-4">
-            {getLevelBadge(module.level)}
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-gray-600 mb-1">
-                <FileText className="w-4 h-4" />
-              </div>
-              <p className="text-sm font-semibold text-gray-900">{module.totalTopics}</p>
-              <p className="text-xs text-gray-600">Topics</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-gray-600 mb-1">
-                <Users className="w-4 h-4" />
-              </div>
-              <p className="text-sm font-semibold text-gray-900">{module.enrollmentCount}</p>
-              <p className="text-xs text-gray-600">Students</p>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-gray-600 mb-1">
-                <Star className="w-4 h-4" />
-              </div>
-              <p className="text-sm font-semibold text-gray-900">{module.avgRating?.toFixed(1) || '0.0'}</p>
-              <p className="text-xs text-gray-600">Rating</p>
             </div>
           </div>
         </div>
@@ -340,30 +363,37 @@ export default function TeacherModulesPage() {
 
   const ModuleListItem = ({ module }: { module: Module }) => (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-5 border border-gray-100"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200 overflow-hidden"
     >
-      <div className="flex items-center gap-5">
-        {/* Thumbnail */}
-        <div className="w-32 h-32 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center flex-shrink-0">
+      <div className="flex flex-col md:flex-row items-stretch">
+        {/* Left: Thumbnail */}
+        <div className="md:w-32 h-32 md:h-auto bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center flex-shrink-0">
           {module.thumbnailUrl ? (
-            <img src={module.thumbnailUrl} alt={module.title} className="w-full h-full object-cover rounded-lg" />
+            <img src={module.thumbnailUrl} alt={module.title} className="w-full h-full object-cover" />
           ) : (
-            <BookOpen className="w-12 h-12 text-[#2563eb] opacity-50" />
+            <BookOpen className="w-10 h-10 text-blue-400" />
           )}
         </div>
 
-        {/* Content */}
-        <div className="flex-1">
+        {/* Middle: Content */}
+        <div className="flex-1 p-4">
           <div className="flex items-start justify-between mb-2">
-            <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-1">{module.title}</h3>
+            <div className="flex-1">
+              <Link 
+                href={`/teacher/modules/${module.id}`}
+                className="block group"
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors cursor-pointer">
+                  {module.title}
+                </h3>
+              </Link>
               {module.subject && (
-                <p className="text-sm text-gray-600">{module.subject.name}</p>
+                <p className="text-sm text-gray-500">{module.subject.name}</p>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-3">
               {getStatusBadge(module.status)}
               {getLevelBadge(module.level)}
             </div>
@@ -374,36 +404,36 @@ export default function TeacherModulesPage() {
           )}
 
           <div className="flex items-center gap-6 text-sm text-gray-600">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <FileText className="w-4 h-4" />
               <span>{module.totalTopics} Topics</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Users className="w-4 h-4" />
               <span>{module.enrollmentCount} Students</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Star className="w-4 h-4" />
               <span>{module.avgRating?.toFixed(1) || '0.0'} Rating</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Eye className="w-4 h-4" />
               <span>{module.viewCount} Views</span>
             </div>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex flex-col gap-2">
+        {/* Right: Actions */}
+        <div className="flex flex-row md:flex-col gap-2 p-4 md:border-l border-t md:border-t-0 border-gray-200 bg-gray-50 md:w-36">
           <Link
             href={`/teacher/modules/${module.id}`}
-            className="px-4 py-2 bg-[#2563eb] text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium text-center"
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium text-center"
           >
             View
           </Link>
           <Link
             href={`/teacher/modules/${module.id}/edit`}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium text-center"
+            className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium text-center"
           >
             Edit
           </Link>
@@ -458,33 +488,18 @@ export default function TeacherModulesPage() {
       )}
 
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">My Modules</h1>
             <p className="text-gray-600">
-              View and manage modules assigned to you by administrators ({totalModules} total)
+              View and manage modules assigned to you ({totalModules} total)
             </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Debug Toggle Button */}
-            <button
-              onClick={() => setShowDebugInfo(!showDebugInfo)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
-              title="Toggle debug information"
-            >
-              🔍 Debug Info
-            </button>
-            
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Need a new module?</p>
-              <p className="text-xs text-gray-500">Contact your administrator</p>
-            </div>
           </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-md p-4 border border-gray-100">
+        <div className="bg-white rounded-lg shadow-sm p-4 border border-gray-200">
           <div className="flex items-center gap-4 flex-wrap">
             {/* Search */}
             <div className="flex-1 min-w-[300px]">
@@ -495,7 +510,7 @@ export default function TeacherModulesPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search modules..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563eb] focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
             </div>
@@ -504,7 +519,7 @@ export default function TeacherModulesPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563eb] focus:border-transparent"
+              className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
             >
               <option value="ALL">All Status</option>
               <option value="DRAFT">Draft</option>
@@ -519,7 +534,7 @@ export default function TeacherModulesPage() {
             <select
               value={levelFilter}
               onChange={(e) => setLevelFilter(e.target.value as LevelFilter)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2563eb] focus:border-transparent"
+              className="px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white"
             >
               <option value="ALL">All Levels</option>
               <option value="BEGINNER">Beginner</option>
@@ -528,18 +543,18 @@ export default function TeacherModulesPage() {
             </select>
 
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+                className={`p-2 rounded transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
               >
-                <Grid className={`w-5 h-5 ${viewMode === 'grid' ? 'text-[#2563eb]' : 'text-gray-600'}`} />
+                <Grid className={`w-5 h-5 ${viewMode === 'grid' ? 'text-blue-600' : 'text-gray-600'}`} />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+                className={`p-2 rounded transition-all ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
               >
-                <List className={`w-5 h-5 ${viewMode === 'list' ? 'text-[#2563eb]' : 'text-gray-600'}`} />
+                <List className={`w-5 h-5 ${viewMode === 'list' ? 'text-blue-600' : 'text-gray-600'}`} />
               </button>
             </div>
           </div>

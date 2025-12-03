@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { 
   GraduationCap, 
   ChevronLeft, 
@@ -22,6 +23,29 @@ import {
 import Link from 'next/link';
 import { teacherApiService } from '@/src/services/teacher-api.service';
 import { showSuccessToast, showErrorToast } from '@/src/utils/toast.util';
+
+// Helper function to construct proper image URL
+const getImageUrl = (profileImage: string | null): string | null => {
+  if (!profileImage) return null;
+  
+  // If already a full URL, return as is
+  if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+    return profileImage;
+  }
+  
+  // Get base URL and remove /api/v1 suffix if present
+  let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  baseUrl = baseUrl.replace(/\/api(\/v1)?\/?$/, '');
+  
+  // Remove any leading slashes from profile image path
+  const cleanPath = profileImage.replace(/^\/+/, '');
+  
+  // Ensure path starts with avatars/
+  const imagePath = cleanPath.startsWith('avatars/') ? cleanPath : `avatars/${cleanPath}`;
+  
+  // Static uploads are served from /uploads/
+  return `${baseUrl}/uploads/${imagePath}`;
+};
 
 interface TeacherMenuItem {
   icon: typeof Home;
@@ -242,8 +266,19 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
         {/* User Profile & Logout */}
         <div className="p-4 border-t border-gray-200 flex-shrink-0">
           <div className={`flex items-center space-x-3 p-3 rounded-xl bg-gray-50 ${isCollapsed ? 'justify-center' : ''}`}>
-            <div className="w-8 h-8 bg-gradient-to-r from-[#2563eb] to-blue-700 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-r from-[#2563eb] to-blue-700 rounded-full flex items-center justify-center overflow-hidden">
+              {teacher?.profileImage ? (
+                <Image
+                  src={getImageUrl(teacher.profileImage) || ''}
+                  alt={teacher.name || 'Teacher'}
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <User className="w-4 h-4 text-white" />
+              )}
             </div>
             
             <AnimatePresence mode="wait">

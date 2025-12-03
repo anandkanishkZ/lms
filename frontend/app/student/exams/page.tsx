@@ -20,7 +20,6 @@ import {
 import Link from 'next/link';
 import { examApiService, type Exam } from '@/src/services/exam-api.service';
 import { showErrorToast } from '@/src/utils/toast.util';
-import StudentLayout from '@/src/components/student/StudentLayout';
 
 type ExamTab = 'upcoming' | 'active' | 'completed';
 
@@ -141,32 +140,29 @@ export default function StudentExamsPage() {
 
   if (loading) {
     return (
-      <StudentLayout title="My Exams" subtitle="View and take your scheduled exams">
-        <div className="p-6">
-          <div className="animate-pulse space-y-6">
-            <div className="h-16 bg-gray-200 rounded-lg"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="h-64 bg-gray-200 rounded-lg"></div>
-              ))}
-            </div>
+      <div className="p-6">
+        <div className="animate-pulse space-y-6">
+          <div className="h-16 bg-gray-200 rounded-lg"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded-lg"></div>
+            ))}
           </div>
         </div>
-      </StudentLayout>
+      </div>
     );
   }
 
   return (
-    <StudentLayout title="My Exams" subtitle="View and take your scheduled exams">
-      <div className="p-6 space-y-6">
-        {/* Stats Cards */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
-        >
-          <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
+    <div className="p-6 space-y-6">
+      {/* Stats Cards */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+      >
+        <div className="bg-white rounded-xl p-6 shadow-md border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-600 text-sm">Upcoming</p>
@@ -401,6 +397,5 @@ export default function StudentExamsPage() {
           </motion.div>
         )}
       </div>
-    </StudentLayout>
   );
 }

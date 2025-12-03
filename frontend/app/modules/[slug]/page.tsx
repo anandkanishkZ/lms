@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -41,6 +41,29 @@ import { StudentLiveClassesTab } from './components/StudentLiveClassesTab';
 import { StudentFeaturedVideo } from '@/src/components/StudentFeaturedVideo';
 import ModuleRating from '@/src/components/ModuleRating';
 
+// Helper function to construct proper image URL
+const getImageUrl = (profileImage: string | null): string | null => {
+  if (!profileImage) return null;
+  
+  // If already a full URL, return as is
+  if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+    return profileImage;
+  }
+  
+  // Get base URL and remove /api/v1 suffix if present
+  let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  baseUrl = baseUrl.replace(/\/api(\/v1)?\/?$/, '');
+  
+  // Remove any leading slashes from profile image path
+  const cleanPath = profileImage.replace(/^\/+/, '');
+  
+  // Ensure path starts with avatars/
+  const imagePath = cleanPath.startsWith('avatars/') ? cleanPath : `avatars/${cleanPath}`;
+  
+  // Static uploads are served from /uploads/
+  return `${baseUrl}/uploads/${imagePath}`;
+};
+
 // Types
 interface Module {
   id: string;
@@ -56,6 +79,8 @@ interface Module {
   teacher: {
     id: string;
     name: string;
+    email?: string | null;
+    profileImage?: string | null;
   };
   subject: {
     id: string;
@@ -126,6 +151,25 @@ export default function ModuleDetailPage() {
   const [resourceTypeFilter, setResourceTypeFilter] = useState<string>('all');
   const [resourceSearch, setResourceSearch] = useState('');
   const tabContainerRef = useRef<HTMLDivElement>(null);
+
+  // Calculate progress metrics from topics data
+  const progressStats = useMemo(() => {
+    if (!topics || topics.length === 0) {
+      return {
+        totalLessons: 0,
+        completedLessons: 0,
+        progressPercentage: 0
+      };
+    }
+
+    const totalLessons = topics.reduce((sum, topic) => sum + (topic.lessons?.length || 0), 0);
+    const completedLessons = topics.reduce((sum, topic) => {
+      return sum + (topic.lessons?.filter((l: any) => l.isCompleted).length || 0);
+    }, 0);
+    const progressPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+    return { totalLessons, completedLessons, progressPercentage };
+  }, [topics]);
 
   useEffect(() => {
     if (slug) {
@@ -561,36 +605,6 @@ export default function ModuleDetailPage() {
                     Topics & Lessons
                   </button>
                   <button
-                    onClick={() => setActiveTab('tasks')}
-                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
-                      activeTab === 'tasks'
-                        ? 'bg-white/20 text-white'
-                        : 'text-white/80 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    Tasks
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('quiz')}
-                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
-                      activeTab === 'quiz'
-                        ? 'bg-white/20 text-white'
-                        : 'text-white/80 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    Quiz
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('challenges')}
-                    className={`px-6 py-4 font-medium transition whitespace-nowrap ${
-                      activeTab === 'challenges'
-                        ? 'bg-white/20 text-white'
-                        : 'text-white/80 hover:text-white hover:bg-white/10'
-                    }`}
-                  >
-                    Challenges
-                  </button>
-                  <button
                     onClick={() => setActiveTab('liveclasses')}
                     className={`px-6 py-4 font-medium transition whitespace-nowrap ${
                       activeTab === 'liveclasses'
@@ -1018,8 +1032,28 @@ export default function ModuleDetailPage() {
             >
               <h3 className="text-lg font-bold text-gray-900 mb-4">Lecturer</h3>
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 to-red-500 flex items-center justify-center text-white text-2xl font-bold">
-                  {module.teacher.name.split(' ').map((n: string) => n[0]).join('')}
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 to-red-500 flex items-center justify-center overflow-hidden">
+                  {module.teacher.profileImage ? (
+                    <img
+                      src={getImageUrl(module.teacher.profileImage) || ''}
+                      alt={module.teacher.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        // If image fails to load, show initials
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.classList.add('bg-gradient-to-br', 'from-pink-400', 'to-red-500');
+                          parent.innerHTML = `<span class="text-white text-2xl font-bold">${module.teacher.name.split(' ').map((n: string) => n[0]).join('')}</span>`;
+                        }
+                      }}
+                    />
+                  ) : (
+                    <span className="text-white text-2xl font-bold">
+                      {module.teacher.name.split(' ').map((n: string) => n[0]).join('')}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1">
                   <h4 className="font-bold text-gray-900">{module.teacher.name}</h4>
@@ -1047,82 +1081,63 @@ export default function ModuleDetailPage() {
             >
               <h3 className="text-lg font-bold text-gray-900 mb-6">Overall Progress</h3>
               
-              {/* Progress Circles */}
-              <div className="grid grid-cols-2 gap-6">
-                {/* Lessons Completed */}
-                <div className="text-center">
-                  <div className="relative inline-flex items-center justify-center mb-3">
-                    <svg className="w-24 h-24 transform -rotate-90">
-                      <circle
-                        cx="48"
-                        cy="48"
-                        r="40"
-                        stroke="#fee2e2"
-                        strokeWidth="8"
-                        fill="none"
-                      />
-                      <circle
-                        cx="48"
-                        cy="48"
-                        r="40"
-                        stroke="#ef4444"
-                        strokeWidth="8"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray={`${2 * Math.PI * 40 * progressPercentage / 100} ${2 * Math.PI * 40}`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xl font-bold text-gray-900">{progressPercentage}%</span>
+              {/* Single Progress Circle - Lessons */}
+              <div className="flex flex-col items-center">
+                <div className="relative inline-flex items-center justify-center mb-4">
+                  <svg className="w-32 h-32 transform -rotate-90">
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="#e0e7ff"
+                      strokeWidth="10"
+                      fill="none"
+                    />
+                    <circle
+                      cx="64"
+                      cy="64"
+                      r="56"
+                      stroke="#4f46e5"
+                      strokeWidth="10"
+                      fill="none"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 56 * progressStats.progressPercentage / 100} ${2 * Math.PI * 56}`}
+                      className="transition-all duration-500"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-gray-900">{progressStats.progressPercentage}%</div>
+                      <div className="text-xs text-gray-500 mt-1">Complete</div>
                     </div>
                   </div>
-                  <p className="text-sm font-medium text-gray-700">Lessons Completed</p>
                 </div>
+                <p className="text-sm font-medium text-gray-700 mb-6">Lessons Completed</p>
+              </div>
 
-                {/* Assignments Completed */}
-                <div className="text-center">
-                  <div className="relative inline-flex items-center justify-center mb-3">
-                    <svg className="w-24 h-24 transform -rotate-90">
-                      <circle
-                        cx="48"
-                        cy="48"
-                        r="40"
-                        stroke="#d1fae5"
-                        strokeWidth="8"
-                        fill="none"
-                      />
-                      <circle
-                        cx="48"
-                        cy="48"
-                        r="40"
-                        stroke="#10b981"
-                        strokeWidth="8"
-                        fill="none"
-                        strokeLinecap="round"
-                        strokeDasharray={`${2 * Math.PI * 40 * assignmentPercentage / 100} ${2 * Math.PI * 40}`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-xl font-bold text-gray-900">{assignmentPercentage}%</span>
-                    </div>
-                  </div>
-                  <p className="text-sm font-medium text-gray-700">Assignments Completed</p>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 text-center border border-blue-100">
+                  <div className="text-3xl font-bold text-blue-600">{progressStats.completedLessons}</div>
+                  <div className="text-xs text-gray-600 mt-1">Lessons Completed</div>
+                </div>
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 text-center border border-gray-200">
+                  <div className="text-3xl font-bold text-gray-700">{progressStats.totalLessons}</div>
+                  <div className="text-xs text-gray-600 mt-1">Total Lessons</div>
                 </div>
               </div>
 
-              {/* Stats Summary */}
-              <div className="mt-6 pt-6 border-t border-gray-200 grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-red-500">{completedLessons}</div>
-                  <div className="text-xs text-gray-600 mt-1">Lessons<br/>Completed</div>
+              {/* Progress Bar */}
+              <div className="mt-6">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                  <span>Progress</span>
+                  <span className="font-semibold">{progressStats.completedLessons} / {progressStats.totalLessons}</span>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-green-500">{completedAssignments}</div>
-                  <div className="text-xs text-gray-600 mt-1">Assignments<br/>Completed</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-500">88%</div>
-                  <div className="text-xs text-gray-600 mt-1">Attendance</div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2.5 rounded-full transition-all duration-500"
+                    style={{ width: `${progressStats.progressPercentage}%` }}
+                  ></div>
                 </div>
               </div>
             </motion.div>

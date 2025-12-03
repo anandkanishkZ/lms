@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Bell, Filter, Search } from 'lucide-react';
-import StudentLayout from '@/src/components/student/StudentLayout';
 import StudentNoticeCard from '@/src/components/notices/StudentNoticeCard';
 import noticeApi, { Notice } from '@/src/services/notice-api.service';
 import { toast } from 'sonner';
@@ -59,10 +58,6 @@ export default function StudentNotificationsPage() {
   const unreadCount = notices.filter((n) => !n.isRead).length;
 
   return (
-    <StudentLayout
-      title="Notifications & Announcements"
-      subtitle="View all announcements, updates, and important notices"
-    >
       <div className="p-6 max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -176,6 +171,5 @@ export default function StudentNotificationsPage() {
           </div>
         )}
       </div>
-    </StudentLayout>
   );
 }

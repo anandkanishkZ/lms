@@ -8,9 +8,6 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  ClipboardList,
-  BarChart3,
-  BookText,
   ClipboardCheck,
   Bell,
 } from 'lucide-react';
@@ -57,9 +54,6 @@ export default function StudentSidebar({ student, stats, onLogout, isOpen }: Stu
     { id: 'learnings', icon: BookOpen, label: 'My Courses', badge: stats.enrolled, path: '/student/dashboard' },
     { id: 'notifications', icon: Bell, label: 'Notices', badge: null, path: '/student/notifications' },
     { id: 'exams', icon: ClipboardCheck, label: 'Exams', badge: null, path: '/student/exams' },
-    { id: 'assignments', icon: ClipboardList, label: 'Assignments', badge: null, path: '/student/assignments' },
-    { id: 'results', icon: BarChart3, label: 'Progress & Results', badge: null, path: '/student/results' },
-    { id: 'resources', icon: BookText, label: 'Resources', badge: null, path: '/student/resources' },
   ];
 
   const isActive = (path: string) => pathname === path;

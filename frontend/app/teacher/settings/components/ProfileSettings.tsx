@@ -19,6 +19,33 @@ interface TeacherProfile {
   role: string;
 }
 
+// Helper function to construct proper image URL
+const getImageUrl = (profileImage: string | null): string | null => {
+  if (!profileImage) return null;
+  
+  // If already a full URL, return as is
+  if (profileImage.startsWith('http://') || profileImage.startsWith('https://')) {
+    return profileImage;
+  }
+  
+  // Backend returns path like "avatars/filename.jpg"
+  // Static files are served directly from: http://localhost:5000/uploads/avatars/filename.jpg
+  // NOT through the API route (/api/v1)
+  
+  // Get base URL and remove /api/v1 suffix if present
+  let baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+  baseUrl = baseUrl.replace(/\/api(\/v1)?\/?$/, ''); // Remove /api or /api/v1 from end
+  
+  // Remove any leading slashes from profile image path
+  const cleanPath = profileImage.replace(/^\/+/, '');
+  
+  // Ensure path starts with avatars/
+  const imagePath = cleanPath.startsWith('avatars/') ? cleanPath : `avatars/${cleanPath}`;
+  
+  // Static uploads are served from /uploads/ not /api/v1/uploads/
+  return `${baseUrl}/uploads/${imagePath}`;
+};
+
 export default function ProfileSettings() {
   const [profile, setProfile] = useState<TeacherProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,20 +72,38 @@ export default function ProfileSettings() {
       setLoading(true);
       const data = await teacherApiService.getProfile();
       setProfile(data);
+      
+      // If firstName, middleName, lastName are null, try to parse from name field
+      let firstName = data.firstName || '';
+      let middleName = data.middleName || '';
+      let lastName = data.lastName || '';
+      
+      // If individual fields are empty but name exists, parse it
+      if (!firstName && !lastName && data.name) {
+        const nameParts = data.name.trim().split(/\s+/);
+        if (nameParts.length === 1) {
+          firstName = nameParts[0];
+        } else if (nameParts.length === 2) {
+          firstName = nameParts[0];
+          lastName = nameParts[1];
+        } else if (nameParts.length >= 3) {
+          firstName = nameParts[0];
+          middleName = nameParts.slice(1, -1).join(' ');
+          lastName = nameParts[nameParts.length - 1];
+        }
+      }
+      
       setFormData({
-        firstName: data.firstName || '',
-        middleName: data.middleName || '',
-        lastName: data.lastName || '',
+        firstName,
+        middleName,
+        lastName,
         email: data.email || '',
         phone: data.phone || '',
       });
       
-      if (data.profileImage) {
-        const imageUrl = data.profileImage.startsWith('http') 
-          ? data.profileImage 
-          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/auth/avatars/${data.profileImage.split('/').pop()}`;
-        setPreviewImage(imageUrl);
-      }
+      // Set profile image preview
+      const imageUrl = getImageUrl(data.profileImage);
+      setPreviewImage(imageUrl);
     } catch (error: any) {
       showErrorToast(error.message || 'Failed to load profile');
     } finally {
@@ -100,9 +145,7 @@ export default function ProfileSettings() {
         showSuccessToast('Photo uploaded successfully');
         
         // Update preview
-        const imageUrl = response.data.profileImage.startsWith('http') 
-          ? response.data.profileImage 
-          : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/v1/auth/avatars/${response.data.profileImage.split('/').pop()}`;
+        const imageUrl = getImageUrl(response.data.profileImage);
         setPreviewImage(imageUrl);
         
         // Update profile
@@ -224,6 +267,7 @@ export default function ProfileSettings() {
                     width={128}
                     height={128}
                     className="w-full h-full object-cover"
+                    unoptimized
                   />
                 ) : (
                   <User className="w-16 h-16 text-gray-400" />

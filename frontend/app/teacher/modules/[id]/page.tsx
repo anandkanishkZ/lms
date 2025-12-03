@@ -424,6 +424,175 @@ export default function TeacherModuleDetailPage() {
               <FeaturedVideoManager
                 moduleId={moduleId}
               />
+
+              {/* Activity Logs */}
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-900">Activity Logs</h2>
+                  <p className="text-sm text-gray-600 mt-1">Track all module status changes and activities</p>
+                </div>
+                <div className="divide-y divide-gray-200">
+                  {/* Approval Log */}
+                  {module.status === 'PUBLISHED' && module.approvedAt && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="p-6"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                            <Check className="w-5 h-5 text-green-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-base font-semibold text-gray-900">Module Approved</h3>
+                            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                              Published
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 mb-2">
+                            Your module has been approved and is now live for students.
+                          </p>
+                          <p className="text-xs text-green-600">
+                            Approved on {new Date(module.approvedAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })} at {new Date(module.approvedAt).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                              hour12: true
+                            })}
+                          </p>
+                          {module.approvedBy && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Approved by: {module.approvedBy}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Rejected Log */}
+                  {module.status === 'REJECTED' && module.rejectedAt && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="p-6"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                            <X className="w-5 h-5 text-red-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-base font-semibold text-gray-900">Module Rejected</h3>
+                            <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">
+                              Rejected
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 mb-2">
+                            Your module submission was rejected. Please review the feedback and resubmit.
+                          </p>
+                          {module.rejectionReason && (
+                            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-2">
+                              <p className="text-xs font-medium text-red-800 mb-1">Rejection Reason:</p>
+                              <p className="text-sm text-red-700">{module.rejectionReason}</p>
+                            </div>
+                          )}
+                          <p className="text-xs text-red-600">
+                            Rejected on {new Date(module.rejectedAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })} at {new Date(module.rejectedAt).toLocaleTimeString('en-US', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                              hour12: true
+                            })}
+                          </p>
+                          {module.rejectedBy && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Rejected by: {module.rejectedBy}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Pending Approval Log */}
+                  {module.status === 'PENDING_APPROVAL' && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="p-6"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                            <Clock className="w-5 h-5 text-yellow-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-base font-semibold text-gray-900">Pending Approval</h3>
+                            <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">
+                              Under Review
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700">
+                            Your module has been submitted for review. An administrator will review it shortly.
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* Draft Status */}
+                  {module.status === 'DRAFT' && (
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="p-6"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-gray-600" />
+                          </div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-base font-semibold text-gray-900">Draft Mode</h3>
+                            <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                              Draft
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700">
+                            This module is in draft mode. Complete the content and submit it for approval when ready.
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* No Activity Log Message */}
+                  {!module.approvedAt && !module.rejectedAt && module.status !== 'PENDING_APPROVAL' && module.status !== 'DRAFT' && (
+                    <div className="p-12 text-center">
+                      <AlertCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-sm text-gray-600">No activity logs available yet</p>
+                    </div>
+                  )}
+                </div>
+              </div>
               
               {/* Module Description */}
               <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
