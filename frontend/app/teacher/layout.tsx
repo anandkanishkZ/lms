@@ -11,16 +11,7 @@ import {
   User,
   Home,
   BookOpen,
-  Users,
-  Video,
-  Calendar,
-  FileText,
-  BarChart3,
-  MessageSquare,
   Bell,
-  Settings,
-  HelpCircle,
-  Award,
   ClipboardCheck
 } from 'lucide-react';
 import Link from 'next/link';
@@ -36,17 +27,8 @@ interface TeacherMenuItem {
 const TEACHER_MENU_ITEMS: TeacherMenuItem[] = [
   { icon: Home, label: 'Dashboard', href: '/teacher/dashboard' },
   { icon: BookOpen, label: 'My Modules', href: '/teacher/modules' },
-  { icon: Users, label: 'Students', href: '/teacher/students' },
-  { icon: Video, label: 'Live Classes', href: '/teacher/classes' },
-  { icon: Calendar, label: 'Schedule', href: '/teacher/schedule' },
-  { icon: FileText, label: 'Assignments', href: '/teacher/assignments' },
   { icon: ClipboardCheck, label: 'Exams', href: '/teacher/exams' },
-  { icon: Award, label: 'Grades', href: '/teacher/grades' },
-  { icon: BarChart3, label: 'Analytics', href: '/teacher/analytics' },
-  { icon: MessageSquare, label: 'Messages', href: '/teacher/messages' },
   { icon: Bell, label: 'Notifications', href: '/teacher/notifications' },
-  { icon: Settings, label: 'Settings', href: '/teacher/settings' },
-  { icon: HelpCircle, label: 'Help', href: '/teacher/help' },
 ];
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
