@@ -1,0 +1,11 @@
+Contact: mailto:security@freeeducationinnepal.com.np
+Expires: 2026-12-31T23:59:59.000Z
+Preferred-Languages: en, ne
+Canonical: https://lms.freeeducationinnepal.com.np/.well-known/security.txt
+Policy: https://lms.freeeducationinnepal.com.np/security-policy
+Acknowledgments: https://lms.freeeducationinnepal.com.np/security-acknowledgments
+
+# Security Vulnerability Reporting
+# Please report security vulnerabilities to security@freeeducationinnepal.com.np
+# We take security seriously and will respond within 48 hours
+# Include detailed information about the vulnerability

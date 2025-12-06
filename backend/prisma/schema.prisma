@@ -254,8 +254,11 @@ model User {
   examAttemptsGraded StudentExamAttempt[] @relation("ExamAttemptsGraded")
 
   // Notice system relations
-  noticeReads              NoticeRead[]             @relation("NoticeReads")
-  notificationPreferences  NotificationPreference?  @relation("UserNotificationPreferences")
+  noticeReads             NoticeRead[]            @relation("NoticeReads")
+  notificationPreferences NotificationPreference? @relation("UserNotificationPreferences")
+
+  // Security audit relations
+  auditLogs AuditLog[]
 
   @@map("users")
 }
@@ -560,20 +563,20 @@ model NoticeRead {
 
 // Notification preferences for users
 model NotificationPreference {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  emailEnabled       Boolean  @default(true)
-  inAppEnabled       Boolean  @default(true)
-  pushEnabled        Boolean  @default(true)
-  examNotifications  Boolean  @default(true)
-  eventNotifications Boolean  @default(true)
-  generalNotifications Boolean @default(true)
-  urgentOnly         Boolean  @default(false)
-  quietHoursEnabled  Boolean  @default(false)
-  quietHoursStart    String? // Format: "22:00"
-  quietHoursEnd      String? // Format: "08:00"
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  emailEnabled         Boolean  @default(true)
+  inAppEnabled         Boolean  @default(true)
+  pushEnabled          Boolean  @default(true)
+  examNotifications    Boolean  @default(true)
+  eventNotifications   Boolean  @default(true)
+  generalNotifications Boolean  @default(true)
+  urgentOnly           Boolean  @default(false)
+  quietHoursEnabled    Boolean  @default(false)
+  quietHoursStart      String? // Format: "22:00"
+  quietHoursEnd        String? // Format: "08:00"
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   // Relations
   user User @relation("UserNotificationPreferences", fields: [userId], references: [id], onDelete: Cascade)
@@ -1534,4 +1537,31 @@ model SubjectEnrollment {
   @@index([enrolledAt])
   @@index([completedAt])
   @@map("subject_enrollments")
+}
+
+// Audit Log Model for Security Tracking
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String?
+  resourceId String?
+  ipAddress  String
+  userAgent  String?
+  method     String
+  path       String
+  statusCode Int
+  duration   Int // Request duration in milliseconds
+  requestId  String?
+  timestamp  DateTime @default(now())
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([action])
+  @@index([statusCode])
+  @@index([requestId])
+  @@map("audit_logs")
 }

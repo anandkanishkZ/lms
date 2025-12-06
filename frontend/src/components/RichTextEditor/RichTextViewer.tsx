@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -12,6 +12,7 @@ import { Highlight } from '@tiptap/extension-highlight';
 import './RichTextEditor.css';
 import { CustomImage } from './CustomImage';
 import { FileLink } from './FileLinkExtension';
+import { sanitizeHTML } from '@/utils/sanitize';
 
 interface RichTextViewerProps {
   content: string;
@@ -22,7 +23,12 @@ export const RichTextViewer: React.FC<RichTextViewerProps> = ({
   content,
   className = ''
 }) => {
-  console.log('👀 RichTextViewer rendering with content:', content?.substring(0, 200));
+  // Sanitize content before rendering to prevent XSS attacks
+  const sanitizedContent = useMemo(() => {
+    return sanitizeHTML(content || '');
+  }, [content]);
+  
+  console.log('👀 RichTextViewer rendering with content:', sanitizedContent?.substring(0, 200));
   
   const editor = useEditor({
     immediatelyRender: false,
@@ -42,7 +48,7 @@ export const RichTextViewer: React.FC<RichTextViewerProps> = ({
         HTMLAttributes: {
           class: 'text-blue-600 underline cursor-pointer',
           target: '_blank',
-          rel: 'noopener noreferrer'
+          rel: 'noopener noreferrer nofollow' // Added nofollow for security
         }
       }),
       TextAlign.configure({
@@ -55,7 +61,7 @@ export const RichTextViewer: React.FC<RichTextViewerProps> = ({
         multicolor: true
       })
     ],
-    content: content || '',  // Ensure content is never undefined
+    content: sanitizedContent || '',  // Use sanitized content
     editable: false,
     editorProps: {
       attributes: {

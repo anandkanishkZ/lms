@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /teacher/settings/
+Disallow: /student/settings/
+Disallow: /student/exams/
+Disallow: /student/results/
+Disallow: /teacher/dashboard/
+Disallow: /uploads/documents/
+Disallow: /uploads/exam-answers/
+
+# Allow public pages
+Allow: /modules/
+Allow: /$
+
+Sitemap: https://lms.freeeducationinnepal.com.np/sitemap.xml

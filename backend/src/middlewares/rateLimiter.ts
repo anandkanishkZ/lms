@@ -8,8 +8,8 @@ export const noticeCreationLimiter = rateLimit({
     success: false,
     message: 'Too many notices created. Please try again after 15 minutes.',
   },
-  standardHeaders: true,
-  legacyHeaders: false,
+  standardHeaders: true, // Return rate limit info in `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   // Use userId from request for identification
   keyGenerator: (req: any) => {
     return req.user?.userId || req.ip;
@@ -18,6 +18,13 @@ export const noticeCreationLimiter = rateLimit({
     // Skip rate limiting for admins
     return req.user?.role === 'ADMIN';
   },
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many notices created. Please try again after 15 minutes.',
+      retryAfter: res.getHeader('Retry-After')
+    });
+  }
 });
 
 // Rate limiter for notice updates
@@ -31,6 +38,13 @@ export const noticeUpdateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: any) => req.user?.userId || req.ip,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many update requests. Please try again later.',
+      retryAfter: res.getHeader('Retry-After')
+    });
+  }
 });
 
 // Rate limiter for general notice API calls
@@ -44,4 +58,11 @@ export const noticeApiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req: any) => req.user?.userId || req.ip,
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests. Please slow down.',
+      retryAfter: res.getHeader('Retry-After')
+    });
+  }
 });

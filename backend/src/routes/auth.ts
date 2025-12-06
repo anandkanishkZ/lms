@@ -4,21 +4,28 @@ import { uploadAvatar, deleteAvatar } from '../controllers/avatarController';
 import { getAvatar, getMyAvatar } from '../controllers/avatarViewController';
 import { optionalAuth, authenticate } from '../middlewares/auth';
 import { uploadSingle, handleUploadError } from '../middlewares/upload';
+import { 
+  validateLogin, 
+  validateRegistration, 
+  validatePasswordResetRequest,
+  validatePasswordReset,
+  validateUserUpdate
+} from '../middlewares/validator';
 
 const router = express.Router();
 
-// Public routes
-router.post('/register', register);
-router.post('/login', login);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
+// Public routes with validation
+router.post('/register', validateRegistration, register);
+router.post('/login', validateLogin, login);
+router.post('/forgot-password', validatePasswordResetRequest, forgotPassword);
+router.post('/reset-password', validatePasswordReset, resetPassword);
 router.get('/verify-email/:token', verifyEmail);
 
 // Protected routes
 router.post('/logout', optionalAuth, logout);
 router.get('/me', authenticate, getProfile); // Alias for getCurrentUser
 router.get('/profile', authenticate, getProfile);
-router.put('/profile', authenticate, updateProfile);
+router.put('/profile', authenticate, validateUserUpdate, updateProfile);
 router.post('/change-password', authenticate, changePassword);
 
 // Avatar routes

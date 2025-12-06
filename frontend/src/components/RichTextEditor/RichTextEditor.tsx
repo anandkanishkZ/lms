@@ -12,6 +12,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { Highlight } from '@tiptap/extension-highlight';
 import { FileLink } from './FileLinkExtension';
+import { sanitizeHTML } from '@/utils/sanitize';
 import { 
   Bold, 
   Italic, 
@@ -99,7 +100,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     content: content || '',  // Ensure content is never undefined
     editable: editable,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      // Sanitize HTML before passing to parent to prevent XSS
+      const htmlContent = editor.getHTML();
+      const sanitizedContent = sanitizeHTML(htmlContent);
+      onChange(sanitizedContent);
     },
     editorProps: {
       attributes: {
