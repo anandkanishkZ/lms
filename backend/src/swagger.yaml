@@ -1,0 +1,1355 @@
+openapi: 3.0.0
+info:
+  title: Smart School LMS API
+  description: |
+    Comprehensive REST API for Smart School Learning Management System.
+    
+    ## Authentication
+    Most endpoints require JWT authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Base URL
+    Development: `http://localhost:5000/api/v1`
+    
+  version: 1.0.0
+  contact:
+    name: Smart School Team
+    email: support@smartschool.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000/api/v1
+    description: Development server
+  - url: https://api.smartschool.com/api/v1
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication and authorization endpoints
+  - name: Users
+    description: User management operations
+  - name: Modules
+    description: Learning module management
+  - name: Topics
+    description: Module topics management
+  - name: Lessons
+    description: Lesson content management
+  - name: Enrollments
+    description: Student enrollment operations
+  - name: Progress
+    description: Learning progress tracking
+  - name: Exams
+    description: Examination management
+  - name: Results
+    description: Exam results and grading
+  - name: Resources
+    description: Learning resource management
+  - name: Live Classes
+    description: Live class scheduling and management
+  - name: Notices
+    description: Notice board and announcements
+  - name: Notifications
+    description: User notification system
+  - name: Admin
+    description: Administrative operations
+  - name: Classes
+    description: Class and section management
+  - name: Subjects
+    description: Subject management
+  - name: Activities
+    description: Activity tracking and history
+  - name: Analytics
+    description: Analytics and reporting
+
+paths:
+  # ==================== AUTHENTICATION ====================
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register new user
+      description: Create a new user account (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role]
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  example: password123
+                role:
+                  type: string
+                  enum: [ADMIN, TEACHER, STUDENT]
+                  example: STUDENT
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid input data
+        '409':
+          description: Email already exists
+
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: User login
+      description: Authenticate user and receive JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: student@lms.com
+                password:
+                  type: string
+                  format: password
+                  example: student123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      summary: User logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+
+  /auth/me:
+    get:
+      tags: [Authentication]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /auth/profile:
+    put:
+      tags: [Authentication]
+      summary: Update user profile
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                bio:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated successfully
+
+  /auth/change-password:
+    post:
+      tags: [Authentication]
+      summary: Change password
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 6
+      responses:
+        '200':
+          description: Password changed successfully
+        '401':
+          description: Current password incorrect
+
+  /auth/upload-avatar:
+    post:
+      tags: [Authentication]
+      summary: Upload user avatar
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Avatar uploaded successfully
+
+  # ==================== MODULES ====================
+  /modules:
+    get:
+      tags: [Modules]
+      summary: Get all modules
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [DRAFT, PENDING_APPROVAL, APPROVED, PUBLISHED, REJECTED, ARCHIVED]
+        - name: teacherId
+          in: query
+          schema:
+            type: string
+        - name: subjectId
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of modules
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      modules:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Module'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags: [Modules]
+      summary: Create new module
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateModule'
+      responses:
+        '201':
+          description: Module created successfully
+        '403':
+          description: Only teachers can create modules
+
+  /modules/{id}:
+    get:
+      tags: [Modules]
+      summary: Get module by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: includeTopics
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Module details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+        '404':
+          description: Module not found
+
+    put:
+      tags: [Modules]
+      summary: Update module
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateModule'
+      responses:
+        '200':
+          description: Module updated successfully
+        '403':
+          description: Not authorized
+
+    delete:
+      tags: [Modules]
+      summary: Delete module
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Module deleted successfully
+        '403':
+          description: Not authorized
+
+  /modules/slug/{slug}:
+    get:
+      tags: [Modules]
+      summary: Get module by slug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Module details
+        '404':
+          description: Module not found
+
+  /modules/{id}/submit:
+    post:
+      tags: [Modules]
+      summary: Submit module for approval
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Module submitted successfully
+
+  /modules/{id}/approve:
+    post:
+      tags: [Modules]
+      summary: Approve module (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Module approved successfully
+        '403':
+          description: Admin access required
+
+  /modules/{id}/reject:
+    post:
+      tags: [Modules]
+      summary: Reject module (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Module rejected successfully
+
+  /modules/{id}/publish:
+    post:
+      tags: [Modules]
+      summary: Publish module (Admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Module published successfully
+
+  # ==================== TOPICS ====================
+  /topics:
+    get:
+      tags: [Topics]
+      summary: Get all topics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of topics
+
+    post:
+      tags: [Topics]
+      summary: Create new topic
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, moduleId]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                moduleId:
+                  type: string
+                orderIndex:
+                  type: integer
+      responses:
+        '201':
+          description: Topic created successfully
+
+  /topics/{id}:
+    get:
+      tags: [Topics]
+      summary: Get topic by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Topic details
+
+    put:
+      tags: [Topics]
+      summary: Update topic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Topic updated successfully
+
+    delete:
+      tags: [Topics]
+      summary: Delete topic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Topic deleted successfully
+
+  /topics/modules/{moduleId}:
+    get:
+      tags: [Topics]
+      summary: Get topics by module
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: moduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of topics for the module
+
+  # ==================== LESSONS ====================
+  /lessons:
+    post:
+      tags: [Lessons]
+      summary: Create new lesson
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, topicId, type]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                topicId:
+                  type: string
+                type:
+                  type: string
+                  enum: [VIDEO, YOUTUBE_LIVE, TEXT, PDF, QUIZ, ASSIGNMENT, EXTERNAL_LINK]
+                content:
+                  type: string
+                videoUrl:
+                  type: string
+                duration:
+                  type: integer
+                orderIndex:
+                  type: integer
+      responses:
+        '201':
+          description: Lesson created successfully
+
+  /lessons/{id}:
+    get:
+      tags: [Lessons]
+      summary: Get lesson by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lesson details
+
+    put:
+      tags: [Lessons]
+      summary: Update lesson
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lesson updated successfully
+
+    delete:
+      tags: [Lessons]
+      summary: Delete lesson
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lesson deleted successfully
+
+  /lessons/topics/{topicId}:
+    get:
+      tags: [Lessons]
+      summary: Get lessons by topic
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of lessons for the topic
+
+  # ==================== ENROLLMENTS ====================
+  /enrollments:
+    get:
+      tags: [Enrollments]
+      summary: Get all enrollments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: moduleId
+          in: query
+          schema:
+            type: string
+        - name: studentId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of enrollments
+
+    post:
+      tags: [Enrollments]
+      summary: Enroll student in module
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [moduleId, studentId]
+              properties:
+                moduleId:
+                  type: string
+                studentId:
+                  type: string
+      responses:
+        '201':
+          description: Enrollment created successfully
+        '409':
+          description: Already enrolled
+
+  /enrollments/my:
+    get:
+      tags: [Enrollments]
+      summary: Get my enrollments (student)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of student's enrollments
+
+  /enrollments/{id}:
+    delete:
+      tags: [Enrollments]
+      summary: Unenroll from module
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unenrolled successfully
+
+  # ==================== EXAMS ====================
+  /exams:
+    get:
+      tags: [Exams]
+      summary: Get all exams
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [UPCOMING, ACTIVE, COMPLETED, CANCELLED]
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: subjectId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of exams
+
+    post:
+      tags: [Exams]
+      summary: Create new exam
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateExam'
+      responses:
+        '201':
+          description: Exam created successfully
+
+  /exams/{id}:
+    get:
+      tags: [Exams]
+      summary: Get exam by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exam details
+
+    put:
+      tags: [Exams]
+      summary: Update exam
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exam updated successfully
+
+    delete:
+      tags: [Exams]
+      summary: Delete exam
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exam deleted successfully
+
+  /exams/{id}/submit:
+    post:
+      tags: [Exams]
+      summary: Submit exam answers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                answers:
+                  type: string
+                  description: JSON string of answers
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Exam submitted successfully
+
+  /exams/{id}/result:
+    get:
+      tags: [Exams, Results]
+      summary: Get exam result
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Exam result details
+
+  /exams/{id}/grade:
+    post:
+      tags: [Exams]
+      summary: Grade exam submission
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [attemptId, questionGrades]
+              properties:
+                attemptId:
+                  type: string
+                questionGrades:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      questionId:
+                        type: string
+                      marks:
+                        type: number
+                      feedback:
+                        type: string
+      responses:
+        '200':
+          description: Exam graded successfully
+
+  # ==================== RESOURCES ====================
+  /resources:
+    get:
+      tags: [Resources]
+      summary: Get all resources
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+        - name: moduleId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of resources
+
+    post:
+      tags: [Resources]
+      summary: Upload resource
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [title, moduleId, type]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                moduleId:
+                  type: string
+                type:
+                  type: string
+                category:
+                  type: string
+                file:
+                  type: string
+                  format: binary
+                externalUrl:
+                  type: string
+      responses:
+        '201':
+          description: Resource uploaded successfully
+
+  /resources/modules/{moduleId}:
+    get:
+      tags: [Resources]
+      summary: Get resources by module
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: moduleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of module resources
+
+  /resources/{id}:
+    delete:
+      tags: [Resources]
+      summary: Delete resource
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resource deleted successfully
+
+  /resources/{id}/download:
+    get:
+      tags: [Resources]
+      summary: Download resource
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resource file
+
+  # ==================== NOTICES ====================
+  /notices:
+    get:
+      tags: [Notices]
+      summary: Get all notices
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of notices
+
+    post:
+      tags: [Notices]
+      summary: Create notice
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content, category]
+              properties:
+                title:
+                  type: string
+                content:
+                  type: string
+                category:
+                  type: string
+                  enum: [EXAM, EVENT, HOLIDAY, GENERAL]
+                moduleId:
+                  type: string
+      responses:
+        '201':
+          description: Notice created successfully
+
+  /notices/{id}:
+    get:
+      tags: [Notices]
+      summary: Get notice by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notice details
+
+    put:
+      tags: [Notices]
+      summary: Update notice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notice updated successfully
+
+    delete:
+      tags: [Notices]
+      summary: Delete notice
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Notice deleted successfully
+
+  # ==================== LIVE CLASSES ====================
+  /live-classes:
+    get:
+      tags: [Live Classes]
+      summary: Get all live classes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: moduleId
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of live classes
+
+    post:
+      tags: [Live Classes]
+      summary: Create live class
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, moduleId, scheduledAt, youtubeUrl]
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+                moduleId:
+                  type: string
+                scheduledAt:
+                  type: string
+                  format: date-time
+                duration:
+                  type: integer
+                youtubeUrl:
+                  type: string
+      responses:
+        '201':
+          description: Live class created successfully
+
+  # ==================== ADMIN ====================
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Get all users (Admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of users
+
+    post:
+      tags: [Admin]
+      summary: Create user (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: User created successfully
+
+  /admin/batches:
+    get:
+      tags: [Admin]
+      summary: Get all batches
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of batches
+
+    post:
+      tags: [Admin]
+      summary: Create batch
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, year, startDate, endDate]
+              properties:
+                name:
+                  type: string
+                year:
+                  type: string
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Batch created successfully
+
+  /admin/analytics:
+    get:
+      tags: [Admin, Analytics]
+      summary: Get system analytics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: System analytics data
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [ADMIN, TEACHER, STUDENT]
+        profileImage:
+          type: string
+        bio:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    Module:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        thumbnailUrl:
+          type: string
+        level:
+          type: string
+          enum: [BEGINNER, INTERMEDIATE, ADVANCED]
+        duration:
+          type: integer
+        status:
+          type: string
+          enum: [DRAFT, PENDING_APPROVAL, APPROVED, PUBLISHED, REJECTED, ARCHIVED]
+        isFeatured:
+          type: boolean
+        teacherId:
+          type: string
+        subjectId:
+          type: string
+        classId:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateModule:
+      type: object
+      required: [title, subjectId, classId]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        subjectId:
+          type: string
+        classId:
+          type: string
+        level:
+          type: string
+        duration:
+          type: integer
+        thumbnailUrl:
+          type: string
+
+    UpdateModule:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        level:
+          type: string
+        duration:
+          type: integer
+        thumbnailUrl:
+          type: string
+
+    CreateExam:
+      type: object
+      required: [title, subjectId, type, startTime, endTime, duration, totalMarks]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        subjectId:
+          type: string
+        classId:
+          type: string
+        type:
+          type: string
+          enum: [MIDTERM, FINAL, QUIZ, ASSIGNMENT, PROJECT]
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        duration:
+          type: integer
+        totalMarks:
+          type: number
+        passingMarks:
+          type: number
+        questions:
+          type: array
+          items:
+            type: object
+
+    Pagination:
+      type: object
+      properties:
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        error:
+          type: string

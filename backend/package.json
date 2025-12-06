@@ -54,8 +54,11 @@
     "pdfkit": "^0.13.0",
     "puppeteer": "^21.5.2",
     "sharp": "^0.32.6",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "twilio": "^4.23.0",
     "uuid": "^9.0.1",
+    "yamljs": "^0.3.0",
     "zod": "^4.1.12"
   },
   "devDependencies": {
@@ -69,7 +72,10 @@
     "@types/node": "^20.19.21",
     "@types/nodemailer": "^6.4.20",
     "@types/pdfkit": "^0.12.12",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^9.0.7",
+    "@types/yamljs": "^0.2.34",
     "@typescript-eslint/eslint-plugin": "^6.12.0",
     "@typescript-eslint/parser": "^6.12.0",
     "eslint": "^8.54.0",

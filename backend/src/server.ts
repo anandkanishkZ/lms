@@ -6,6 +6,9 @@ import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
+import path from 'path';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -49,6 +52,9 @@ dotenv.config();
 const app: Application = express();
 const prisma = new PrismaClient();
 
+// Load Swagger documentation
+const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
+
 // CORS configuration (must be before rate limiting)
 const corsOptions = {
   origin: function (origin: any, callback: any) {
@@ -82,7 +88,10 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable for Swagger UI
+  crossOriginEmbedderPolicy: false,
+}));
 app.use(compression());
 
 // Rate limiting (after CORS to avoid blocking preflight requests)
@@ -158,6 +167,32 @@ app.get('/api/health', (req: Request, res: Response) => {
     uptime: process.uptime(),
     environment: process.env.NODE_ENV || 'development',
   });
+});
+
+// API Documentation - Swagger UI
+const swaggerUiOptions = {
+  customCss: `
+    .swagger-ui .topbar { display: none }
+    .swagger-ui .info { margin: 30px 0 }
+    .swagger-ui .info .title { font-size: 36px; color: #667eea }
+  `,
+  customSiteTitle: 'Smart School LMS API Documentation',
+  customfavIcon: '/favicon.ico',
+  swaggerOptions: {
+    persistAuthorization: true,
+    displayRequestDuration: true,
+    filter: true,
+    tryItOutEnabled: true,
+  },
+};
+
+app.use('/api/docs', swaggerUi.serve);
+app.get('/api/docs', swaggerUi.setup(swaggerDocument, swaggerUiOptions));
+
+// Alternative: JSON API documentation
+app.get('/api/docs.json', (req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerDocument);
 });
 
 // API v1 routes
