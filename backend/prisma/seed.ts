@@ -42,11 +42,11 @@ async function main() {
     // Create sample teacher
     const teacherPassword = await bcrypt.hash('teacher123', 12)
     const teacher = await prisma.user.upsert({
-      where: { email: 'teacher@smartschool.com' },
+      where: { email: 'teacher@lms.com' },
       update: {},
       create: {
         name: 'John Teacher',
-        email: 'teacher@smartschool.com',
+        email: 'teacher@lms.com',
         phone: '+1234567891',
         role: 'TEACHER',
         password: teacherPassword,
@@ -58,11 +58,11 @@ async function main() {
     // Create sample student
     const studentPassword = await bcrypt.hash('student123', 12)
     const student = await prisma.user.upsert({
-      where: { email: 'student@smartschool.com' },
+      where: { email: 'student@lms.com' },
       update: {},
       create: {
         name: 'Jane Student',
-        email: 'student@smartschool.com',
+        email: 'student@lms.com',
         phone: '+1234567892',
         symbolNo: 'STU001',
         role: 'STUDENT',
@@ -355,7 +355,7 @@ async function main() {
     // Create system settings
     const defaultSettings = [
       { key: 'SCHOOL_NAME', value: 'Smart School', description: 'Name of the school' },
-      { key: 'SCHOOL_EMAIL', value: 'info@smartschool.com', description: 'Official school email' },
+      { key: 'SCHOOL_EMAIL', value: 'info@freeeducationinnepal.com.np', description: 'Official school email' },
       { key: 'SCHOOL_PHONE', value: '+1234567890', description: 'Official school phone' },
       { key: 'SCHOOL_ADDRESS', value: '123 Education Street, Learning City', description: 'School address' },
       { key: 'ACADEMIC_YEAR', value: '2024-25', description: 'Current academic year' },
@@ -372,9 +372,9 @@ async function main() {
 
     console.log('✅ Seed completed successfully!')
     console.log('\n📋 Default accounts created:')
-    console.log('👤 Admin: admin@smartschool.com / admin123')
-    console.log('👨‍🏫 Teacher: teacher@smartschool.com / teacher123')
-    console.log('👩‍🎓 Student: student@smartschool.com / student123')
+    console.log('👤 Admin: admin@lms.com / admin123')
+    console.log('👨‍🏫 Teacher: teacher@lms.com / teacher123')
+    console.log('👩‍🎓 Student: student@lms.com / student123')
     console.log('\n🏫 Sample data:')
     console.log('📚 Classes: Class 10-A, Class 10-B')
     console.log('📖 Subjects: Mathematics, Science, English')

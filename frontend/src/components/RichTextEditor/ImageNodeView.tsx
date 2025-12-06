@@ -51,7 +51,7 @@ export const ImageNodeView: React.FC<ImageNodeViewProps> = ({
       console.log('🖼️ ImageNodeView loading:', { src });
       
       // If it's an API URL, append token as query parameter
-      // Handle both relative (/api/...) and full URLs (http://localhost:5000/api/...)
+      // Handle both relative (/api/...) and full URLs
       if (src && (src.startsWith('/api') || src.includes('/api/v1/upload/files/'))) {
         const teacherToken = localStorage.getItem('teacher_token');
         const studentToken = localStorage.getItem('student_token');
@@ -67,10 +67,11 @@ export const ImageNodeView: React.FC<ImageNodeViewProps> = ({
         });
         
         if (token) {
+          const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
           // If it's already a full URL, just append token
           const authenticatedUrl = src.startsWith('http') 
             ? `${src}?token=${token}`
-            : `http://localhost:5000${src}?token=${token}`;
+            : `${apiBase}${src}?token=${token}`;
           console.log('✅ Authenticated image URL:', authenticatedUrl);
           setImageSrc(authenticatedUrl);
         } else {

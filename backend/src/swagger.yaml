@@ -16,7 +16,7 @@ info:
   version: 1.0.0
   contact:
     name: Smart School Team
-    email: support@smartschool.com
+    email: support@freeeducationinnepal.com.np
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -24,7 +24,7 @@ info:
 servers:
   - url: http://localhost:5000/api/v1
     description: Development server
-  - url: https://api.smartschool.com/api/v1
+  - url: https://server.freeeducationinnepal.com.np/api/v1
     description: Production server
 
 tags:

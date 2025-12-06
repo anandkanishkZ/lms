@@ -110,7 +110,8 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
         throw new Error('Authentication required. Please login again.');
       }
 
-      const response = await fetch('http://localhost:5000/api/v1/upload/editor-image', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
+      const response = await fetch(`${apiUrl}/upload/editor-image`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -130,7 +131,8 @@ export const ImageUploadModal: React.FC<ImageUploadModalProps> = ({
 
       // Wait a moment to show success state
       setTimeout(() => {
-        const imageUrl = `http://localhost:5000${data.data.url}`;
+        const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
+        const imageUrl = data.data.url.startsWith('http') ? data.data.url : `${apiBase}${data.data.url}`;
         onImageUpload(imageUrl);
         handleClose();
       }, 500);

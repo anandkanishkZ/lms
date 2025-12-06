@@ -21,7 +21,7 @@ const options: swaggerJsdoc.Options = {
       `,
       contact: {
         name: 'Smart School Team',
-        email: 'support@smartschool.com',
+        email: process.env.SUPPORT_EMAIL || 'support@freeeducationinnepal.com.np',
       },
       license: {
         name: 'MIT',
@@ -34,7 +34,7 @@ const options: swaggerJsdoc.Options = {
         description: 'Development server',
       },
       {
-        url: 'https://api.smartschool.com/api/v1',
+        url: process.env.PRODUCTION_API_URL || 'https://server.freeeducationinnepal.com.np/api/v1',
         description: 'Production server',
       },
     ],

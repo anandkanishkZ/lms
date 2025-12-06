@@ -98,12 +98,13 @@ export const FileAttachment: React.FC<FileAttachmentProps> = ({
       }
 
       // For API URLs, fetch with authentication and trigger download
-      // Handle both relative (/api/...) and full URLs (http://localhost:5000/api/...)
+      // Handle both relative (/api/...) and full URLs
       if (url.startsWith('/api') || url.includes('/api/v1/upload/files/')) {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
         // If it's already a full URL, just append token
         const downloadUrl = url.startsWith('http') 
           ? `${url}?token=${token}`
-          : `http://localhost:5000${url}?token=${token}`;
+          : `${apiBase}${url}?token=${token}`;
         console.log('⬇️ Fetching from:', downloadUrl);
         
         const response = await fetch(downloadUrl);
@@ -160,12 +161,13 @@ export const FileAttachment: React.FC<FileAttachmentProps> = ({
       }
 
       // For API URLs, append token as query parameter
-      // Handle both relative (/api/...) and full URLs (http://localhost:5000/api/...)
+      // Handle both relative (/api/...) and full URLs
       if (url.startsWith('/api') || url.includes('/api/v1/upload/files/')) {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL?.replace('/api/v1', '') || 'http://localhost:5000';
         // If it's already a full URL, just append token
         const authenticatedUrl = url.startsWith('http') 
           ? `${url}?token=${token}`
-          : `http://localhost:5000${url}?token=${token}`;
+          : `${apiBase}${url}?token=${token}`;
         console.log('✅ Opening authenticated URL:', authenticatedUrl);
         window.open(authenticatedUrl, '_blank');
       } else {
