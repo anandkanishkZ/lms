@@ -124,8 +124,8 @@ if (process.env.NODE_ENV === 'production') {
 } else {
   // In development, use a more lenient rate limiter
   const devLimiter = rateLimit({
-    windowMs: 60000, // 1 minute
-    max: 1000, // Very high limit for development
+    windowMs: parseInt(process.env.DEV_RATE_LIMIT_WINDOW_MS || '60000'), // 1 minute default
+    max: parseInt(process.env.DEV_RATE_LIMIT_MAX_REQUESTS || '1000'), // Very high limit for development
     skip: (req) => req.method === 'OPTIONS',
     handler: (req, res) => {
       res.status(429).json({
