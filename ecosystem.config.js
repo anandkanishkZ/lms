@@ -52,9 +52,6 @@ module.exports = {
       // Node.js specific options
       node_args: '--max-old-space-size=2048',
       
-      // Graceful shutdown
-      wait_ready: true,
-      
       // Additional metadata
       vizion: true,
       post_update: ['npm install', 'npx prisma generate']
@@ -106,9 +103,6 @@ module.exports = {
       
       // Node.js specific options
       node_args: '--max-old-space-size=2048',
-      
-      // Graceful shutdown
-      wait_ready: true,
       
       // Additional metadata
       vizion: true
