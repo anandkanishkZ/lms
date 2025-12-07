@@ -69,13 +69,20 @@ const handleValidationErrors = (req: Request, res: Response, next: NextFunction)
   next();
 };
 
-// Login validation
+// Login validation - supports both 'email' and 'identifier' fields
 export const validateLogin = [
-  body('email')
-    .trim()
-    .notEmpty().withMessage('Email is required')
-    .isEmail().withMessage('Invalid email format')
-    .normalizeEmail(),
+  // Use custom validation to handle both 'email' and 'identifier' fields
+  body(['email', 'identifier', 'emailOrPhone'])
+    .custom((value, { req }) => {
+      // At least one identifier field must be present
+      const identifier = req.body.email || req.body.identifier || req.body.emailOrPhone;
+      if (!identifier) {
+        throw new Error('Email, phone, or symbol number is required');
+      }
+      return true;
+    })
+    .optional({ checkFalsy: true })
+    .trim(),
   
   body('password')
     .notEmpty().withMessage('Password is required')
