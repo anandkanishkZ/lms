@@ -69,11 +69,11 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'development',
-        PORT: 3002
+        PORT: 3005
       },
       env_production: {
         NODE_ENV: 'production',
-        PORT: 3002
+        PORT: 3005
       },
       error_file: './logs/pm2-frontend-error.log',
       out_file: './logs/pm2-frontend-out.log',
