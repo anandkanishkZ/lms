@@ -12,6 +12,7 @@ import {
   getPastLiveSessions,
   deleteLiveSession,
   getLiveSessionStats,
+  getLiveSessionsByModule,
 } from '../controllers/youtubeLiveController';
 import { authenticateToken, authorizeRoles } from '../middlewares/auth';
 
@@ -22,6 +23,7 @@ router.get('/upcoming', authenticateToken, getUpcomingLiveSessions);
 router.get('/current', authenticateToken, getCurrentlyLiveSessions);
 router.get('/past', authenticateToken, getPastLiveSessions);
 router.get('/lessons/:lessonId', authenticateToken, getLiveSessionByLesson);
+router.get('/module/:moduleId', authenticateToken, getLiveSessionsByModule);
 router.get('/:sessionId', authenticateToken, getLiveSession);
 
 // Teacher/Admin routes - Manage sessions

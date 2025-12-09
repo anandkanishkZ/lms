@@ -161,3 +161,12 @@ export const getLiveSessionStats = asyncHandler(async (req: AuthRequest, res: Re
 
   res.status(200).json(result);
 });
+
+// @desc    Get live sessions by module
+// @route   GET /api/youtube-live/module/:moduleId
+// @access  Authenticated
+export const getLiveSessionsByModule = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const result = await youtubeLiveService.getLiveSessionsByModule(req.params.moduleId);
+
+  res.status(200).json(result);
+});

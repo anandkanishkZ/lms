@@ -12,6 +12,11 @@ class Module {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   
+  // Featured video fields
+  final String? featuredVideoUrl;
+  final String? featuredVideoTitle;
+  final String? featuredVideoDescription;
+  
   // Additional fields from API
   final int? totalTopics;
   final int? totalLessons;
@@ -36,6 +41,9 @@ class Module {
     this.teacherId,
     this.createdAt,
     this.updatedAt,
+    this.featuredVideoUrl,
+    this.featuredVideoTitle,
+    this.featuredVideoDescription,
     this.totalTopics,
     this.totalLessons,
     this.duration,
@@ -61,6 +69,9 @@ class Module {
         teacherId: json['teacherId'] as String?,
         createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
         updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+        featuredVideoUrl: json['featuredVideoUrl'] as String?,
+        featuredVideoTitle: json['featuredVideoTitle'] as String?,
+        featuredVideoDescription: json['featuredVideoDescription'] as String?,
         totalTopics: json['totalTopics'] as int?,
         totalLessons: json['totalLessons'] as int?,
         duration: json['duration'] as int?,

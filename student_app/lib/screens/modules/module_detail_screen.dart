@@ -8,6 +8,7 @@ import '../../services/lesson_service.dart';
 import '../../services/live_class_service.dart';
 import '../../providers/auth_provider.dart';
 import 'package:intl/intl.dart';
+import '../lessons/lesson_detail_screen.dart';
 
 class ModuleDetailScreen extends StatefulWidget {
   final Module module;
@@ -121,14 +122,28 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
 
     try {
       final allClasses = await _liveClassService!.getLiveClassesByModule(widget.module.id);
+      print('Loaded ${allClasses.length} live classes for module ${widget.module.id}');
+      
+      if (allClasses.isNotEmpty) {
+        print('First class: ${allClasses[0].title}, Status: ${allClasses[0].status}, Time: ${allClasses[0].startTime}');
+      }
+      
       final now = DateTime.now();
       
       setState(() {
-        _upcomingClasses = allClasses.where((lc) => lc.scheduledAt.isAfter(now) && lc.status != 'completed').toList();
-        _pastClasses = allClasses.where((lc) => lc.status == 'completed' || lc.scheduledAt.isBefore(now)).toList();
+        // Match backend status values: SCHEDULED, LIVE, COMPLETED
+        _upcomingClasses = allClasses.where((lc) => 
+          lc.startTime.isAfter(now) && (lc.status == 'SCHEDULED' || lc.status == 'LIVE')
+        ).toList();
+        _pastClasses = allClasses.where((lc) => 
+          lc.status == 'COMPLETED' || (lc.startTime.isBefore(now) && lc.status != 'SCHEDULED')
+        ).toList();
         _isLoadingLiveClasses = false;
       });
+      
+      print('Upcoming: ${_upcomingClasses.length}, Past: ${_pastClasses.length}');
     } catch (e) {
+      print('Error loading live classes: $e');
       setState(() {
         _liveClassesError = e.toString();
         _isLoadingLiveClasses = false;
@@ -175,6 +190,86 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Featured Video Section
+          if (widget.module.featuredVideoUrl != null) ...[
+            Text(
+              'Featured Video',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => _launchUrl(widget.module.featuredVideoUrl!),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.black,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // YouTube thumbnail
+                      if (_extractYouTubeVideoId(widget.module.featuredVideoUrl!) != null)
+                        Image.network(
+                          'https://img.youtube.com/vi/${_extractYouTubeVideoId(widget.module.featuredVideoUrl!)}/maxresdefault.jpg',
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 200,
+                            color: Colors.grey[300],
+                            child: const Icon(Icons.videocam, size: 64, color: Colors.grey),
+                          ),
+                        )
+                      else
+                        Container(
+                          height: 200,
+                          color: Colors.grey[800],
+                          child: const Icon(Icons.play_circle_outline, size: 80, color: Colors.white),
+                        ),
+                      // Play button overlay
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (widget.module.featuredVideoTitle != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                widget.module.featuredVideoTitle!,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+            if (widget.module.featuredVideoDescription != null) ...[
+              const SizedBox(height: 4),
+              Text(
+                widget.module.featuredVideoDescription!,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+          ],
+          
           // Module Header
           if (widget.module.thumbnailUrl != null)
             ClipRRect(
@@ -487,9 +582,14 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                             ? const Icon(Icons.check_circle, color: Colors.green)
                             : null,
                         onTap: () {
-                          // TODO: Navigate to lesson detail
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Opening: ${lesson.title}')),
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LessonDetailScreen(
+                                lessonId: lesson.id,
+                                moduleId: widget.module.id,
+                              ),
+                            ),
                           );
                         },
                       ),
@@ -636,24 +736,24 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                 Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
                 const SizedBox(width: 8),
                 Text(
-                  dateFormat.format(liveClass.scheduledAt),
+                  dateFormat.format(liveClass.startTime),
                   style: TextStyle(color: Colors.grey[700]),
                 ),
                 const SizedBox(width: 16),
                 Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
                 const SizedBox(width: 8),
                 Text(
-                  timeFormat.format(liveClass.scheduledAt),
+                  timeFormat.format(liveClass.startTime),
                   style: TextStyle(color: Colors.grey[700]),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            if (isUpcoming && liveClass.meetingUrl != null)
+            if (isUpcoming && liveClass.meetingLink != null)
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => _launchUrl(liveClass.meetingUrl!),
+                  onPressed: () => _launchUrl(liveClass.meetingLink!),
                   icon: const Icon(Icons.video_call),
                   label: const Text('Join Live Class'),
                   style: ElevatedButton.styleFrom(
@@ -770,6 +870,26 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
           SnackBar(content: Text('Could not open: $url')),
         );
       }
+    }
+  }
+
+  String? _extractYouTubeVideoId(String url) {
+    try {
+      final uri = Uri.parse(url);
+      
+      // Handle different YouTube URL formats
+      if (uri.host.contains('youtube.com')) {
+        // Format: https://www.youtube.com/watch?v=VIDEO_ID
+        return uri.queryParameters['v'];
+      } else if (uri.host.contains('youtu.be')) {
+        // Format: https://youtu.be/VIDEO_ID
+        return uri.pathSegments.isNotEmpty ? uri.pathSegments[0] : null;
+      }
+      
+      return null;
+    } catch (e) {
+      print('Error extracting YouTube video ID: $e');
+      return null;
     }
   }
 }

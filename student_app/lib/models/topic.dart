@@ -133,9 +133,10 @@ class LiveClass {
   final String id;
   final String title;
   final String? description;
-  final String? meetingUrl;
-  final DateTime scheduledAt;
-  final DateTime? endedAt;
+  final String? meetingLink;
+  final String? youtubeUrl;
+  final DateTime startTime;
+  final DateTime? endTime;
   final String status;
   final String? moduleId;
   final String? recordingUrl;
@@ -146,9 +147,10 @@ class LiveClass {
     required this.id,
     required this.title,
     this.description,
-    this.meetingUrl,
-    required this.scheduledAt,
-    this.endedAt,
+    this.meetingLink,
+    this.youtubeUrl,
+    required this.startTime,
+    this.endTime,
     required this.status,
     this.moduleId,
     this.recordingUrl,
@@ -161,9 +163,10 @@ class LiveClass {
       id: json['id'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
-      meetingUrl: json['meetingUrl'] as String?,
-      scheduledAt: DateTime.parse(json['scheduledAt']),
-      endedAt: json['endedAt'] != null ? DateTime.parse(json['endedAt']) : null,
+      meetingLink: json['meetingLink'] as String?,
+      youtubeUrl: json['youtubeUrl'] as String?,
+      startTime: DateTime.parse(json['startTime']),
+      endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
       status: json['status'] as String,
       moduleId: json['moduleId'] as String?,
       recordingUrl: json['recordingUrl'] as String?,

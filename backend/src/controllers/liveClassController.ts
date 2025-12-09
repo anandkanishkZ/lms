@@ -476,3 +476,35 @@ export const leaveLiveClass = asyncHandler(async (req: AuthRequest, res: Respons
     data: { duration },
   });
 });
+
+// @desc    Get live classes by module
+// @route   GET /api/live-classes/module/:moduleId
+// @access  Private
+export const getLiveClassesByModule = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { moduleId } = req.params;
+
+  const liveClasses = await prisma.liveClass.findMany({
+    where: {
+      moduleId,
+    },
+    include: {
+      subject: { select: { id: true, name: true } },
+      teacher: { select: { id: true, name: true } },
+      class: { select: { id: true, name: true, section: true } },
+      module: { select: { id: true, title: true } },
+      _count: {
+        select: {
+          attendances: true,
+        },
+      },
+    },
+    orderBy: {
+      startTime: 'asc',
+    },
+  });
+
+  res.json({
+    success: true,
+    data: liveClasses,
+  });
+});

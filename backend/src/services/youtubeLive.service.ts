@@ -764,6 +764,44 @@ class YoutubeLiveService {
 
     return enrollments.length;
   }
+
+  /**
+   * Get all live sessions for a module
+   */
+  async getLiveSessionsByModule(moduleId: string) {
+    const sessions = await prisma.youtubeLiveSession.findMany({
+      where: {
+        lesson: {
+          topic: {
+            moduleId,
+          },
+        },
+      },
+      include: {
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+            topic: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        scheduledStartTime: 'desc',
+      },
+    });
+
+    return {
+      success: true,
+      message: `Found ${sessions.length} live sessions for module`,
+      data: sessions,
+    };
+  }
 }
 
 export const youtubeLiveService = new YoutubeLiveService();

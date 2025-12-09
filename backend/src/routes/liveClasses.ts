@@ -7,6 +7,7 @@ import {
   deleteLiveClass,
   joinLiveClass,
   leaveLiveClass,
+  getLiveClassesByModule,
 } from '../controllers/liveClassController';
 import { authorizeRoles } from '../middlewares/auth';
 
@@ -14,6 +15,9 @@ const router = express.Router();
 
 // Get all live classes
 router.get('/', getLiveClasses);
+
+// Get live classes by module
+router.get('/module/:moduleId', getLiveClassesByModule);
 
 // Create new live class (Teacher/Admin only)
 router.post('/', authorizeRoles('TEACHER', 'ADMIN'), createLiveClass);
