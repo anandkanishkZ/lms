@@ -25,6 +25,7 @@ import messageRoutes from './routes/messages';
 import analyticsRoutes from './routes/analytics';
 import teacherDashboardRoutes from './routes/teacherDashboard';
 import moduleApprovalRoutes from './routes/moduleApproval';
+import studentRoutes from './routes/students';
 
 // Import admin routes
 import adminRoutes from './routes/admin';
@@ -278,6 +279,7 @@ app.use('/api/v1/certificates', authenticateToken, certificateRoutes);
 app.use('/api/v1/notifications', authenticateToken, notificationRoutes);
 app.use('/api/v1/messages', authenticateToken, messageRoutes);
 app.use('/api/v1/analytics', authenticateToken, analyticsRoutes);
+app.use('/api/v1/students', studentRoutes);
 app.use('/api/v1/teacher/dashboard', teacherDashboardRoutes);
 app.use('/api/v1/admin/modules/approval', moduleApprovalRoutes);
 app.use('/api/v1/admin', adminRoutes);

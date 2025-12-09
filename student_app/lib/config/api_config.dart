@@ -61,7 +61,7 @@ class ApiConfig {
   static const String unreadNoticesCount = '$notices/unread/count';
   
   // Dashboard Endpoints
-  static const String dashboard = '$apiUrl/analytics/student/dashboard';
+  static const String dashboard = '$apiUrl/students/dashboard';
   static const String studentStats = '$apiUrl/analytics/student/stats';
   
   // Notification Endpoints
