@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/user.dart';
@@ -202,5 +204,95 @@ class AuthService {
     } catch (e) {
       throw Exception('Password change error: $e');
     }
+  }
+
+  // Upload avatar
+  Future<User> uploadAvatar(File imageFile) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('${ApiConfig.apiUrl}/auth/avatar'),
+      );
+
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      // Add the image file
+      var multipartFile = await http.MultipartFile.fromPath(
+        'avatar',
+        imageFile.path,
+        contentType: MediaType('image', 'jpeg'),
+      );
+      
+      request.files.add(multipartFile);
+
+      var streamedResponse = await request.send().timeout(ApiConfig.timeout);
+      var response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          final user = User.fromJson(data['data']['user']);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_userKey, json.encode(user.toJson()));
+          return user;
+        } else {
+          throw Exception(data['message'] ?? 'Upload failed');
+        }
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Upload failed');
+      }
+    } catch (e) {
+      throw Exception('Avatar upload error: $e');
+    }
+  }
+
+  // Delete avatar
+  Future<User> deleteAvatar() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.apiUrl}/auth/avatar'),
+        headers: ApiConfig.headers(token: token),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          final user = User.fromJson(data['data']['user']);
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_userKey, json.encode(user.toJson()));
+          return user;
+        } else {
+          throw Exception(data['message'] ?? 'Delete failed');
+        }
+      } else {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Delete failed');
+      }
+    } catch (e) {
+      throw Exception('Avatar delete error: $e');
+    }
+  }
+
+  // Get avatar URL
+  String getAvatarUrl(String? profileImage) {
+    if (profileImage == null || profileImage.isEmpty) {
+      return '';
+    }
+    
+    // profileImage from backend is in format: "avatars/filename.jpg"
+    // We need to extract just the filename and use the correct endpoint
+    String filename = profileImage;
+    if (profileImage.startsWith('avatars/')) {
+      filename = profileImage.substring(8); // Remove "avatars/" prefix
+    }
+    
+    return '${ApiConfig.apiUrl}/auth/avatars/$filename';
   }
 }

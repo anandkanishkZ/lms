@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/auth_service.dart';
@@ -147,5 +148,46 @@ class AuthProvider with ChangeNotifier {
 
   void _clearError() {
     _errorMessage = null;
+  }
+
+  // Upload avatar
+  Future<bool> uploadAvatar(File imageFile) async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final updatedUser = await _authService.uploadAvatar(imageFile);
+      _currentUser = updatedUser;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Delete avatar
+  Future<bool> deleteAvatar() async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final updatedUser = await _authService.deleteAvatar();
+      _currentUser = updatedUser;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _setError(e.toString());
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Get avatar URL
+  String getAvatarUrl(String? profileImage) {
+    return _authService.getAvatarUrl(profileImage);
   }
 }

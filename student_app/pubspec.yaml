@@ -61,6 +61,12 @@ dependencies:
   # Utilities
   intl: ^0.19.0
   url_launcher: ^6.2.4
+  
+  # Image Picker
+  image_picker: ^1.0.7
+  
+  # HTTP with multipart support
+  dio: ^5.4.1
 
 dev_dependencies:
   flutter_test:
