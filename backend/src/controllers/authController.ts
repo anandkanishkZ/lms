@@ -285,7 +285,7 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
     return;
   }
 
-  const { firstName, middleName, lastName, email, phone, school } = req.body;
+  const { firstName, middleName, lastName, email, phone, school, symbolNo } = req.body;
 
   // Check if email is being changed and if it's already taken
   if (email) {
@@ -338,6 +338,7 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
       ...(email && { email }),
       ...(phone && { phone }),
       ...(school && { school }),
+      ...(symbolNo && { symbolNo }),
     },
     select: {
       id: true,

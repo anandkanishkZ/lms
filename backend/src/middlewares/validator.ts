@@ -221,6 +221,11 @@ export const validateUserUpdate = [
     .trim()
     .matches(/^[0-9]{10}$/).withMessage('Phone must be 10 digits'),
   
+  body('symbolNo')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 50 }).withMessage('Symbol number must be 1-50 characters'),
+  
   body('bio')
     .optional()
     .trim()
