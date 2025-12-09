@@ -1,4 +1,4 @@
-package com.freeeducationinnepal.student_app
+package com.nepallms.student
 
 import io.flutter.embedding.android.FlutterActivity
 
