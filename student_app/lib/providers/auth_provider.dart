@@ -105,7 +105,9 @@ class AuthProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _setError(e.toString());
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      print('AuthProvider updateProfile error: $errorMessage');
+      _setError(errorMessage);
       return false;
     } finally {
       _setLoading(false);

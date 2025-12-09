@@ -167,7 +167,10 @@ class AuthService {
         }
       } else {
         final error = json.decode(response.body);
-        throw Exception(error['message'] ?? 'Update failed');
+        final errorMessage = error['message'] ?? error['error'] ?? 'Update failed';
+        print('Profile update error (${response.statusCode}): $errorMessage');
+        print('Response body: ${response.body}');
+        throw Exception(errorMessage);
       }
     } catch (e) {
       throw Exception('Update error: $e');

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 
@@ -170,70 +171,165 @@ void _showEditProfileDialog(BuildContext context, AuthProvider authProvider) {
 
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Edit Profile'),
-      content: Form(
-        key: formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Name',
-                border: OutlineInputBorder(),
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) {
+        bool isLoading = false;
+        
+        return AlertDialog(
+          title: const Text('Edit Profile'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person),
+                      helperText: 'Only letters and spaces allowed',
+                    ),
+                    validator: (value) {
+                      if (value?.isEmpty ?? true) {
+                        return 'Name is required';
+                      }
+                      if (value!.length < 2 || value.length > 100) {
+                        return 'Name must be 2-100 characters';
+                      }
+                      if (!RegExp(r'^[a-zA-Z\s]+$').hasMatch(value)) {
+                        return 'Name can only contain letters and spaces';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone (Optional)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone),
+                      helperText: 'Enter 10-digit phone number',
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        if (!RegExp(r'^[0-9]{10}$').hasMatch(value)) {
+                          return 'Phone must be exactly 10 digits';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: symbolNoController,
+                    decoration: const InputDecoration(
+                      labelText: 'Symbol Number (Optional)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.numbers),
+                      helperText: 'Your student symbol number',
+                    ),
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        if (value.length > 50) {
+                          return 'Symbol number must not exceed 50 characters';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                ],
               ),
-              validator: (value) {
-                if (value?.isEmpty ?? true) return 'Name is required';
-                return null;
-              },
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: phoneController,
-              decoration: const InputDecoration(
-                labelText: 'Phone',
-                border: OutlineInputBorder(),
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: isLoading ? null : () => Navigator.pop(context),
+              child: const Text('Cancel'),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: symbolNoController,
-              decoration: const InputDecoration(
-                labelText: 'Symbol Number',
-                border: OutlineInputBorder(),
-              ),
+            ElevatedButton(
+              onPressed: isLoading
+                  ? null
+                  : () async {
+                      if (formKey.currentState!.validate()) {
+                        setState(() => isLoading = true);
+
+                        try {
+                          final success = await authProvider.updateProfile(
+                            name: nameController.text.trim(),
+                            phone: phoneController.text.trim().isNotEmpty 
+                                ? phoneController.text.trim() 
+                                : null,
+                            symbolNo: symbolNoController.text.trim().isNotEmpty 
+                                ? symbolNoController.text.trim() 
+                                : null,
+                          );
+
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            
+                            if (success) {
+                              Fluttertoast.showToast(
+                                msg: "✓ Profile updated successfully",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                backgroundColor: Colors.green,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                            } else {
+                              final errorMsg = authProvider.error ?? 'Failed to update profile';
+                              Fluttertoast.showToast(
+                                msg: "✗ $errorMsg",
+                                toastLength: Toast.LENGTH_LONG,
+                                gravity: ToastGravity.BOTTOM,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                            }
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.pop(context);
+                            Fluttertoast.showToast(
+                              msg: "✗ Error: ${e.toString()}",
+                              toastLength: Toast.LENGTH_LONG,
+                              gravity: ToastGravity.BOTTOM,
+                              backgroundColor: Colors.red,
+                              textColor: Colors.white,
+                              fontSize: 16.0,
+                            );
+                          }
+                        }
+                      } else {
+                        Fluttertoast.showToast(
+                          msg: "⚠ Please fix the errors in the form",
+                          toastLength: Toast.LENGTH_SHORT,
+                          gravity: ToastGravity.BOTTOM,
+                          backgroundColor: Colors.orange,
+                          textColor: Colors.white,
+                          fontSize: 16.0,
+                        );
+                      }
+                    },
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Text('Save'),
             ),
           ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            if (formKey.currentState!.validate()) {
-              final success = await authProvider.updateProfile(
-                name: nameController.text,
-                phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-                symbolNo: symbolNoController.text.isNotEmpty ? symbolNoController.text : null,
-              );
-
-              if (context.mounted) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(success ? 'Profile updated successfully' : 'Failed to update profile'),
-                  ),
-                );
-              }
-            }
-          },
-          child: const Text('Save'),
-        ),
-      ],
+        );
+      },
     ),
   );
 }

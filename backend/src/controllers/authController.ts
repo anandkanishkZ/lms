@@ -286,8 +286,13 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
   }
 
   const { firstName, middleName, lastName, email, phone, school, symbolNo } = req.body;
-
-  // Check if email is being changed and if it's already taken
+  
+  // Get name from request body (for direct updates) or build from firstName, middleName, lastName
+  let name = req.body.name;
+  if (!name && (firstName || middleName || lastName)) {
+    const nameParts = [firstName, middleName, lastName].filter(Boolean);
+    name = nameParts.join(' ') || undefined;
+  }
   if (email) {
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -323,10 +328,6 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
     }
   }
 
-  // Build the name field from firstName, middleName, lastName
-  const nameParts = [firstName, middleName, lastName].filter(Boolean);
-  const name = nameParts.join(' ') || undefined;
-
   // Update user
   const updatedUser = await prisma.user.update({
     where: { id: req.user.userId },
@@ -336,9 +337,9 @@ export const updateProfile = asyncHandler(async (req: AuthRequest, res: Response
       ...(lastName && { lastName }),
       ...(name && { name }),
       ...(email && { email }),
-      ...(phone && { phone }),
+      ...(phone !== undefined && { phone: phone || null }),
       ...(school && { school }),
-      ...(symbolNo && { symbolNo }),
+      ...(symbolNo !== undefined && { symbolNo: symbolNo || null }),
     },
     select: {
       id: true,

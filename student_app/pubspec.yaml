@@ -47,6 +47,7 @@ dependencies:
   # UI Components
   cached_network_image: ^3.3.1
   flutter_svg: ^2.0.10
+  fluttertoast: ^8.2.4
   
   # Video Player
   youtube_player_flutter: ^9.0.3

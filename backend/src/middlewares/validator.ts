@@ -217,14 +217,20 @@ export const validateUserUpdate = [
     .escape(),
   
   body('phone')
-    .optional()
+    .optional({ values: 'null' })
     .trim()
-    .matches(/^[0-9]{10}$/).withMessage('Phone must be 10 digits'),
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return /^[0-9]{10}$/.test(value);
+    }).withMessage('Phone must be 10 digits if provided'),
   
   body('symbolNo')
-    .optional()
+    .optional({ values: 'null' })
     .trim()
-    .isLength({ min: 1, max: 50 }).withMessage('Symbol number must be 1-50 characters'),
+    .custom((value) => {
+      if (!value || value === '') return true;
+      return value.length >= 1 && value.length <= 50;
+    }).withMessage('Symbol number must be 1-50 characters if provided'),
   
   body('bio')
     .optional()

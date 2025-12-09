@@ -25,11 +25,23 @@ import { showSuccessToast, showErrorToast, showLoadingToast, dismissToast } from
 
 // Validation Schemas
 const profileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
+  firstName: z.string()
+    .min(1, 'First name is required')
+    .min(2, 'First name must be at least 2 characters')
+    .max(100, 'First name must not exceed 100 characters')
+    .regex(/^[a-zA-Z\s]+$/, 'First name can only contain letters and spaces'),
   middleName: z.string().optional(),
-  lastName: z.string().min(1, 'Last name is required'),
+  lastName: z.string()
+    .min(1, 'Last name is required')
+    .min(2, 'Last name must be at least 2 characters')
+    .max(100, 'Last name must not exceed 100 characters')
+    .regex(/^[a-zA-Z\s]+$/, 'Last name can only contain letters and spaces'),
   email: z.string().email('Invalid email').optional().or(z.literal('')),
-  phone: z.string().optional(),
+  phone: z.string()
+    .optional()
+    .refine((val) => !val || val === '' || /^[0-9]{10}$/.test(val), {
+      message: 'Phone must be exactly 10 digits',
+    }),
   school: z.string().optional(),
 });
 
@@ -116,9 +128,20 @@ export default function StudentProfilePage() {
       const updatedProfile = await studentApiService.updateProfile(updateData);
       setStudent(updatedProfile);
       setIsEditMode(false);
-      showSuccessToast('Profile updated successfully!');
+      showSuccessToast('✅ Profile updated successfully!');
     } catch (error: any) {
-      showErrorToast(error.response?.data?.message || 'Failed to update profile');
+      // Show detailed validation errors
+      const errorMessage = error.response?.data?.message || 'Failed to update profile';
+      const validationErrors = error.response?.data?.errors;
+      
+      if (validationErrors && Array.isArray(validationErrors)) {
+        // Show all validation errors
+        validationErrors.forEach((err: any) => {
+          showErrorToast(`❌ ${err.msg || err.message}`, { autoClose: 5000 });
+        });
+      } else {
+        showErrorToast(`❌ ${errorMessage}`, { autoClose: 5000 });
+      }
     } finally {
       setIsSavingProfile(false);
     }
@@ -135,9 +158,20 @@ export default function StudentProfilePage() {
       await studentApiService.changePassword(passwordData);
       passwordForm.reset();
       setIsChangingPassword(false);
-      showSuccessToast('Password changed successfully!');
+      showSuccessToast('✅ Password changed successfully!');
     } catch (error: any) {
-      showErrorToast(error.response?.data?.message || 'Failed to change password');
+      // Show detailed validation errors
+      const errorMessage = error.response?.data?.message || 'Failed to change password';
+      const validationErrors = error.response?.data?.errors;
+      
+      if (validationErrors && Array.isArray(validationErrors)) {
+        // Show all validation errors
+        validationErrors.forEach((err: any) => {
+          showErrorToast(`❌ ${err.msg || err.message}`, { autoClose: 5000 });
+        });
+      } else {
+        showErrorToast(`❌ ${errorMessage}`, { autoClose: 5000 });
+      }
     } finally {
       setIsSavingPassword(false);
     }
@@ -440,6 +474,9 @@ export default function StudentProfilePage() {
                       placeholder="Enter middle name"
                     />
                   </div>
+                  {profileForm.formState.errors.middleName && (
+                    <p className="mt-1 text-sm text-red-500">{profileForm.formState.errors.middleName.message}</p>
+                  )}
                 </div>
 
                 {/* Last Name */}
@@ -488,9 +525,13 @@ export default function StudentProfilePage() {
                       {...profileForm.register('phone')}
                       disabled={!isEditMode}
                       className="w-full pl-11 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500"
-                      placeholder="Enter phone number"
+                      placeholder="Enter phone number (10 digits)"
+                      maxLength={10}
                     />
                   </div>
+                  {profileForm.formState.errors.phone && (
+                    <p className="mt-1 text-sm text-red-500">{profileForm.formState.errors.phone.message}</p>
+                  )}
                 </div>
 
                 {/* School */}
