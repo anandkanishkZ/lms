@@ -258,7 +258,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           slivers: [
             // Modern App Bar with Profile Header
             SliverAppBar(
-              expandedHeight: 280,
+              expandedHeight: 240,
               pinned: true,
               backgroundColor: Theme.of(context).primaryColor,
               elevation: 0,
@@ -278,7 +278,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 60),
+                        const SizedBox(height: 50),
                         // Profile Avatar with Edit Button
                         Stack(
                           children: [

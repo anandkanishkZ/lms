@@ -24,30 +24,16 @@ export const createLiveClass = asyncHandler(async (req: AuthRequest, res: Respon
 
   const teacherId = req.user!.id;
 
-  // Validate teacher has access to this class and subject
-  const teacherClass = await prisma.teacherClass.findFirst({
-    where: {
-      teacherId,
-      classId,
-      subjectId,
-      isActive: true,
-    },
-  });
-
-  if (!teacherClass && req.user!.role !== 'ADMIN') {
-    res.status(403).json({
-      success: false,
-      message: 'You are not authorized to create classes for this subject/class',
-    });
-    return;
-  }
-
-  // If moduleId is provided, validate teacher owns the module
+  // If moduleId is provided, validate teacher owns the module and get class/subject from it
   if (moduleId) {
     const module = await prisma.module.findFirst({
       where: {
         id: moduleId,
         teacherId,
+      },
+      include: {
+        class: true,
+        subject: true,
       },
     });
 
@@ -55,6 +41,27 @@ export const createLiveClass = asyncHandler(async (req: AuthRequest, res: Respon
       res.status(403).json({
         success: false,
         message: 'You are not authorized to add live classes to this module',
+      });
+      return;
+    }
+
+    // If module exists, teacher is authorized (they own the module)
+    // No need for additional TeacherClass check
+  } else {
+    // If no moduleId, validate teacher has access to this class and subject
+    const teacherClass = await prisma.teacherClass.findFirst({
+      where: {
+        teacherId,
+        classId,
+        subjectId,
+        isActive: true,
+      },
+    });
+
+    if (!teacherClass && req.user!.role !== 'ADMIN') {
+      res.status(403).json({
+        success: false,
+        message: 'You are not authorized to create classes for this subject/class',
       });
       return;
     }
