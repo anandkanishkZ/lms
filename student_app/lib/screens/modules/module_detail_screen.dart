@@ -3,9 +3,11 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/module.dart';
 import '../../models/topic.dart';
+import '../../models/review.dart';
 import '../../services/topic_service.dart';
 import '../../services/lesson_service.dart';
 import '../../services/live_class_service.dart';
+import '../../services/review_service.dart';
 import '../../providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 import '../lessons/lesson_detail_screen.dart';
@@ -27,6 +29,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
   TopicService? _topicService;
   LessonService? _lessonService;
   LiveClassService? _liveClassService;
+  ReviewService? _reviewService;
 
   List<Topic> _topics = [];
   List<LiveClass> _upcomingClasses = [];
@@ -35,6 +38,23 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
   bool _isLoadingLiveClasses = false;
   String? _topicsError;
   String? _liveClassesError;
+
+  // Review related state
+  ModuleReview? _myReview;
+  List<ModuleReview> _allReviews = [];
+  RatingStats _ratingStats = RatingStats(
+    averageRating: 0,
+    totalReviews: 0,
+    ratingDistribution: [],
+  );
+  bool _isLoadingReviews = false;
+  String? _reviewsError;
+  int _reviewsPage = 1;
+  bool _hasMoreReviews = false;
+  bool _showReviewForm = false;
+  bool _isEditingReview = false;
+  int _selectedRating = 0;
+  final TextEditingController _reviewCommentController = TextEditingController();
 
   final Set<String> _expandedTopics = {};
 
@@ -54,15 +74,18 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       _topicService = TopicService(authProvider.authService);
       _lessonService = LessonService(authProvider.authService);
       _liveClassService = LiveClassService(authProvider.authService);
+      _reviewService = ReviewService(authProvider.authService);
 
       _loadTopics();
       _loadLiveClasses();
+      _loadReviews();
     }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _reviewCommentController.dispose();
     super.dispose();
   }
 
@@ -169,6 +192,142 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
         _liveClassesError = e.toString();
         _isLoadingLiveClasses = false;
       });
+    }
+  }
+
+  Future<void> _loadReviews() async {
+    if (_reviewService == null) return;
+    
+    setState(() {
+      _isLoadingReviews = true;
+      _reviewsError = null;
+    });
+
+    try {
+      // Load all review data concurrently
+      final results = await Future.wait([
+        _reviewService!.getRatingStats(widget.module.id),
+        _reviewService!.getModuleReviews(widget.module.id, page: _reviewsPage),
+        _reviewService!.getMyReview(widget.module.id),
+      ]);
+
+      final stats = results[0] as RatingStats;
+      final reviewsResponse = results[1] as ReviewsResponse;
+      final myReview = results[2] as ModuleReview?;
+
+      setState(() {
+        _ratingStats = stats;
+        _allReviews = reviewsResponse.reviews;
+        _hasMoreReviews = reviewsResponse.pagination.hasNextPage;
+        _myReview = myReview;
+        
+        // Set form data if user has existing review
+        if (_myReview != null) {
+          _selectedRating = _myReview!.rating;
+          _reviewCommentController.text = _myReview!.comment ?? '';
+        }
+        
+        _isLoadingReviews = false;
+      });
+      
+      print('Loaded ${_allReviews.length} reviews. Average rating: ${_ratingStats.averageRating}');
+    } catch (e) {
+      print('Error loading reviews: $e');
+      setState(() {
+        _reviewsError = e.toString();
+        _isLoadingReviews = false;
+      });
+    }
+  }
+
+  Future<void> _submitReview() async {
+    if (_reviewService == null) return;
+    
+    if (_selectedRating == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a rating')),
+      );
+      return;
+    }
+
+    try {
+      final review = await _reviewService!.submitReview(
+        widget.module.id,
+        _selectedRating,
+        _reviewCommentController.text.trim().isEmpty 
+            ? null 
+            : _reviewCommentController.text.trim(),
+      );
+
+      setState(() {
+        _myReview = review;
+        _showReviewForm = false;
+        _isEditingReview = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_isEditingReview 
+              ? 'Review updated successfully' 
+              : 'Review submitted successfully'),
+        ),
+      );
+
+      // Reload reviews to get updated stats
+      _loadReviews();
+    } catch (e) {
+      print('Error submitting review: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to submit review: ${e.toString()}')),
+      );
+    }
+  }
+
+  Future<void> _deleteReview() async {
+    if (_reviewService == null || _myReview == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Review'),
+        content: const Text('Are you sure you want to delete your review?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await _reviewService!.deleteReview(widget.module.id);
+      
+      setState(() {
+        _myReview = null;
+        _selectedRating = 0;
+        _reviewCommentController.clear();
+        _isEditingReview = false;
+        _showReviewForm = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Review deleted successfully')),
+      );
+
+      // Reload reviews to get updated stats
+      _loadReviews();
+    } catch (e) {
+      print('Error deleting review: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete review: ${e.toString()}')),
+      );
     }
   }
 
@@ -639,24 +798,35 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
 
     if (_liveClassesError != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text(
-              'Error Loading Live Classes',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: Colors.red[700],
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+              const SizedBox(height: 16),
+              Text(
+                'Error Loading Live Classes',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.red[700],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _loadLiveClasses,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                _liveClassesError!,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _loadLiveClasses,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -880,43 +1050,471 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
   }
 
   Widget _buildReviewsTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.star_border, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No Reviews Yet',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
-            ),
+    if (_isLoadingReviews) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_reviewsError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+              const SizedBox(height: 16),
+              Text(
+                'Error Loading Reviews',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.red[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _reviewsError!,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _loadReviews,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'Be the first to review this module',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[500],
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Rating Overview
+          _buildRatingOverview(),
+          
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 24),
+          
+          // My Review Section
+          _buildMyReviewSection(),
+          
+          const SizedBox(height: 24),
+          
+          // All Reviews
+          if (_allReviews.isNotEmpty) ...[
+            const Divider(),
+            const SizedBox(height: 24),
+            Text(
+              'Recent Reviews',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
             ),
+            const SizedBox(height: 16),
+            _buildReviewsList(),
+          ] else if (_ratingStats.totalReviews == 0 && _myReview == null) ...[
+            Center(
+              child: Column(
+                children: [
+                  Icon(Icons.rate_review, size: 48, color: Colors.grey[400]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No reviews yet',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Be the first to review this module!',
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRatingOverview() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Module Ratings & Reviews',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          const SizedBox(height: 24),
-          ElevatedButton.icon(
-            onPressed: () {
-              // TODO: Implement add review
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Review feature coming soon')),
-              );
-            },
-            icon: const Icon(Icons.rate_review),
-            label: const Text('Write a Review'),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              // Average Rating
+              Expanded(
+                child: Column(
+                  children: [
+                    Text(
+                      _ratingStats.averageRating.toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontSize: 48,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    _buildStarRating(_ratingStats.averageRating, size: 24),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Based on ${_ratingStats.totalReviews} review${_ratingStats.totalReviews != 1 ? 's' : ''}',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Rating Distribution
+              Expanded(
+                child: Column(
+                  children: [5, 4, 3, 2, 1].map((rating) {
+                    final count = _ratingStats.ratingDistribution
+                        .firstWhere(
+                          (r) => r.rating == rating,
+                          orElse: () => RatingDistribution(rating: rating, count: 0),
+                        )
+                        .count;
+                    final percentage = _ratingStats.totalReviews > 0
+                        ? (count / _ratingStats.totalReviews) * 100
+                        : 0.0;
+                    
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Row(
+                        children: [
+                          Text('$rating', style: const TextStyle(fontSize: 12)),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.star, size: 12, color: Colors.amber),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: LinearProgressIndicator(
+                              value: percentage / 100,
+                              backgroundColor: Colors.grey[200],
+                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 24,
+                            child: Text(
+                              '$count',
+                              style: const TextStyle(fontSize: 12),
+                              textAlign: TextAlign.end,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMyReviewSection() {
+    if (_myReview != null && !_isEditingReview) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.blue[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue[100]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Your Review',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        setState(() {
+                          _isEditingReview = true;
+                          _selectedRating = _myReview!.rating;
+                          _reviewCommentController.text = _myReview!.comment ?? '';
+                        });
+                      },
+                      icon: const Icon(Icons.edit, size: 20),
+                      tooltip: 'Edit',
+                    ),
+                    IconButton(
+                      onPressed: _deleteReview,
+                      icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                      tooltip: 'Delete',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            _buildStarRating(_myReview!.rating.toDouble()),
+            if (_myReview!.comment != null && _myReview!.comment!.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                _myReview!.comment!,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
+              'Reviewed on ${DateFormat('MMM dd, yyyy').format(_myReview!.createdAt)}',
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_showReviewForm || _isEditingReview) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey[200]!),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _isEditingReview ? 'Edit Your Review' : 'Write a Review',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            
+            // Rating Selection
+            const Text('Rating *', style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            _buildInteractiveStarRating(),
+            
+            const SizedBox(height: 16),
+            
+            // Comment
+            const Text('Comment (optional)', style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _reviewCommentController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Share your thoughts about this module...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // Buttons
+            Row(
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _submitReview,
+                  icon: const Icon(Icons.send, size: 18),
+                  label: Text(_isEditingReview ? 'Update Review' : 'Submit Review'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _showReviewForm = false;
+                      _isEditingReview = false;
+                      if (_myReview != null) {
+                        _selectedRating = _myReview!.rating;
+                        _reviewCommentController.text = _myReview!.comment ?? '';
+                      } else {
+                        _selectedRating = 0;
+                        _reviewCommentController.clear();
+                      }
+                    });
+                  },
+                  child: const Text('Cancel'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Show "Write a Review" button if user hasn't reviewed yet
+    return ElevatedButton.icon(
+      onPressed: () {
+        setState(() {
+          _showReviewForm = true;
+          _selectedRating = 0;
+          _reviewCommentController.clear();
+        });
+      },
+      icon: const Icon(Icons.rate_review),
+      label: const Text('Write a Review'),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildReviewsList() {
+    return Column(
+      children: [
+        ..._allReviews.map((review) => _buildReviewCard(review)),
+        
+        if (_hasMoreReviews) ...[
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton(
+              onPressed: () async {
+                setState(() => _reviewsPage++);
+                try {
+                  final response = await _reviewService!.getModuleReviews(
+                    widget.module.id, 
+                    page: _reviewsPage,
+                  );
+                  setState(() {
+                    _allReviews.addAll(response.reviews);
+                    _hasMoreReviews = response.pagination.hasNextPage;
+                  });
+                } catch (e) {
+                  setState(() => _reviewsPage--);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to load more reviews: $e')),
+                  );
+                }
+              },
+              child: const Text('Load More Reviews'),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildReviewCard(ModuleReview review) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey[300]!),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.grey[300],
+                child: Text(
+                  review.student?.name.substring(0, 1).toUpperCase() ?? '?',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      review.student?.name ?? 'Anonymous',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      DateFormat('MMM dd, yyyy').format(review.createdAt),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _buildStarRating(review.rating.toDouble(), size: 16),
+            ],
+          ),
+          
+          if (review.comment != null && review.comment!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              review.comment!,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStarRating(double rating, {double size = 20}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        return Icon(
+          index < rating ? Icons.star : Icons.star_border,
+          color: Colors.amber,
+          size: size,
+        );
+      }),
+    );
+  }
+
+  Widget _buildInteractiveStarRating() {
+    return Row(
+      children: List.generate(5, (index) {
+        final starValue = index + 1;
+        return GestureDetector(
+          onTap: () {
+            setState(() {
+              _selectedRating = starValue;
+            });
+          },
+          child: Icon(
+            starValue <= _selectedRating ? Icons.star : Icons.star_border,
+            color: starValue <= _selectedRating ? Colors.amber : Colors.grey,
+            size: 32,
+          ),
+        );
+      }),
     );
   }
 

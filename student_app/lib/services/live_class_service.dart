@@ -79,44 +79,54 @@ class LiveClassService {
   }
 
   Future<List<LiveClass>> getLiveClassesByModule(String moduleId) async {
-    final token = await _authService.getToken();
-    if (token == null) throw Exception('No token found');
+    try {
+      final token = await _authService.getToken();
+      if (token == null) throw Exception('No token found');
 
-    print('Fetching live classes for module: $moduleId');
-    final url = '${ApiConfig.baseUrl}/live-classes/module/$moduleId';
-    print('URL: $url');
+      print('Fetching live classes for module: $moduleId');
+      final url = '${ApiConfig.baseUrl}/live-classes/module/$moduleId';
+      print('URL: $url');
 
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Connection timeout - please check your internet connection');
+        },
+      );
 
-    print('Response status: ${response.statusCode}');
-    print('Response body: ${response.body}');
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
-    if (response.statusCode == 200) {
-      final data = json.decode(response.body);
-      
-      if (data['success'] == true && data['data'] != null) {
-        // Backend now returns { success: true, data: { liveClasses: [...], pagination: {...} } }
-        final liveClassesData = data['data']['liveClasses'] as List;
-        final liveClasses = liveClassesData
-            .map((liveClassJson) => LiveClass.fromJson(liveClassJson))
-            .toList();
-        print('Parsed ${liveClasses.length} live classes');
-        return liveClasses;
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['success'] == true && data['data'] != null) {
+          // Backend now returns { success: true, data: { liveClasses: [...], pagination: {...} } }
+          final liveClassesData = data['data']['liveClasses'] as List;
+          final liveClasses = liveClassesData
+              .map((liveClassJson) => LiveClass.fromJson(liveClassJson))
+              .toList();
+          print('Parsed ${liveClasses.length} live classes');
+          return liveClasses;
+        } else {
+          print('No data in response or success=false');
+          return [];
+        }
       } else {
-        print('No data in response or success=false');
+        // If endpoint doesn't exist, return empty list
+        print('Failed to load live classes for module: ${response.statusCode}');
+        print('Error: ${response.body}');
         return [];
       }
-    } else {
-      // If endpoint doesn't exist, return empty list
-      print('Failed to load live classes for module: ${response.statusCode}');
-      print('Error: ${response.body}');
-      return [];
+    } catch (e) {
+      print('Exception in getLiveClassesByModule: $e');
+      rethrow;
     }
   }
 }
