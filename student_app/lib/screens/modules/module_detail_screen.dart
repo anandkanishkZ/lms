@@ -129,15 +129,36 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       }
       
       final now = DateTime.now();
+      final upcoming = <LiveClass>[];
+      final past = <LiveClass>[];
+      
+      for (var liveClass in allClasses) {
+        // Prioritize status-based classification
+        if (liveClass.status == 'SCHEDULED' || liveClass.status == 'LIVE') {
+          // SCHEDULED or LIVE classes always go to upcoming
+          upcoming.add(liveClass);
+        } else if (liveClass.status == 'COMPLETED' || liveClass.status == 'CANCELLED') {
+          // COMPLETED or CANCELLED always go to past
+          past.add(liveClass);
+        } else {
+          // For unknown statuses, use time-based classification
+          if (liveClass.startTime.isAfter(now)) {
+            upcoming.add(liveClass);
+          } else {
+            past.add(liveClass);
+          }
+        }
+      }
+      
+      // Sort upcoming: latest (soonest) first
+      upcoming.sort((a, b) => a.startTime.compareTo(b.startTime));
+      
+      // Sort past: latest (most recent) first
+      past.sort((a, b) => b.startTime.compareTo(a.startTime));
       
       setState(() {
-        // Match backend status values: SCHEDULED, LIVE, COMPLETED
-        _upcomingClasses = allClasses.where((lc) => 
-          lc.startTime.isAfter(now) && (lc.status == 'SCHEDULED' || lc.status == 'LIVE')
-        ).toList();
-        _pastClasses = allClasses.where((lc) => 
-          lc.status == 'COMPLETED' || (lc.startTime.isBefore(now) && lc.status != 'SCHEDULED')
-        ).toList();
+        _upcomingClasses = upcoming;
+        _pastClasses = past;
         _isLoadingLiveClasses = false;
       });
       
@@ -696,83 +717,164 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
   Widget _buildLiveClassCard(LiveClass liveClass, bool isUpcoming) {
     final dateFormat = DateFormat('MMM dd, yyyy');
     final timeFormat = DateFormat('hh:mm a');
+    
+    // Get YouTube thumbnail if available
+    String? thumbnailUrl;
+    if (liveClass.youtubeUrl != null) {
+      final videoId = _extractYouTubeVideoId(liveClass.youtubeUrl!);
+      if (videoId != null) {
+        thumbnailUrl = 'https://img.youtube.com/vi/$videoId/maxresdefault.jpg';
+      }
+    }
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // YouTube Thumbnail
+          if (thumbnailUrl != null)
+            Stack(
               children: [
-                Icon(
-                  isUpcoming ? Icons.schedule : Icons.history,
-                  color: isUpcoming ? Colors.blue : Colors.grey,
-                  size: 20,
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Image.network(
+                    thumbnailUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.videocam, size: 48, color: Colors.grey),
+                    ),
+                  ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    liveClass.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: liveClass.status == 'LIVE' 
+                        ? Colors.red 
+                        : liveClass.status == 'SCHEDULED'
+                          ? Colors.blue
+                          : Colors.grey,
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      liveClass.status,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned.fill(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        if (liveClass.youtubeUrl != null) {
+                          _launchUrl(liveClass.youtubeUrl!);
+                        }
+                      },
+                      child: const Center(
+                        child: Icon(
+                          Icons.play_circle_outline,
+                          size: 64,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
-            if (liveClass.description != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                liveClass.description!,
-                style: TextStyle(color: Colors.grey[700]),
-              ),
-            ],
-            const SizedBox(height: 12),
-            Row(
+          
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                Text(
-                  dateFormat.format(liveClass.startTime),
-                  style: TextStyle(color: Colors.grey[700]),
+                Row(
+                  children: [
+                    Icon(
+                      isUpcoming ? Icons.schedule : Icons.history,
+                      color: isUpcoming ? Colors.blue : Colors.grey,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        liveClass.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
-                const SizedBox(width: 8),
-                Text(
-                  timeFormat.format(liveClass.startTime),
-                  style: TextStyle(color: Colors.grey[700]),
+                if (liveClass.description != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    liveClass.description!,
+                    style: TextStyle(color: Colors.grey[700]),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Text(
+                      dateFormat.format(liveClass.startTime),
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                    const SizedBox(width: 16),
+                    Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                    const SizedBox(width: 8),
+                    Text(
+                      timeFormat.format(liveClass.startTime),
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (liveClass.youtubeUrl != null)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () => _launchUrl(liveClass.youtubeUrl!),
+                          icon: const Icon(Icons.video_library),
+                          label: Text(liveClass.status == 'LIVE' ? 'Watch Live' : 'YouTube'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: liveClass.status == 'LIVE' ? Colors.red : Colors.blue,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                    if (liveClass.youtubeUrl != null && liveClass.meetingLink != null)
+                      const SizedBox(width: 8),
+                    if (liveClass.meetingLink != null)
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _launchUrl(liveClass.meetingLink!),
+                          icon: const Icon(Icons.video_call),
+                          label: const Text('Join'),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            if (isUpcoming && liveClass.meetingLink != null)
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _launchUrl(liveClass.meetingLink!),
-                  icon: const Icon(Icons.video_call),
-                  label: const Text('Join Live Class'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              )
-            else if (!isUpcoming && liveClass.recordingUrl != null)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _launchUrl(liveClass.recordingUrl!),
-                  icon: const Icon(Icons.play_circle),
-                  label: const Text('Watch Recording'),
-                ),
-              ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
