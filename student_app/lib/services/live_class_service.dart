@@ -101,7 +101,9 @@ class LiveClassService {
       final data = json.decode(response.body);
       
       if (data['success'] == true && data['data'] != null) {
-        final liveClasses = (data['data'] as List)
+        // Backend now returns { success: true, data: { liveClasses: [...], pagination: {...} } }
+        final liveClassesData = data['data']['liveClasses'] as List;
+        final liveClasses = liveClassesData
             .map((liveClassJson) => LiveClass.fromJson(liveClassJson))
             .toList();
         print('Parsed ${liveClasses.length} live classes');

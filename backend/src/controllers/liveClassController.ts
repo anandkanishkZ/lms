@@ -488,7 +488,7 @@ export const getLiveClassesByModule = asyncHandler(async (req: AuthRequest, res:
       moduleId,
     },
     include: {
-      subject: { select: { id: true, name: true } },
+      subject: { select: { id: true, name: true, color: true } },
       teacher: { select: { id: true, name: true } },
       class: { select: { id: true, name: true, section: true } },
       module: { select: { id: true, title: true } },
@@ -505,6 +505,17 @@ export const getLiveClassesByModule = asyncHandler(async (req: AuthRequest, res:
 
   res.json({
     success: true,
-    data: liveClasses,
+    message: 'Live classes retrieved successfully',
+    data: {
+      liveClasses,
+      pagination: {
+        page: 1,
+        limit: liveClasses.length,
+        total: liveClasses.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    },
   });
 });
