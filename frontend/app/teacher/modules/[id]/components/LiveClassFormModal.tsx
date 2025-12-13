@@ -21,6 +21,7 @@ export interface LiveClassFormData {
   description: string;
   youtubeUrl: string;
   startTime: string;
+  endTime: string;
 }
 
 export function LiveClassFormModal({
@@ -36,6 +37,7 @@ export function LiveClassFormModal({
     description: '',
     youtubeUrl: '',
     startTime: '',
+    endTime: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Partial<LiveClassFormData>>({});
@@ -49,16 +51,19 @@ export function LiveClassFormModal({
           description: liveClass.description || '',
           youtubeUrl: liveClass.youtubeUrl || '',
           startTime: liveClass.startTime ? new Date(liveClass.startTime).toISOString().slice(0, 16) : '',
+          endTime: liveClass.endTime ? new Date(liveClass.endTime).toISOString().slice(0, 16) : '',
         });
       } else {
-        // Create mode - set default time
+        // Create mode - set default time (start: now, end: now + 1 hour)
         const now = new Date();
+        const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000);
         
         setFormData({
           title: '',
           description: '',
           youtubeUrl: '',
           startTime: now.toISOString().slice(0, 16),
+          endTime: oneHourLater.toISOString().slice(0, 16),
         });
       }
       setErrors({});
@@ -210,7 +215,7 @@ export function LiveClassFormModal({
               </div>
 
               {/* Date and Time */}
-              <div>
+              <div className="space-y-4">
                 {/* Start Time */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -230,6 +235,31 @@ export function LiveClassFormModal({
                   {errors.startTime && (
                     <p className="mt-1 text-xs text-red-600">{errors.startTime}</p>
                   )}
+                </div>
+
+                {/* End Time */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    End Date & Time
+                  </label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    <input
+                      type="datetime-local"
+                      value={formData.endTime}
+                      onChange={(e) => handleChange('endTime', e.target.value)}
+                      min={formData.startTime}
+                      className={`w-full pl-11 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-[#2563eb] focus:border-transparent ${
+                        errors.endTime ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    />
+                  </div>
+                  {errors.endTime && (
+                    <p className="mt-1 text-xs text-red-600">{errors.endTime}</p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500">
+                    Optional: Leave empty for open-ended sessions
+                  </p>
                 </div>
               </div>
             </div>

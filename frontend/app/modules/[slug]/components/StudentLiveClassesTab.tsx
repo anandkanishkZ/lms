@@ -93,12 +93,34 @@ export function StudentLiveClassesTab({ moduleId, moduleName }: StudentLiveClass
   };
 
   const getStats = () => {
+    const now = new Date();
     const total = liveClasses.length;
-    const upcoming = liveClasses.filter(
-      (lc) => lc.status === 'SCHEDULED' && new Date(lc.startTime) > new Date()
-    ).length;
-    const live = liveClasses.filter((lc) => lc.status === 'LIVE').length;
-    const completed = liveClasses.filter((lc) => lc.status === 'COMPLETED').length;
+    
+    const upcoming = liveClasses.filter((lc) => {
+      const startTime = new Date(lc.startTime);
+      return startTime > now && (lc.status === 'SCHEDULED' || lc.status === 'LIVE');
+    }).length;
+    
+    const live = liveClasses.filter((lc) => {
+      const startTime = new Date(lc.startTime);
+      const endTime = lc.endTime ? new Date(lc.endTime) : null;
+      
+      if (!endTime) {
+        return now >= startTime && (lc.status === 'LIVE' || lc.status === 'SCHEDULED');
+      }
+      
+      return now >= startTime && now <= endTime && (lc.status === 'LIVE' || lc.status === 'SCHEDULED');
+    }).length;
+    
+    const completed = liveClasses.filter((lc) => {
+      const endTime = lc.endTime ? new Date(lc.endTime) : null;
+      
+      if (endTime && now > endTime) {
+        return true;
+      }
+      
+      return lc.status === 'COMPLETED';
+    }).length;
 
     return { total, upcoming, live, completed };
   };

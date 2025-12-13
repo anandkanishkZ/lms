@@ -124,18 +124,46 @@ export function StudentLiveClassCard({ liveClass, moduleName, onWatch }: Student
   };
 
   const isUpcoming = () => {
-    return new Date(liveClass.startTime) > new Date() && liveClass.status === 'SCHEDULED';
+    const now = new Date();
+    const startTime = new Date(liveClass.startTime);
+    return startTime > now && (liveClass.status === 'SCHEDULED' || liveClass.status === 'LIVE');
   };
 
   const isLive = () => {
-    return liveClass.status === 'LIVE';
+    const now = new Date();
+    const startTime = new Date(liveClass.startTime);
+    const endTime = liveClass.endTime ? new Date(liveClass.endTime) : null;
+    
+    // If no end time, check if we're past start time and status is LIVE or SCHEDULED
+    if (!endTime) {
+      return now >= startTime && (liveClass.status === 'LIVE' || liveClass.status === 'SCHEDULED');
+    }
+    
+    // If end time exists, check if we're between start and end time
+    return now >= startTime && now <= endTime && (liveClass.status === 'LIVE' || liveClass.status === 'SCHEDULED');
   };
 
   const isCompleted = () => {
+    const now = new Date();
+    const endTime = liveClass.endTime ? new Date(liveClass.endTime) : null;
+    
+    // If end time exists and we're past it, it's completed
+    if (endTime && now > endTime) {
+      return true;
+    }
+    
     return liveClass.status === 'COMPLETED';
   };
 
-  const statusInfo = getStatusInfo(liveClass.status);
+  // Dynamically determine actual status based on time
+  const getActualStatus = () => {
+    if (isCompleted()) return 'COMPLETED';
+    if (isLive()) return 'LIVE';
+    if (isUpcoming()) return 'SCHEDULED';
+    return liveClass.status;
+  };
+
+  const statusInfo = getStatusInfo(getActualStatus());
 
   return (
     <motion.div

@@ -1141,31 +1141,6 @@ export default function ModuleDetailPage() {
                 </div>
               </div>
             </motion.div>
-
-
-
-            {/* Bottom Stats Bar - Campus 4.0 Style */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-            >
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-3xl font-bold text-red-500">{completedLessons}</div>
-                  <div className="text-sm text-gray-600 mt-1">Lessons<br/>Completed</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-green-500">{completedAssignments}</div>
-                  <div className="text-sm text-gray-600 mt-1">Assignments<br/>Completed</div>
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-purple-600">22</div>
-                  <div className="text-sm text-gray-600 mt-1">Classes<br/>Attended</div>
-                </div>
-              </div>
-            </motion.div>
           </div>
         </div>
       </div>

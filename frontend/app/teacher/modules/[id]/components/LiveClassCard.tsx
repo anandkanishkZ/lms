@@ -99,10 +99,42 @@ export function LiveClassCard({ liveClass, onEdit, onDelete, onView }: LiveClass
   };
 
   const isUpcoming = () => {
-    return new Date(liveClass.startTime) > new Date() && liveClass.status === 'SCHEDULED';
+    const now = new Date();
+    const startTime = new Date(liveClass.startTime);
+    return startTime > now && (liveClass.status === 'SCHEDULED' || liveClass.status === 'LIVE');
   };
 
-  const statusInfo = getStatusInfo(liveClass.status);
+  const isLive = () => {
+    const now = new Date();
+    const startTime = new Date(liveClass.startTime);
+    const endTime = liveClass.endTime ? new Date(liveClass.endTime) : null;
+    
+    if (!endTime) {
+      return now >= startTime && (liveClass.status === 'LIVE' || liveClass.status === 'SCHEDULED');
+    }
+    
+    return now >= startTime && now <= endTime && (liveClass.status === 'LIVE' || liveClass.status === 'SCHEDULED');
+  };
+
+  const isCompleted = () => {
+    const now = new Date();
+    const endTime = liveClass.endTime ? new Date(liveClass.endTime) : null;
+    
+    if (endTime && now > endTime) {
+      return true;
+    }
+    
+    return liveClass.status === 'COMPLETED';
+  };
+
+  const getActualStatus = () => {
+    if (isCompleted()) return 'COMPLETED';
+    if (isLive()) return 'LIVE';
+    if (isUpcoming()) return 'SCHEDULED';
+    return liveClass.status;
+  };
+
+  const statusInfo = getStatusInfo(getActualStatus());
 
   return (
     <motion.div
