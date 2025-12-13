@@ -3,6 +3,8 @@
  * Handles all API calls related to class management
  */
 
+import { AUTH_CONFIG, getCurrentUserType } from '@/src/config/api.config';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
 // Types
@@ -116,11 +118,13 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Get authentication token from localStorage
+ * Get authentication token from localStorage based on user type
  */
 const getAuthToken = (): string | null => {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('adminToken');
+  const userType = getCurrentUserType();
+  const config = AUTH_CONFIG[userType];
+  return localStorage.getItem(config.tokenKey);
 };
 
 /**
