@@ -1234,9 +1234,37 @@ export const getExamPreview = async (req: AuthRequest, res: Response) => {
 
     const exam = await prisma.exam.findUnique({
       where: { id },
-      include: {
-        subject: true,
-        class: true,
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        instructions: true,
+        type: true,
+        status: true,
+        startTime: true,
+        endTime: true,
+        duration: true,
+        totalMarks: true,
+        passingMarks: true,
+        allowLateSubmission: true,
+        shuffleQuestions: true,
+        showResultsImmediately: true,
+        allowReview: true,
+        maxAttempts: true,
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        class: {
+          select: {
+            id: true,
+            name: true,
+            section: true,
+          },
+        },
         createdByUser: {
           select: {
             id: true,
@@ -1247,24 +1275,13 @@ export const getExamPreview = async (req: AuthRequest, res: Response) => {
         questions: {
           select: {
             id: true,
-            questionId: true,
-            orderIndex: true,
             marks: true,
             question: {
               select: {
                 id: true,
-                type: true,
-                // Don't include text, explanation, or options for students
+                questionType: true,
               },
             },
-          },
-          orderBy: {
-            orderIndex: 'asc',
-          },
-        },
-        _count: {
-          select: {
-            attempts: true,
           },
         },
       },
@@ -1295,11 +1312,11 @@ export const getExamPreview = async (req: AuthRequest, res: Response) => {
     }
 
     // Count questions by type
-    const questionTypes = exam.questions.reduce((acc: any, q) => {
-      const type = q.question.type;
-      acc[type] = (acc[type] || 0) + 1;
-      return acc;
-    }, {});
+    const questionTypes: Record<string, number> = {};
+    exam.questions.forEach((q) => {
+      const type = q.question.questionType;
+      questionTypes[type] = (questionTypes[type] || 0) + 1;
+    });
 
     res.json({
       success: true,
