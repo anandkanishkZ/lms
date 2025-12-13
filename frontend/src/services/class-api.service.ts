@@ -168,11 +168,33 @@ export const createClass = async (data: CreateClassData): Promise<ApiResponse<Cl
 
 /**
  * Get all classes with optional filters and pagination
+ * For teachers, this returns only classes they teach
+ * For admins, this returns all classes
  */
 export const getAllClasses = async (filters: ClassFilters = {}): Promise<ApiResponse<Class[]>> => {
   const token = getAuthToken();
-  const queryString = buildQueryString(filters);
+  const userType = getCurrentUserType();
   
+  // For teachers, use the teacher-specific endpoint
+  if (userType === 'teacher') {
+    const response = await fetch(`${API_URL}/notices/teacher/classes`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.message || 'Failed to fetch classes');
+    }
+
+    return result;
+  }
+  
+  // For admins, use the admin endpoint with filters
+  const queryString = buildQueryString(filters);
   const response = await fetch(`${API_URL}/admin/classes?${queryString}`, {
     method: 'GET',
     headers: {
