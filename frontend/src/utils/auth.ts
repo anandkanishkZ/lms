@@ -53,12 +53,16 @@ export const getCurrentToken = (): string | null => {
 };
 
 /**
- * Check if user is authenticated (has any valid token)
+ * Check if user is authenticated (has any valid, non-expired token)
  * 
- * @returns true if any authentication token exists
+ * @returns true if any valid authentication token exists
  */
 export const isAuthenticated = (): boolean => {
-  return getCurrentToken() !== null;
+  const token = getCurrentToken();
+  if (!token) return false;
+  
+  // Check if token is expired
+  return !isTokenExpired(token);
 };
 
 /**

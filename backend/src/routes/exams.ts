@@ -15,6 +15,7 @@ import {
   getExamAttempts,
   gradeAnswer,
   getMyExamResult,
+  getExamPreview,
 } from '../controllers/examController';
 
 const router = express.Router();
@@ -38,8 +39,15 @@ router.get('/', authenticateToken, getAllExams);
 router.post('/', authenticateToken, authorizeRoles('TEACHER', 'ADMIN'), createExam);
 
 /**
+ * @route   GET /api/v1/exams/:id/preview
+ * @desc    Get exam preview (student-safe, no answers)
+ * @access  Private (Student)
+ */
+router.get('/:id/preview', authenticateToken, authorizeRoles('STUDENT'), getExamPreview);
+
+/**
  * @route   GET /api/v1/exams/:id
- * @desc    Get single exam by ID
+ * @desc    Get single exam by ID (full details for teachers/admins)
  * @access  Private
  */
 router.get('/:id', authenticateToken, getExamById);

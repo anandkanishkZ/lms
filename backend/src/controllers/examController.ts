@@ -1222,6 +1222,123 @@ export const getMyExamResult = async (req: AuthRequest, res: Response) => {
   }
 };
 
+/**
+ * Get exam preview (for students before starting)
+ * GET /api/v1/exams/:id/preview
+ */
+export const getExamPreview = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+
+    const exam = await prisma.exam.findUnique({
+      where: { id },
+      include: {
+        subject: true,
+        class: true,
+        createdByUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        questions: {
+          select: {
+            id: true,
+            questionId: true,
+            orderIndex: true,
+            marks: true,
+            question: {
+              select: {
+                id: true,
+                type: true,
+                // Don't include text, explanation, or options for students
+              },
+            },
+          },
+          orderBy: {
+            orderIndex: 'asc',
+          },
+        },
+        _count: {
+          select: {
+            attempts: true,
+          },
+        },
+      },
+    });
+
+    if (!exam) {
+      return res.status(404).json({
+        success: false,
+        message: 'Exam not found',
+      });
+    }
+
+    // Check if student has already attempted this exam
+    let attemptCount = 0;
+    let canAttempt = true;
+    if (userRole === 'STUDENT') {
+      attemptCount = await prisma.studentExamAttempt.count({
+        where: {
+          examId: id,
+          studentId: userId,
+          isCompleted: true,
+        },
+      });
+      
+      if (exam.maxAttempts && attemptCount >= exam.maxAttempts) {
+        canAttempt = false;
+      }
+    }
+
+    // Count questions by type
+    const questionTypes = exam.questions.reduce((acc: any, q) => {
+      const type = q.question.type;
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {});
+
+    res.json({
+      success: true,
+      data: {
+        id: exam.id,
+        title: exam.title,
+        description: exam.description,
+        instructions: exam.instructions,
+        type: exam.type,
+        status: exam.status,
+        startTime: exam.startTime,
+        endTime: exam.endTime,
+        duration: exam.duration,
+        totalMarks: exam.totalMarks,
+        passingMarks: exam.passingMarks,
+        allowLateSubmission: exam.allowLateSubmission,
+        shuffleQuestions: exam.shuffleQuestions,
+        showResultsImmediately: exam.showResultsImmediately,
+        allowReview: exam.allowReview,
+        maxAttempts: exam.maxAttempts,
+        subject: exam.subject,
+        class: exam.class,
+        createdByUser: exam.createdByUser,
+        questionCount: exam.questions.length,
+        questionTypes,
+        attemptCount,
+        canAttempt,
+      },
+    });
+  } catch (error: any) {
+    console.error('Error fetching exam preview:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch exam preview',
+      error: error.message,
+    });
+  }
+};
+
 export default {
   createExam,
   getAllExams,
@@ -1237,4 +1354,5 @@ export default {
   getExamAttempts,
   gradeAnswer,
   getMyExamResult,
+  getExamPreview,
 };

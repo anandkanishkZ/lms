@@ -7,6 +7,37 @@ import 'auth_service.dart';
 class ExamService {
   final AuthService _authService = AuthService();
 
+  // Get exam preview (safe for students, no answers)
+  Future<Map<String, dynamic>> getExamPreview(String examId) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.exams}/$examId/preview'),
+        headers: ApiConfig.headers(token: token),
+      ).timeout(ApiConfig.timeout);
+
+      print('Exam Preview Response Status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          return data['data'];
+        } else {
+          throw Exception(data['message'] ?? 'Failed to load exam preview');
+        }
+      } else {
+        final errorBody = response.body;
+        print('Error response: $errorBody');
+        throw Exception('Failed to load exam preview: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Exception in getExamPreview: $e');
+      throw Exception('Error loading exam preview: $e');
+    }
+  }
+
   // Get all available exams
   Future<List<Exam>> getAllExams() async {
     final token = await _authService.getToken();
@@ -18,18 +49,38 @@ class ExamService {
         headers: ApiConfig.headers(token: token),
       ).timeout(ApiConfig.timeout);
 
+      print('Exam API Response Status: ${response.statusCode}');
+      print('Exam API Response Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           final List<dynamic> examsJson = data['data'];
-          return examsJson.map((json) => Exam.fromJson(json)).toList();
+          print('Number of exams received: ${examsJson.length}');
+          
+          // Parse each exam with error handling
+          final List<Exam> exams = [];
+          for (int i = 0; i < examsJson.length; i++) {
+            try {
+              final exam = Exam.fromJson(examsJson[i]);
+              exams.add(exam);
+            } catch (e) {
+              print('Error parsing exam at index $i: $e');
+              print('Exam JSON: ${examsJson[i]}');
+            }
+          }
+          
+          return exams;
         } else {
           throw Exception(data['message'] ?? 'Failed to load exams');
         }
       } else {
-        throw Exception('Failed to load exams');
+        final errorBody = response.body;
+        print('Error response: $errorBody');
+        throw Exception('Failed to load exams: ${response.statusCode}');
       }
     } catch (e) {
+      print('Exception in getAllExams: $e');
       throw Exception('Error loading exams: $e');
     }
   }

@@ -12,7 +12,8 @@ class Exam {
   final bool isPublished;
   final String? moduleId;
   final String? subjectId;
-  final String teacherId;
+  final String? classId;
+  final String? teacherId;
   final DateTime createdAt;
   
   // Student-specific fields
@@ -34,7 +35,8 @@ class Exam {
     required this.isPublished,
     this.moduleId,
     this.subjectId,
-    required this.teacherId,
+    this.classId,
+    this.teacherId,
     required this.createdAt,
     this.isSubmitted,
     this.obtainedMarks,
@@ -43,21 +45,22 @@ class Exam {
 
   factory Exam.fromJson(Map<String, dynamic> json) {
     return Exam(
-      id: json['id'],
-      title: json['title'],
+      id: json['id'] ?? '',
+      title: json['title'] ?? 'Untitled Exam',
       description: json['description'],
-      type: json['type'],
+      type: json['type'] ?? 'QUIZ',
       startTime: json['startTime'] != null ? DateTime.parse(json['startTime']) : null,
       endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
-      duration: json['duration'],
-      totalMarks: json['totalMarks'],
-      passingMarks: json['passingMarks'],
-      status: json['status'],
+      duration: json['duration'] ?? 0,
+      totalMarks: json['totalMarks'] ?? 0,
+      passingMarks: json['passingMarks'] ?? 0,
+      status: json['status'] ?? 'ACTIVE',
       isPublished: json['isPublished'] ?? false,
       moduleId: json['moduleId'],
       subjectId: json['subjectId'],
-      teacherId: json['teacherId'],
-      createdAt: DateTime.parse(json['createdAt']),
+      classId: json['classId'],
+      teacherId: json['createdBy'], // Backend uses 'createdBy' not 'teacherId'
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       isSubmitted: json['isSubmitted'],
       obtainedMarks: json['obtainedMarks'],
       submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt']) : null,

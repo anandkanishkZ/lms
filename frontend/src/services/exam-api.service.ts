@@ -217,6 +217,42 @@ export interface UploadedFile {
   mimetype: string;
 }
 
+export interface ExamPreview {
+  id: string;
+  title: string;
+  description: string | null;
+  instructions: string | null;
+  type: 'MIDTERM' | 'FINAL' | 'QUIZ' | 'ASSIGNMENT' | 'PROJECT';
+  status: 'UPCOMING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+  startTime: string;
+  endTime: string;
+  duration: number;
+  totalMarks: number;
+  passingMarks: number;
+  allowLateSubmission: boolean;
+  shuffleQuestions: boolean;
+  showResultsImmediately: boolean;
+  allowReview: boolean;
+  maxAttempts: number;
+  subject?: {
+    id: string;
+    name: string;
+  };
+  class?: {
+    id: string;
+    name: string;
+  };
+  createdByUser?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  questionCount: number;
+  questionTypes: Record<string, number>;
+  attemptCount: number;
+  canAttempt: boolean;
+}
+
 class ExamApiService {
   private readonly BASE_URL = '/exams';
 
@@ -242,6 +278,16 @@ class ExamApiService {
     const url = params.toString() ? `${this.BASE_URL}?${params.toString()}` : this.BASE_URL;
     const response = await apiClient.get<{ success: boolean; data: Exam[] }>(url);
     return response.data?.data || [];
+  }
+
+  /**
+   * Get exam preview (student-safe, no answers)
+   */
+  async getExamPreview(examId: string): Promise<ExamPreview> {
+    const response = await apiClient.get<{ success: boolean; data: ExamPreview }>(
+      `${this.BASE_URL}/${examId}/preview`
+    );
+    return response.data?.data as ExamPreview;
   }
 
   /**
