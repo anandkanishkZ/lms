@@ -135,6 +135,37 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
     }
   }
 
+  // Helper method to determine actual status based on time
+  String _getActualStatus(LiveClass liveClass, DateTime now) {
+    // Check if completed based on endTime
+    if (liveClass.endTime != null && now.isAfter(liveClass.endTime!)) {
+      return 'COMPLETED';
+    }
+    
+    // Check if live (between startTime and endTime)
+    if (now.isAfter(liveClass.startTime) || now.isAtSameMomentAs(liveClass.startTime)) {
+      // If no endTime, consider it live if status is LIVE or SCHEDULED
+      if (liveClass.endTime == null) {
+        if (liveClass.status == 'LIVE' || liveClass.status == 'SCHEDULED') {
+          return 'LIVE';
+        }
+      } else {
+        // If we have endTime, check if current time is before it
+        if (now.isBefore(liveClass.endTime!)) {
+          return 'LIVE';
+        }
+      }
+    }
+    
+    // Check if scheduled (before startTime)
+    if (now.isBefore(liveClass.startTime)) {
+      return 'SCHEDULED';
+    }
+    
+    // Return original status if none of the above conditions match
+    return liveClass.status;
+  }
+
   Future<void> _loadLiveClasses() async {
     if (_liveClassService == null) return;
     
@@ -156,15 +187,20 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       final past = <LiveClass>[];
       
       for (var liveClass in allClasses) {
-        // Prioritize status-based classification
-        if (liveClass.status == 'SCHEDULED' || liveClass.status == 'LIVE') {
-          // SCHEDULED or LIVE classes always go to upcoming
+        // Use time-based detection to determine actual status
+        final actualStatus = _getActualStatus(liveClass, now);
+        
+        if (actualStatus == 'LIVE') {
+          // Live classes go to upcoming (they're happening now)
           upcoming.add(liveClass);
-        } else if (liveClass.status == 'COMPLETED' || liveClass.status == 'CANCELLED') {
-          // COMPLETED or CANCELLED always go to past
+        } else if (actualStatus == 'SCHEDULED') {
+          // Scheduled classes go to upcoming
+          upcoming.add(liveClass);
+        } else if (actualStatus == 'COMPLETED' || liveClass.status == 'CANCELLED') {
+          // Completed or cancelled go to past
           past.add(liveClass);
         } else {
-          // For unknown statuses, use time-based classification
+          // Fallback to time-based classification
           if (liveClass.startTime.isAfter(now)) {
             upcoming.add(liveClass);
           } else {
@@ -888,6 +924,10 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
     final dateFormat = DateFormat('MMM dd, yyyy');
     final timeFormat = DateFormat('hh:mm a');
     
+    // Determine actual status based on time
+    final now = DateTime.now();
+    final actualStatus = _getActualStatus(liveClass, now);
+    
     // Get YouTube thumbnail if available
     String? thumbnailUrl;
     if (liveClass.youtubeUrl != null) {
@@ -924,20 +964,35 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: liveClass.status == 'LIVE' 
+                      color: actualStatus == 'LIVE' 
                         ? Colors.red 
-                        : liveClass.status == 'SCHEDULED'
+                        : actualStatus == 'SCHEDULED'
                           ? Colors.blue
                           : Colors.grey,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: Text(
-                      liveClass.status,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (actualStatus == 'LIVE')
+                          Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.only(right: 4),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        Text(
+                          actualStatus == 'LIVE' ? 'Live Now' : actualStatus,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1022,9 +1077,9 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                         child: ElevatedButton.icon(
                           onPressed: () => _launchUrl(liveClass.youtubeUrl!),
                           icon: const Icon(Icons.video_library),
-                          label: Text(liveClass.status == 'LIVE' ? 'Watch Live' : 'YouTube'),
+                          label: Text(actualStatus == 'LIVE' ? 'Watch Live' : 'YouTube'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: liveClass.status == 'LIVE' ? Colors.red : Colors.blue,
+                            backgroundColor: actualStatus == 'LIVE' ? Colors.red : Colors.blue,
                             foregroundColor: Colors.white,
                           ),
                         ),
