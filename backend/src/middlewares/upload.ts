@@ -62,12 +62,22 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   const allowedExtensions = allowedTypes[fieldType] || /jpeg|jpg|png|pdf|doc|docx/;
   
   const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedExtensions.test(file.mimetype);
-
-  if (mimetype && extname) {
-    return cb(null, true);
+  
+  // For exam answer files, be more lenient with MIME type checking
+  // Some browsers may send different MIME types for the same file extension
+  if (fieldType === 'files') {
+    if (extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error(`Invalid file type for ${fieldType}. Allowed extensions: ${allowedExtensions.source}`));
+    }
   } else {
-    cb(new Error(`Invalid file type for ${fieldType}. Allowed types: ${allowedExtensions.source}`));
+    const mimetype = allowedExtensions.test(file.mimetype);
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error(`Invalid file type for ${fieldType}. Allowed types: ${allowedExtensions.source}`));
+    }
   }
 };
 
