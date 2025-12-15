@@ -26,6 +26,9 @@ const storage = multer.diskStorage({
       subDir = 'certificates';
     } else if (file.fieldname === 'resource') {
       subDir = 'resources';
+    } else if (file.fieldname === 'files') {
+      // For exam answer uploads
+      subDir = 'exam-answers';
     }
 
     const fullPath = path.join(uploadDir, subDir);
@@ -52,6 +55,7 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
     notice: /pdf|doc|docx|jpg|jpeg|png/,
     certificate: /pdf/,
     resource: /pdf|doc|docx|ppt|pptx|xls|xlsx|txt|mp4|avi|mkv|mp3|wav|zip|rar|jpeg|jpg|png|gif|webp|svg/,
+    files: /pdf|doc|docx|ppt|pptx|xls|xlsx|txt|jpeg|jpg|png|gif|webp|svg|zip|rar/, // For exam answers
   };
 
   const fieldType = file.fieldname || 'general';

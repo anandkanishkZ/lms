@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticateToken, authorizeRoles } from '../middlewares/auth';
+import { uploadMultiple, handleUploadError } from '../middlewares/upload';
 import {
   createExam,
   getAllExams,
@@ -104,10 +105,17 @@ router.post('/:id/start', authenticateToken, authorizeRoles('STUDENT'), startExa
 
 /**
  * @route   POST /api/v1/exams/:examId/attempts/:attemptId/answer
- * @desc    Submit answer for a question
+ * @desc    Submit answer for a question (supports file uploads)
  * @access  Private (Student)
  */
-router.post('/:examId/attempts/:attemptId/answer', authenticateToken, authorizeRoles('STUDENT'), submitAnswer);
+router.post(
+  '/:examId/attempts/:attemptId/answer',
+  authenticateToken,
+  authorizeRoles('STUDENT'),
+  uploadMultiple('files', 5),
+  handleUploadError,
+  submitAnswer
+);
 
 /**
  * @route   POST /api/v1/exams/:examId/attempts/:attemptId/submit

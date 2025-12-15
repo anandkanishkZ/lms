@@ -50,7 +50,7 @@ class ApiConfig {
   static String examById(String id) => '$exams/$id';
   static String startExam(String id) => '$exams/$id/start';
   static String submitAnswer(String examId, String attemptId) => '$exams/$examId/attempts/$attemptId/answer';
-  static String submitExam(String examId) => '$exams/$examId/submit';
+  static String submitExam(String examId, String attemptId) => '$exams/$examId/attempts/$attemptId/submit';
   static String examResults(String examId) => '$exams/$examId/results';
   static String examResult(String id) => '$exams/$id/my-result';
   

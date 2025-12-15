@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/exam_provider.dart';
 import '../../models/exam.dart';
 import 'exam_preview_screen.dart';
+import 'take_exam_screen.dart';
 import 'dart:async';
 
 class ExamsScreen extends StatefulWidget {
@@ -591,9 +592,14 @@ class _ExamCard extends StatelessWidget {
             final provider = Provider.of<ExamProvider>(context, listen: false);
             final result = await provider.startExam(exam.id);
             if (result != null && context.mounted) {
-              // TODO: Navigate to exam taking screen
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Exam started! Taking screen coming soon...')),
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TakeExamScreen(
+                    examId: exam.id,
+                    examData: result,
+                  ),
+                ),
               );
             }
           },

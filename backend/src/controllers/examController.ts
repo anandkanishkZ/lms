@@ -802,8 +802,12 @@ export const submitAnswer = async (req: AuthRequest, res: Response) => {
       questionId,
       selectedOptionId,
       textAnswer,
-      uploadedFiles,
     } = req.body;
+
+    // Handle uploaded files
+    const uploadedFiles = req.files
+      ? (req.files as Express.Multer.File[]).map((file) => `/uploads/exam-answers/${file.filename}`)
+      : [];
 
     // Verify attempt belongs to student
     const attempt = await prisma.studentExamAttempt.findUnique({
@@ -857,7 +861,7 @@ export const submitAnswer = async (req: AuthRequest, res: Response) => {
         data: {
           selectedOptionId,
           textAnswer,
-          uploadedFiles: uploadedFiles || [],
+          uploadedFiles: uploadedFiles.length > 0 ? uploadedFiles : existingAnswer.uploadedFiles,
         },
       });
     } else {
@@ -868,7 +872,7 @@ export const submitAnswer = async (req: AuthRequest, res: Response) => {
           questionId,
           selectedOptionId,
           textAnswer,
-          uploadedFiles: uploadedFiles || [],
+          uploadedFiles: uploadedFiles.length > 0 ? uploadedFiles : [],
         },
       });
     }

@@ -56,9 +56,9 @@ class ExamProvider extends ChangeNotifier {
   }
 
   // Submit exam
-  Future<Map<String, dynamic>?> submitExam(String examId, Map<String, dynamic> answers) async {
+  Future<Map<String, dynamic>?> submitExam(String examId, String attemptId) async {
     try {
-      final result = await _examService.submitExam(examId, answers);
+      final result = await _examService.submitExam(examId, attemptId);
       await loadAttempts();
       return result;
     } catch (e) {

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'dart:typed_data';
 import '../config/api_config.dart';
 import '../models/exam.dart';
 import 'auth_service.dart';
@@ -112,19 +113,122 @@ class ExamService {
     }
   }
 
-  // Submit exam answers
-  Future<Map<String, dynamic>> submitExam(String examId, Map<String, dynamic> answers) async {
+  // Submit individual answer (for auto-save)
+  Future<void> submitAnswer(
+    String examId,
+    String attemptId,
+    String questionId,
+    dynamic answer,
+  ) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    try {
+      // Check if answer contains file uploads
+      bool hasFiles = false;
+      List<Map<String, dynamic>> files = [];
+      
+      if (answer is List) {
+        // Check if it's a list of file objects
+        if (answer.isNotEmpty && answer[0] is Map && answer[0].containsKey('bytes')) {
+          hasFiles = true;
+          files = List<Map<String, dynamic>>.from(answer);
+        }
+      }
+
+      if (hasFiles) {
+        // Handle file upload with multipart/form-data
+        var request = http.MultipartRequest(
+          'POST',
+          Uri.parse(ApiConfig.submitAnswer(examId, attemptId)),
+        );
+        
+        // Add headers
+        request.headers['Authorization'] = 'Bearer $token';
+        
+        // Add fields
+        request.fields['questionId'] = questionId;
+        
+        // Add files
+        for (var i = 0; i < files.length; i++) {
+          final file = files[i];
+          final fileName = file['name'] as String;
+          final bytes = file['bytes'] as Uint8List?;
+          
+          if (bytes != null) {
+            request.files.add(
+              http.MultipartFile.fromBytes(
+                'files',
+                bytes,
+                filename: fileName,
+              ),
+            );
+          }
+        }
+        
+        final streamedResponse = await request.send();
+        final response = await http.Response.fromStream(streamedResponse);
+        
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          final error = json.decode(response.body);
+          throw Exception(error['message'] ?? 'Failed to submit answer');
+        }
+      } else {
+        // Handle regular answer submission (text, MCQ, etc.)
+        Map<String, dynamic> bodyData = {'questionId': questionId};
+        
+        // Determine answer type and add appropriate field
+        if (answer is String) {
+          // For MCQ (option ID), TRUE_FALSE, SHORT_ANSWER, LONG_ANSWER
+          if (answer == 'true' || answer == 'false') {
+            bodyData['textAnswer'] = answer;
+          } else if (answer.length < 50) {
+            // Likely an option ID (MCQ) or short answer
+            // Try to determine if it's an MCQ option ID (usually starts with 'cm')
+            if (answer.startsWith('cm') || answer.startsWith('cl')) {
+              bodyData['selectedOptionId'] = answer;
+            } else {
+              bodyData['textAnswer'] = answer;
+            }
+          } else {
+            bodyData['textAnswer'] = answer;
+          }
+        } else if (answer != null) {
+          bodyData['textAnswer'] = answer.toString();
+        }
+        
+        final response = await http.post(
+          Uri.parse(ApiConfig.submitAnswer(examId, attemptId)),
+          headers: ApiConfig.headers(token: token),
+          body: json.encode(bodyData),
+        ).timeout(ApiConfig.timeout);
+
+        if (response.statusCode != 200 && response.statusCode != 201) {
+          final error = json.decode(response.body);
+          throw Exception(error['message'] ?? 'Failed to submit answer');
+        }
+      }
+    } catch (e) {
+      print('Error submitting answer: $e');
+      // Don't throw for auto-save failures - just log
+    }
+  }
+
+  // Submit exam attempt (final submission)
+  Future<Map<String, dynamic>> submitExamAttempt(
+    String examId,
+    String attemptId,
+  ) async {
     final token = await _authService.getToken();
     if (token == null) throw Exception('Not authenticated');
 
     try {
       final response = await http.post(
-        Uri.parse(ApiConfig.submitExam(examId)),
+        Uri.parse(ApiConfig.submitExam(examId, attemptId)),
         headers: ApiConfig.headers(token: token),
-        body: json.encode(answers),
       ).timeout(ApiConfig.timeout);
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
           return data['data'];
@@ -140,14 +244,22 @@ class ExamService {
     }
   }
 
-  // Get exam results
-  Future<Map<String, dynamic>> getExamResults(String examId) async {
+  // Submit exam (alias for submitExamAttempt for backward compatibility)
+  Future<Map<String, dynamic>> submitExam(
+    String examId,
+    String attemptId,
+  ) async {
+    return submitExamAttempt(examId, attemptId);
+  }
+
+  // Get exam result
+  Future<Map<String, dynamic>> getExamResult(String examId) async {
     final token = await _authService.getToken();
     if (token == null) throw Exception('Not authenticated');
 
     try {
       final response = await http.get(
-        Uri.parse(ApiConfig.examResults(examId)),
+        Uri.parse(ApiConfig.examResult(examId)),
         headers: ApiConfig.headers(token: token),
       ).timeout(ApiConfig.timeout);
 
@@ -156,14 +268,19 @@ class ExamService {
         if (data['success'] == true) {
           return data['data'];
         } else {
-          throw Exception(data['message'] ?? 'Failed to load results');
+          throw Exception(data['message'] ?? 'Failed to load result');
         }
       } else {
-        throw Exception('Failed to load results');
+        throw Exception('Failed to load result');
       }
     } catch (e) {
-      throw Exception('Error loading results: $e');
+      throw Exception('Error loading result: $e');
     }
+  }
+
+  // Alias for backwards compatibility
+  Future<Map<String, dynamic>> getExamResults(String examId) async {
+    return getExamResult(examId);
   }
 
   // Get my exam attempts

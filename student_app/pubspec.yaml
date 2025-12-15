@@ -67,6 +67,7 @@ dependencies:
   
   # HTTP with multipart support
   dio: ^5.4.1
+  file_picker: ^10.3.7
 
 dev_dependencies:
   flutter_test:

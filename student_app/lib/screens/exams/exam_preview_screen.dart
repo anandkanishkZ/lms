@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/exam_service.dart';
+import 'take_exam_screen.dart';
 
 class ExamPreviewScreen extends StatefulWidget {
   final String examId;
@@ -43,6 +44,40 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _startExam() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _examService.startExam(widget.examId);
+      
+      if (!mounted) return;
+      
+      // Navigate to take exam screen
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TakeExamScreen(
+            examId: widget.examId,
+            examData: result,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to start exam: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -551,11 +586,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: () {
-                                  // Navigate to exam screen
-                                  // TODO: Implement start exam navigation
-                                  Navigator.pop(context);
-                                },
+                                onPressed: _isLoading ? null : _startExam,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
                                   foregroundColor: Colors.white,
@@ -564,13 +595,22 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
-                                child: const Text(
-                                  'Start Exam',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                child: _isLoading
+                                    ? const SizedBox(
+                                        height: 20,
+                                        width: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        ),
+                                      )
+                                    : const Text(
+                                        'Start Exam',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                               ),
                             ),
 
