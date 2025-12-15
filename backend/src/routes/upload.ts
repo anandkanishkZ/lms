@@ -323,12 +323,11 @@ router.post(
 
 /**
  * @route   GET /api/v1/upload/exam-files/:filename
- * @desc    Securely serve exam answer files with authentication
- * @access  Private (Authenticated users only)
+ * @desc    Serve exam answer files publicly without authentication
+ * @access  Public (No authentication required)
  */
 router.get(
   '/exam-files/:filename',
-  authenticateToken,
   async (req, res): Promise<void> => {
     try {
       const { filename } = req.params;
