@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:timezone/data/latest.dart' as tz;
 import 'providers/auth_provider.dart';
 import 'providers/module_provider.dart';
 import 'providers/exam_provider.dart';
@@ -7,8 +8,17 @@ import 'providers/dashboard_provider.dart';
 import 'providers/notice_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
+import 'services/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize timezone data for notifications
+  tz.initializeTimeZones();
+  
+  // Initialize notification service
+  await NotificationService().initialize();
+  
   runApp(const MyApp());
 }
 

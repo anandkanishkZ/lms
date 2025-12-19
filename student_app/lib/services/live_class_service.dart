@@ -9,12 +9,47 @@ class LiveClassService {
 
   LiveClassService(this._authService);
 
+  Future<List<LiveClass>> getAllLiveClasses() async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('No token found');
+
+    print('Fetching all live classes...');
+    final url = '${ApiConfig.baseUrl}/live-classes?limit=100';
+    print('URL: $url');
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    print('All classes response status: ${response.statusCode}');
+    print('All classes response body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      if (data['data'] == null || data['data']['liveClasses'] is! List) {
+        print('No data or invalid format');
+        return [];
+      }
+      final liveClasses = (data['data']['liveClasses'] as List)
+          .map((liveClassJson) => LiveClass.fromJson(liveClassJson))
+          .toList();
+      print('Parsed ${liveClasses.length} total live classes');
+      return liveClasses;
+    } else {
+      throw Exception('Failed to load live classes: ${response.statusCode}');
+    }
+  }
+
   Future<List<LiveClass>> getUpcomingLiveClasses() async {
     final token = await _authService.getToken();
     if (token == null) throw Exception('No token found');
 
     final response = await http.get(
-      Uri.parse(ApiConfig.upcomingLiveSessions),
+      Uri.parse('${ApiConfig.baseUrl}/live-classes?upcoming=true'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -23,7 +58,10 @@ class LiveClassService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      final liveClasses = (data['data'] as List)
+      if (data['data'] == null || data['data']['liveClasses'] is! List) {
+        return [];
+      }
+      final liveClasses = (data['data']['liveClasses'] as List)
           .map((liveClassJson) => LiveClass.fromJson(liveClassJson))
           .toList();
       return liveClasses;
@@ -37,7 +75,7 @@ class LiveClassService {
     if (token == null) throw Exception('No token found');
 
     final response = await http.get(
-      Uri.parse(ApiConfig.currentLiveSessions),
+      Uri.parse('${ApiConfig.baseUrl}/live-classes?status=LIVE'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -46,7 +84,10 @@ class LiveClassService {
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      final liveClasses = (data['data'] as List)
+      if (data['data'] == null || data['data']['liveClasses'] is! List) {
+        return [];
+      }
+      final liveClasses = (data['data']['liveClasses'] as List)
           .map((liveClassJson) => LiveClass.fromJson(liveClassJson))
           .toList();
       return liveClasses;
@@ -59,19 +100,31 @@ class LiveClassService {
     final token = await _authService.getToken();
     if (token == null) throw Exception('No token found');
 
+    print('Fetching past live classes...');
+    final url = '${ApiConfig.baseUrl}/live-classes?status=COMPLETED';
+    print('URL: $url');
+
     final response = await http.get(
-      Uri.parse(ApiConfig.pastLiveSessions),
+      Uri.parse(url),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
     );
 
+    print('Past classes response status: ${response.statusCode}');
+    print('Past classes response body: ${response.body}');
+
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-      final liveClasses = (data['data'] as List)
+      if (data['data'] == null || data['data']['liveClasses'] is! List) {
+        print('No data or invalid format');
+        return [];
+      }
+      final liveClasses = (data['data']['liveClasses'] as List)
           .map((liveClassJson) => LiveClass.fromJson(liveClassJson))
           .toList();
+      print('Parsed ${liveClasses.length} past live classes');
       return liveClasses;
     } else {
       throw Exception('Failed to load past live classes: ${response.statusCode}');

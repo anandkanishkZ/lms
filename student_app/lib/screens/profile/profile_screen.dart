@@ -251,7 +251,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     final user = authProvider.currentUser;
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.grey[50],
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: CustomScrollView(
@@ -259,7 +259,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           slivers: [
             // Modern App Bar with Profile Header
             SliverAppBar(
-              expandedHeight: 220,
+              expandedHeight: 265,
               pinned: true,
               backgroundColor: Theme.of(context).primaryColor,
               elevation: 0,
@@ -267,19 +267,19 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 background: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                       colors: [
                         Theme.of(context).primaryColor,
-                        Theme.of(context).primaryColor.withOpacity(0.8),
+                        Theme.of(context).primaryColor.withOpacity(0.85),
                       ],
                     ),
                   ),
                   child: SafeArea(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Spacer(flex: 2),
+                        const SizedBox(height: 15),
                         // Profile Avatar with Edit Button
                         Stack(
                           children: [
@@ -292,22 +292,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: Colors.white,
-                                      width: 4,
+                                      width: 5,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 15,
-                                        offset: const Offset(0, 8),
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 20,
+                                        spreadRadius: 5,
+                                        offset: const Offset(0, 10),
                                       ),
                                     ],
                                   ),
                                   child: CircleAvatar(
-                                    radius: 55,
+                                    radius: 65,
                                     backgroundColor: Colors.white,
                                     child: CircleAvatar(
-                                      radius: 50,
-                                      backgroundColor: Colors.grey[200],
+                                      radius: 60,
+                                      backgroundColor: Colors.grey[100],
                                       backgroundImage: user?.profileImage != null &&
                                               user!.profileImage!.isNotEmpty
                                           ? CachedNetworkImageProvider(
@@ -324,7 +325,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                               : Text(
                                                   user?.name.substring(0, 1).toUpperCase() ?? 'S',
                                                   style: TextStyle(
-                                                    fontSize: 40,
+                                                    fontSize: 45,
                                                     fontWeight: FontWeight.bold,
                                                     color: Theme.of(context).primaryColor,
                                                   ),
@@ -336,21 +337,21 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               ),
                             ),
                             Positioned(
-                              bottom: 0,
-                              right: 0,
+                              bottom: 5,
+                              right: 5,
                               child: GestureDetector(
                                 onTap: _isUploadingAvatar
                                     ? null
                                     : () => _showAvatarOptions(context),
                                 child: Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        blurRadius: 8,
+                                        color: Colors.black.withOpacity(0.15),
+                                        blurRadius: 10,
                                         offset: const Offset(0, 4),
                                       ),
                                     ],
@@ -358,51 +359,87 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                   child: Icon(
                                     Icons.camera_alt_rounded,
                                     color: Theme.of(context).primaryColor,
-                                    size: 18,
+                                    size: 22,
                                   ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const Spacer(flex: 1),
+                        const SizedBox(height: 20),
                         // Name
                         Text(
                           user?.name ?? 'Student',
                           style: const TextStyle(
-                            fontSize: 20,
+                            fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            letterSpacing: 0.3,
+                            letterSpacing: 0.5,
                           ),
-                          maxLines: 1,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         // Email with icon
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.email_rounded,
-                              color: Colors.white70,
-                              size: 14,
-                            ),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                user?.email ?? '',
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.email_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  user?.email ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        // Account Status Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: user?.verified == true ? Colors.green : Colors.orange,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                user?.verified == true ? Icons.verified : Icons.pending,
+                                color: Colors.white,
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                user?.verified == true ? 'Verified Account' : 'Pending Verification',
                                 style: const TextStyle(
                                   fontSize: 12,
-                                  color: Colors.white70,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                        const Spacer(flex: 1),
                       ],
                     ),
                   ),
@@ -412,67 +449,89 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
 
             // Body Content
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Symbol Number Badge (if exists)
-                    if (user?.symbolNo != null) ...[
-                      Center(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+                  
+                  // Symbol Number Badge (if exists)
+                  if (user?.symbolNo != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Center(
                         child: Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 10,
+                            horizontal: 24,
+                            vertical: 14,
                           ),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Theme.of(context).primaryColor.withOpacity(0.1),
-                                Theme.of(context).primaryColor.withOpacity(0.05),
+                                Theme.of(context).primaryColor,
+                                Theme.of(context).primaryColor.withOpacity(0.8),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(24),
-                            border: Border.all(
-                              color: Theme.of(context).primaryColor.withOpacity(0.3),
-                              width: 1.5,
-                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).primaryColor.withOpacity(0.3),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(
+                              const Icon(
                                 Icons.badge_rounded,
-                                color: Theme.of(context).primaryColor,
-                                size: 20,
+                                color: Colors.white,
+                                size: 22,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 10),
                               Text(
                                 'Symbol No: ${user!.symbolNo}',
-                                style: TextStyle(
-                                  color: Theme.of(context).primaryColor,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  letterSpacing: 0.5,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Personal Information Section
-                    const Text(
-                      'Personal Information',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
                     ),
-                    const SizedBox(height: 12),
-                    _buildInfoCard(
+                    const SizedBox(height: 24),
+                  ],
+
+                  // Personal Information Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.person_outline_rounded,
+                          color: Theme.of(context).primaryColor,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Personal Information',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: _buildInfoCard(
                       children: [
                         _buildInfoRow(
                           icon: Icons.person_rounded,
@@ -498,53 +557,73 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                         ),
                       ],
                     ),
+                  ),
 
-                    const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-                    // Account Actions Section
-                    const Text(
-                      'Account Settings',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                  // Account Actions Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.settings_outlined,
+                          color: Theme.of(context).primaryColor,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Account Settings',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
+                  ),
+                  const SizedBox(height: 16),
 
-                    _buildActionButton(
-                      icon: Icons.edit_rounded,
-                      title: 'Edit Profile',
-                      subtitle: 'Update your personal information',
-                      gradient: LinearGradient(
-                        colors: [Colors.blue.shade400, Colors.blue.shade600],
-                      ),
-                      onTap: () => _showEditProfileDialog(context, authProvider),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        _buildActionButton(
+                          icon: Icons.edit_rounded,
+                          title: 'Edit Profile',
+                          subtitle: 'Update your personal information',
+                          gradient: LinearGradient(
+                            colors: [Colors.blue.shade400, Colors.blue.shade600],
+                          ),
+                          onTap: () => _showEditProfileDialog(context, authProvider),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          icon: Icons.lock_rounded,
+                          title: 'Change Password',
+                          subtitle: 'Update your account password',
+                          gradient: LinearGradient(
+                            colors: [Colors.purple.shade400, Colors.purple.shade600],
+                          ),
+                          onTap: () => _showChangePasswordDialog(context, authProvider),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildActionButton(
+                          icon: Icons.logout_rounded,
+                          title: 'Logout',
+                          subtitle: 'Sign out from your account',
+                          gradient: LinearGradient(
+                            colors: [Colors.red.shade400, Colors.red.shade600],
+                          ),
+                          onTap: () => _handleLogout(context, authProvider),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    _buildActionButton(
-                      icon: Icons.lock_rounded,
-                      title: 'Change Password',
-                      subtitle: 'Update your account password',
-                      gradient: LinearGradient(
-                        colors: [Colors.purple.shade400, Colors.purple.shade600],
-                      ),
-                      onTap: () => _showChangePasswordDialog(context, authProvider),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildActionButton(
-                      icon: Icons.logout_rounded,
-                      title: 'Logout',
-                      subtitle: 'Sign out from your account',
-                      gradient: LinearGradient(
-                        colors: [Colors.red.shade400, Colors.red.shade600],
-                      ),
-                      onTap: () => _handleLogout(context, authProvider),
-                    ),
+                  ),
 
-                    const SizedBox(height: 80), // Extra padding for bottom navigation
-                  ],
-                ),
+                  const SizedBox(height: 100), // Extra padding for bottom navigation
+                ],
               ),
             ),
           ],

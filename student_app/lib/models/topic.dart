@@ -139,7 +139,12 @@ class LiveClass {
   final DateTime? endTime;
   final String status;
   final String? moduleId;
+  final String? moduleName;
   final String? recordingUrl;
+  final bool isLive;
+  final String? subjectName;
+  final String? className;
+  final String? teacherName;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -153,23 +158,59 @@ class LiveClass {
     this.endTime,
     required this.status,
     this.moduleId,
+    this.moduleName,
     this.recordingUrl,
+    this.isLive = false,
+    this.subjectName,
+    this.className,
+    this.teacherName,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory LiveClass.fromJson(Map<String, dynamic> json) {
+    // Extract related data
+    String? moduleName;
+    String? subjectName;
+    String? className;
+    String? teacherName;
+    
+    if (json['module'] != null) {
+      moduleName = json['module']['title'] as String?;
+    }
+    
+    if (json['subject'] != null) {
+      subjectName = json['subject']['name'] as String?;
+    }
+    
+    if (json['class'] != null) {
+      final classData = json['class'];
+      className = classData['name'] as String?;
+      if (classData['section'] != null) {
+        className = '$className-${classData['section']}';
+      }
+    }
+    
+    if (json['teacher'] != null) {
+      teacherName = json['teacher']['name'] as String?;
+    }
+    
     return LiveClass(
       id: json['id'] as String,
-      title: json['title'] as String,
+      title: json['title'] as String? ?? 'Untitled Class',
       description: json['description'] as String?,
       meetingLink: json['meetingLink'] as String?,
       youtubeUrl: json['youtubeUrl'] as String?,
       startTime: DateTime.parse(json['startTime']),
       endTime: json['endTime'] != null ? DateTime.parse(json['endTime']) : null,
-      status: json['status'] as String,
+      status: json['status'] as String? ?? 'SCHEDULED',
       moduleId: json['moduleId'] as String?,
+      moduleName: moduleName,
       recordingUrl: json['recordingUrl'] as String?,
+      isLive: json['status'] == 'LIVE',
+      subjectName: subjectName,
+      className: className,
+      teacherName: teacherName,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );
