@@ -265,33 +265,110 @@ class _ExamsScreenState extends State<ExamsScreen> {
   }
 
   Widget _buildErrorState(ExamProvider provider) {
+    // Parse error to provide better messaging
+    String errorMessage = provider.error ?? 'Unknown error occurred';
+    String title = 'Error Loading Exams';
+    IconData icon = Icons.error_outline;
+    Color iconColor = Colors.red;
+    String suggestion = 'Please check your internet connection and try again.';
+
+    if (errorMessage.toLowerCase().contains('network') || 
+        errorMessage.toLowerCase().contains('connection')) {
+      title = 'Connection Error';
+      icon = Icons.wifi_off;
+      iconColor = Colors.orange;
+      suggestion = 'Please check your internet connection and try again.';
+    } else if (errorMessage.toLowerCase().contains('timeout')) {
+      title = 'Request Timeout';
+      icon = Icons.timer_off;
+      iconColor = Colors.orange;
+      suggestion = 'The server is taking too long to respond. Please try again.';
+    } else if (errorMessage.toLowerCase().contains('unauthorized') || 
+               errorMessage.toLowerCase().contains('not authenticated')) {
+      title = 'Authentication Error';
+      icon = Icons.lock_outline;
+      iconColor = Colors.red;
+      suggestion = 'Please log out and log in again.';
+    } else if (errorMessage.toLowerCase().contains('server') || 
+               errorMessage.toLowerCase().contains('500')) {
+      title = 'Server Error';
+      icon = Icons.cloud_off;
+      iconColor = Colors.grey;
+      suggestion = 'The server is experiencing issues. Please try again later.';
+    }
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-          const SizedBox(height: 16),
-          Text(
-            'Error loading exams',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              provider.error!,
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 64, color: iconColor),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              suggestion,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey[600],
-                  ),
+                    height: 1.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () => provider.loadExams(),
-            child: const Text('Retry'),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.info_outline, size: 16, color: Colors.grey[600]),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      errorMessage.replaceAll('Exception:', '').trim(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => provider.loadExams(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

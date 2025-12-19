@@ -68,17 +68,145 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
     } catch (e) {
       if (!mounted) return;
       
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to start exam: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      setState(() => _isLoading = false);
+      
+      // Show detailed error dialog
+      _showErrorDialog(e.toString());
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  void _showErrorDialog(String errorMessage) {
+    // Parse error message
+    String title = 'Error Starting Exam';
+    String message = errorMessage;
+    IconData icon = Icons.error_outline;
+    Color iconColor = Colors.red;
+
+    if (errorMessage.toLowerCase().contains('maximum attempts')) {
+      title = 'Maximum Attempts Reached';
+      message = 'You have already used all available attempts for this exam.';
+      icon = Icons.block;
+      iconColor = Colors.orange;
+    } else if (errorMessage.toLowerCase().contains('not started yet') || 
+               errorMessage.toLowerCase().contains('before start time')) {
+      title = 'Exam Not Available Yet';
+      message = 'This exam has not started yet. Please check back at the scheduled time.';
+      icon = Icons.schedule;
+      iconColor = Colors.blue;
+    } else if (errorMessage.toLowerCase().contains('expired') || 
+               errorMessage.toLowerCase().contains('after end time')) {
+      title = 'Exam Has Ended';
+      message = 'This exam has already ended and is no longer accepting submissions.';
+      icon = Icons.event_busy;
+      iconColor = Colors.grey;
+    } else if (errorMessage.toLowerCase().contains('not found')) {
+      title = 'Exam Not Found';
+      message = 'The exam you are trying to access could not be found.';
+      icon = Icons.search_off;
+      iconColor = Colors.grey;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: iconColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                size: 48,
+                color: iconColor,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (_examPreview != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    if (_examPreview!['attemptsMade'] != null && 
+                        _examPreview!['maxAttempts'] != null)
+                      _buildInfoRow(
+                        'Attempts',
+                        '${_examPreview!['attemptsMade']}/${_examPreview!['maxAttempts']}',
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey[600],
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    );
   }
 
   String _formatDateTime(String? dateTime) {

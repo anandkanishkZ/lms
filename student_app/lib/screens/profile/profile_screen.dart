@@ -255,10 +255,11 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
           slivers: [
             // Modern App Bar with Profile Header
             SliverAppBar(
-              expandedHeight: 240,
+              expandedHeight: 220,
               pinned: true,
               backgroundColor: Theme.of(context).primaryColor,
               elevation: 0,
@@ -276,9 +277,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                   ),
                   child: SafeArea(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 50),
+                        const Spacer(flex: 2),
                         // Profile Avatar with Edit Button
                         Stack(
                           children: [
@@ -291,21 +292,21 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: Colors.white,
-                                      width: 5,
+                                      width: 4,
                                     ),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withOpacity(0.3),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
+                                        blurRadius: 15,
+                                        offset: const Offset(0, 8),
                                       ),
                                     ],
                                   ),
                                   child: CircleAvatar(
-                                    radius: 65,
+                                    radius: 55,
                                     backgroundColor: Colors.white,
                                     child: CircleAvatar(
-                                      radius: 60,
+                                      radius: 50,
                                       backgroundColor: Colors.grey[200],
                                       backgroundImage: user?.profileImage != null &&
                                               user!.profileImage!.isNotEmpty
@@ -323,7 +324,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                               : Text(
                                                   user?.name.substring(0, 1).toUpperCase() ?? 'S',
                                                   style: TextStyle(
-                                                    fontSize: 48,
+                                                    fontSize: 40,
                                                     fontWeight: FontWeight.bold,
                                                     color: Theme.of(context).primaryColor,
                                                   ),
@@ -335,14 +336,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                               ),
                             ),
                             Positioned(
-                              bottom: 5,
-                              right: 5,
+                              bottom: 0,
+                              right: 0,
                               child: GestureDetector(
                                 onTap: _isUploadingAvatar
                                     ? null
                                     : () => _showAvatarOptions(context),
                                 child: Container(
-                                  padding: const EdgeInsets.all(10),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     shape: BoxShape.circle,
@@ -357,25 +358,27 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                                   child: Icon(
                                     Icons.camera_alt_rounded,
                                     color: Theme.of(context).primaryColor,
-                                    size: 22,
+                                    size: 18,
                                   ),
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const Spacer(flex: 1),
                         // Name
                         Text(
                           user?.name ?? 'Student',
                           style: const TextStyle(
-                            fontSize: 26,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            letterSpacing: 0.5,
+                            letterSpacing: 0.3,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 4),
                         // Email with icon
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -383,18 +386,23 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             const Icon(
                               Icons.email_rounded,
                               color: Colors.white70,
-                              size: 16,
+                              size: 14,
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              user?.email ?? '',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.white70,
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                user?.email ?? '',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
                         ),
+                        const Spacer(flex: 1),
                       ],
                     ),
                   ),
@@ -534,7 +542,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                       onTap: () => _handleLogout(context, authProvider),
                     ),
 
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 80), // Extra padding for bottom navigation
                   ],
                 ),
               ),
