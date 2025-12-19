@@ -39,6 +39,9 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
   Map<String, dynamic> _answers = {}; // questionId -> answer
   Map<String, bool> _questionStatus = {}; // questionId -> isAnswered
   
+  // Text controllers for text input questions
+  Map<String, TextEditingController> _textControllers = {};
+  
   // Timer
   Timer? _timer;
   int _remainingSeconds = 0;
@@ -56,6 +59,11 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
   @override
   void dispose() {
     _timer?.cancel();
+    // Dispose all text controllers
+    for (var controller in _textControllers.values) {
+      controller.dispose();
+    }
+    _textControllers.clear();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -118,6 +126,23 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
         _isLoading = false;
       });
     }
+  }
+
+  // Get or create a text controller for a question
+  TextEditingController _getController(String questionId, dynamic currentAnswer) {
+    if (!_textControllers.containsKey(questionId)) {
+      _textControllers[questionId] = TextEditingController(
+        text: currentAnswer?.toString() ?? '',
+      );
+    } else {
+      // Update text if answer changed externally
+      final existingText = _textControllers[questionId]!.text;
+      final newText = currentAnswer?.toString() ?? '';
+      if (existingText != newText) {
+        _textControllers[questionId]!.text = newText;
+      }
+    }
+    return _textControllers[questionId]!;
   }
 
   void _startTimer() {
@@ -275,18 +300,16 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: WillPopScope(
-        onWillPop: () async {
-          if (_canGoBack) return true;
-          
-          final confirm = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: const Text('Exit Exam?'),
-              content: const Text('Your progress will be saved. You can resume later.'),
-              actions: [
+    return WillPopScope(
+      onWillPop: () async {
+        if (_canGoBack) return true;
+        
+        final confirm = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Exit Exam?'),
+            content: const Text('Your progress will be saved. You can resume later.'),
+            actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
                   child: const Text('Cancel'),
@@ -371,7 +394,6 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
                       _buildNavigationButtons(),
                     ],
                   ),
-        ),
       ),
     );
   }
@@ -704,7 +726,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
   }
 
   Widget _buildShortAnswerInput(String questionId, dynamic currentAnswer) {
-    final controller = TextEditingController(text: currentAnswer?.toString() ?? '');
+    final controller = _getController(questionId, currentAnswer);
     
     return TextField(
       controller: controller,
@@ -723,7 +745,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
   }
 
   Widget _buildLongAnswerInput(String questionId, dynamic currentAnswer) {
-    final controller = TextEditingController(text: currentAnswer?.toString() ?? '');
+    final controller = _getController(questionId, currentAnswer);
     
     return TextField(
       controller: controller,

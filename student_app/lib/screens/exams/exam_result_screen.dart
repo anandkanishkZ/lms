@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/exam_service.dart';
+import 'exam_review_screen.dart';
 
 class ExamResultScreen extends StatefulWidget {
   final String examId;
@@ -48,12 +49,30 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     }
   }
 
+  // Helper methods to get values from either attempt object or result object
+  double _getObtainedMarks() {
+    if (_result == null) return 0;
+    // Try attempt object fields first (totalScore), then result object fields (totalMarksObtained)
+    return (_result!['totalScore'] ?? _result!['totalMarksObtained'] ?? 0).toDouble();
+  }
+
+  double _getTotalMarks() {
+    if (_result == null) return 100;
+    // Try attempt object fields first (maxScore), then exam.totalMarks
+    return (_result!['maxScore'] ?? _result!['exam']?['totalMarks'] ?? 100).toDouble();
+  }
+
+  double _getPassingMarks() {
+    if (_result == null) return 0;
+    return (_result!['exam']?['passingMarks'] ?? 0).toDouble();
+  }
+
   Color _getGradeColor() {
     if (_result == null) return Colors.grey;
     
-    final obtained = _result!['totalMarksObtained'] ?? 0;
-    final total = _result!['exam']?['totalMarks'] ?? 100;
-    final percentage = (obtained / total) * 100;
+    final obtained = _getObtainedMarks();
+    final total = _getTotalMarks();
+    final percentage = total > 0 ? (obtained / total) * 100 : 0;
     
     if (percentage >= 80) return Colors.green;
     if (percentage >= 60) return Colors.blue;
@@ -64,9 +83,9 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   String _getGradeText() {
     if (_result == null) return 'N/A';
     
-    final obtained = _result!['totalMarksObtained'] ?? 0;
-    final total = _result!['exam']?['totalMarks'] ?? 100;
-    final percentage = (obtained / total) * 100;
+    final obtained = _getObtainedMarks();
+    final total = _getTotalMarks();
+    final percentage = total > 0 ? (obtained / total) * 100 : 0;
     
     if (percentage >= 90) return 'A+';
     if (percentage >= 80) return 'A';
@@ -81,8 +100,8 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
   bool _isPassed() {
     if (_result == null) return false;
     
-    final obtained = _result!['totalMarksObtained'] ?? 0;
-    final passing = _result!['exam']?['passingMarks'] ?? 0;
+    final obtained = _getObtainedMarks();
+    final passing = _getPassingMarks();
     
     return obtained >= passing;
   }
@@ -186,7 +205,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
                                   Text(
-                                    '${_result!['totalMarksObtained'] ?? 0}',
+                                    '${_getObtainedMarks().toStringAsFixed(0)}',
                                     style: TextStyle(
                                       fontSize: 64,
                                       fontWeight: FontWeight.bold,
@@ -194,7 +213,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                                     ),
                                   ),
                                   Text(
-                                    '/${_result!['exam']?['totalMarks'] ?? 0}',
+                                    '/${_getTotalMarks().toStringAsFixed(0)}',
                                     style: TextStyle(
                                       fontSize: 32,
                                       color: Colors.grey[600],
@@ -232,14 +251,14 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                           children: [
                             _buildStatRow(
                               'Passing Marks',
-                              '${_result!['exam']?['passingMarks'] ?? 0}',
+                              '${_getPassingMarks().toStringAsFixed(0)}',
                               Icons.rule,
                               Colors.blue,
                             ),
                             const SizedBox(height: 12),
                             _buildStatRow(
                               'Percentage',
-                              '${(((_result!['totalMarksObtained'] ?? 0) / (_result!['exam']?['totalMarks'] ?? 1)) * 100).toStringAsFixed(1)}%',
+                              '${_getTotalMarks() > 0 ? ((_getObtainedMarks() / _getTotalMarks()) * 100).toStringAsFixed(1) : "0.0"}%',
                               Icons.percent,
                               Colors.purple,
                             ),
@@ -292,9 +311,13 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                                 child: OutlinedButton.icon(
                                   onPressed: () {
                                     // Navigate to review answers
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Review feature coming soon!'),
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ExamReviewScreen(
+                                          examId: widget.examId,
+                                          attemptData: _result,
+                                        ),
                                       ),
                                     );
                                   },

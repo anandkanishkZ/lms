@@ -28,6 +28,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Free Education Nepal',
         debugShowCheckedModeBanner: false,
+        // Force LTR text direction for the entire app
+        locale: const Locale('en', 'US'),
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.blue,
@@ -45,6 +47,13 @@ class MyApp extends StatelessWidget {
             ),
           ),
         ),
+        // Builder to wrap everything with LTR directionality
+        builder: (context, child) {
+          return Directionality(
+            textDirection: TextDirection.ltr,
+            child: child ?? const SizedBox(),
+          );
+        },
         home: const AuthWrapper(),
       ),
     );
