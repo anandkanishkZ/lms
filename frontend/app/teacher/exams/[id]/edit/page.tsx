@@ -293,12 +293,13 @@ export default function EditExamPage() {
       setLoading(true);
 
       // Prepare update data (only changed fields)
+      // Convert datetime-local strings to ISO format to preserve timezone
       const updateData: UpdateExamData = {
         title: formData.title,
         description: formData.description,
         instructions: formData.instructions,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
+        startTime: formData.startTime ? new Date(formData.startTime).toISOString() : undefined,
+        endTime: formData.endTime ? new Date(formData.endTime).toISOString() : undefined,
         duration: formData.duration,
         totalMarks: formData.totalMarks,
         passingMarks: formData.passingMarks,

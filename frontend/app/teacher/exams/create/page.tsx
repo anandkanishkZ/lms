@@ -191,8 +191,11 @@ export default function CreateExamPage() {
     try {
       setLoading(true);
 
+      // Convert datetime-local strings to ISO format to preserve timezone
       const examData: CreateExamData = {
         ...formData,
+        startTime: formData.startTime ? new Date(formData.startTime).toISOString() : '',
+        endTime: formData.endTime ? new Date(formData.endTime).toISOString() : '',
         questions,
       } as CreateExamData;
 
