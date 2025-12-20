@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/exam_service.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'take_exam_screen.dart';
 
 class ExamPreviewScreen extends StatefulWidget {
@@ -340,7 +341,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
         foregroundColor: Colors.white,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? SkeletonDetailContent()
           : _error != null
               ? Center(
                   child: Column(

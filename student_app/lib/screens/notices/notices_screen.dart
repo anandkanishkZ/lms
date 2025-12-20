@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/notice_provider.dart';
 import '../../models/notice.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'package:intl/intl.dart';
 import 'notice_detail_screen.dart';
 
@@ -106,7 +107,7 @@ class _NoticesScreenState extends State<NoticesScreen> {
             child: Consumer<NoticeProvider>(
               builder: (context, provider, child) {
                 if (provider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
+                  return SkeletonNoticeList();
                 }
 
                 if (provider.error != null) {

@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 import '../../models/module.dart';
 import '../../models/topic.dart';
 import '../../models/review.dart';
+import '../../models/resource.dart' as ResourceModel;
 import '../../services/topic_service.dart';
 import '../../services/lesson_service.dart';
 import '../../services/live_class_service.dart';
 import '../../services/review_service.dart';
+import '../../services/resource_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'package:intl/intl.dart';
 import '../lessons/lesson_detail_screen.dart';
+import '../live_classes/youtube_player_screen.dart';
 
 class ModuleDetailScreen extends StatefulWidget {
   final Module module;
@@ -30,14 +35,18 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
   LessonService? _lessonService;
   LiveClassService? _liveClassService;
   ReviewService? _reviewService;
+  ResourceService? _resourceService;
 
   List<Topic> _topics = [];
   List<LiveClass> _upcomingClasses = [];
   List<LiveClass> _pastClasses = [];
+  List<ResourceModel.Resource> _resources = [];
   bool _isLoadingTopics = false;
   bool _isLoadingLiveClasses = false;
+  bool _isLoadingResources = false;
   String? _topicsError;
   String? _liveClassesError;
+  String? _resourcesError;
 
   // Review related state
   ModuleReview? _myReview;
@@ -75,10 +84,12 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       _lessonService = LessonService(authProvider.authService);
       _liveClassService = LiveClassService(authProvider.authService);
       _reviewService = ReviewService(authProvider.authService);
+      _resourceService = ResourceService(authProvider.authService);
 
       _loadTopics();
       _loadLiveClasses();
       _loadReviews();
+      _loadResources();
     }
   }
 
@@ -131,6 +142,28 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       setState(() {
         _topicsError = e.toString();
         _isLoadingTopics = false;
+      });
+    }
+  }
+
+  Future<void> _loadResources() async {
+    if (_resourceService == null) return;
+    
+    setState(() {
+      _isLoadingResources = true;
+      _resourcesError = null;
+    });
+
+    try {
+      final resources = await _resourceService!.getModuleResources(widget.module.id);
+      setState(() {
+        _resources = resources;
+        _isLoadingResources = false;
+      });
+    } catch (e) {
+      setState(() {
+        _resourcesError = e.toString();
+        _isLoadingResources = false;
       });
     }
   }
@@ -416,7 +449,11 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
             ),
             const SizedBox(height: 12),
             GestureDetector(
-              onTap: () => _launchUrl(widget.module.featuredVideoUrl!),
+              onTap: () {
+                if (widget.module.featuredVideoUrl != null) {
+                  _playYouTubeVideo(widget.module.featuredVideoUrl!, widget.module.title);
+                }
+              },
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
@@ -613,38 +650,263 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
   }
 
   Widget _buildResourcesTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
-          const SizedBox(height: 16),
-          Text(
-            'No Resources Available',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: Colors.grey[600],
-              fontWeight: FontWeight.w500,
+    if (_isLoadingResources) {
+      return SkeletonListItems();
+    }
+
+    if (_resourcesError != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text('Error loading resources', style: TextStyle(color: Colors.red[700])),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _loadResources,
+              child: const Text('Retry'),
             ),
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              'Resources for this module will be added soon',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[500],
+          ],
+        ),
+      );
+    }
+
+    if (_resources.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.folder_open, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No Resources Available',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32),
+              child: Text(
+                'Resources for this module will be added soon',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Colors.grey[500],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadResources,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _resources.length,
+        itemBuilder: (context, index) {
+          final resource = _resources[index];
+          return _buildResourceCard(resource);
+        },
       ),
     );
   }
 
+  Widget _buildResourceCard(ResourceModel.Resource resource) {
+    IconData icon;
+    Color iconColor;
+
+    switch (resource.type.toUpperCase()) {
+      case 'VIDEO':
+        icon = Icons.play_circle_filled;
+        iconColor = Colors.red;
+        break;
+      case 'LINK':
+        icon = Icons.link;
+        iconColor = Colors.blue;
+        break;
+      case 'DOCUMENT':
+      case 'FILE':
+        if (resource.fileType?.toLowerCase().contains('pdf') == true) {
+          icon = Icons.picture_as_pdf;
+          iconColor = Colors.red[700]!;
+        } else if (resource.fileType?.toLowerCase().contains('doc') == true) {
+          icon = Icons.description;
+          iconColor = Colors.blue[700]!;
+        } else if (resource.fileType?.toLowerCase().contains('xls') == true ||
+                   resource.fileType?.toLowerCase().contains('sheet') == true) {
+          icon = Icons.table_chart;
+          iconColor = Colors.green[700]!;
+        } else if (resource.fileType?.toLowerCase().contains('ppt') == true ||
+                   resource.fileType?.toLowerCase().contains('slide') == true) {
+          icon = Icons.slideshow;
+          iconColor = Colors.orange[700]!;
+        } else if (resource.fileType?.toLowerCase().contains('image') == true ||
+                   resource.fileType?.toLowerCase().contains('jpg') == true ||
+                   resource.fileType?.toLowerCase().contains('png') == true) {
+          icon = Icons.image;
+          iconColor = Colors.purple[700]!;
+        } else if (resource.fileType?.toLowerCase().contains('zip') == true ||
+                   resource.fileType?.toLowerCase().contains('rar') == true) {
+          icon = Icons.folder_zip;
+          iconColor = Colors.amber[700]!;
+        } else {
+          icon = Icons.insert_drive_file;
+          iconColor = Colors.grey[700]!;
+        }
+        break;
+      default:
+        icon = Icons.insert_drive_file;
+        iconColor = Colors.grey[700]!;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () => _handleResourceTap(resource),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      resource.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (resource.description != null && resource.description!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        resource.description!,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey[600],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        if (resource.fileType != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: iconColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              resource.fileType!.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: iconColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        if (resource.formattedFileSize.isNotEmpty) ...[
+                          Icon(Icons.file_present, size: 14, color: Colors.grey[500]),
+                          const SizedBox(width: 4),
+                          Text(
+                            resource.formattedFileSize,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                        if (resource.accessCount != null && resource.accessCount! > 0) ...[
+                          const SizedBox(width: 12),
+                          Icon(Icons.visibility, size: 14, color: Colors.grey[500]),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${resource.accessCount}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right, color: Colors.grey[400]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleResourceTap(ResourceModel.Resource resource) async {
+    if (_resourceService == null) return;
+
+    // Track access
+    await _resourceService!.trackAccess(resource.id, 'VIEW');
+
+    if (resource.type.toUpperCase() == 'LINK' && resource.externalUrl != null) {
+      // Open external link
+      final url = Uri.parse(resource.externalUrl!);
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open link')),
+          );
+        }
+      }
+    } else if (resource.filePath != null) {
+      // Download/open file
+      final fileUrl = _resourceService!.getResourceUrl(resource.filePath);
+      final url = Uri.parse(fileUrl);
+      
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+        // Track download
+        await _resourceService!.trackAccess(resource.id, 'DOWNLOAD');
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not open resource')),
+          );
+        }
+      }
+    }
+  }
+
   Widget _buildTopicsLessonsTab() {
     if (_isLoadingTopics) {
-      return const Center(child: CircularProgressIndicator());
+      return SkeletonListItems();
     }
 
     if (_topicsError != null) {
@@ -829,7 +1091,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
 
   Widget _buildLiveClassesTab() {
     if (_isLoadingLiveClasses) {
-      return const Center(child: CircularProgressIndicator());
+      return SkeletonLiveClassList();
     }
 
     if (_liveClassesError != null) {
@@ -1002,7 +1264,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                     child: InkWell(
                       onTap: () {
                         if (liveClass.youtubeUrl != null) {
-                          _launchUrl(liveClass.youtubeUrl!);
+                          _playYouTubeVideo(liveClass.youtubeUrl!, liveClass.title);
                         }
                       },
                       child: const Center(
@@ -1075,7 +1337,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                     if (liveClass.youtubeUrl != null)
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () => _launchUrl(liveClass.youtubeUrl!),
+                          onPressed: () => _playYouTubeVideo(liveClass.youtubeUrl!, liveClass.title),
                           icon: const Icon(Icons.video_library),
                           label: Text(actualStatus == 'LIVE' ? 'Watch Live' : 'YouTube'),
                           style: ElevatedButton.styleFrom(
@@ -1106,7 +1368,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
 
   Widget _buildReviewsTab() {
     if (_isLoadingReviews) {
-      return const Center(child: CircularProgressIndicator());
+      return SkeletonListItems(itemCount: 3);
     }
 
     if (_reviewsError != null) {
@@ -1625,6 +1887,25 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
           SnackBar(content: Text('Could not open: $url')),
         );
       }
+    }
+  }
+
+  void _playYouTubeVideo(String youtubeUrl, String title) {
+    final videoId = YoutubePlayer.convertUrlToId(youtubeUrl);
+    if (videoId != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => YouTubePlayerScreen(
+            videoId: videoId,
+            title: title,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid YouTube URL')),
+      );
     }
   }
 

@@ -6,6 +6,7 @@ import '../../models/topic.dart';
 import '../../services/live_class_service.dart';
 import '../../services/notification_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'youtube_player_screen.dart';
 
 class LiveClassesScreen extends StatefulWidget {
@@ -256,7 +257,7 @@ class _LiveClassesScreenState extends State<LiveClassesScreen> with SingleTicker
 
   Widget _buildCurrentClassesTab() {
     if (_isLoadingCurrent) {
-      return const Center(child: CircularProgressIndicator());
+      return SkeletonLiveClassList();
     }
 
     if (_currentError != null) {
@@ -285,7 +286,7 @@ class _LiveClassesScreenState extends State<LiveClassesScreen> with SingleTicker
 
   Widget _buildUpcomingClassesTab() {
     if (_isLoadingUpcoming) {
-      return const Center(child: CircularProgressIndicator());
+      return SkeletonLiveClassList();
     }
 
     if (_upcomingError != null) {
@@ -314,7 +315,7 @@ class _LiveClassesScreenState extends State<LiveClassesScreen> with SingleTicker
 
   Widget _buildPastClassesTab() {
     if (_isLoadingPast) {
-      return const Center(child: CircularProgressIndicator());
+      return SkeletonLiveClassList();
     }
 
     if (_pastError != null) {

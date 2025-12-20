@@ -143,8 +143,9 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.symmetric(vertical: 24),
+        padding: const EdgeInsets.only(top: 24, bottom: 8),
         child: SafeArea(
+          minimum: const EdgeInsets.only(bottom: 16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

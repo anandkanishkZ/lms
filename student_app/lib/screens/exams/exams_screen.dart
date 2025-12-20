@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/exam_provider.dart';
 import '../../models/exam.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'exam_preview_screen.dart';
 import 'take_exam_screen.dart';
+import 'exam_result_screen.dart';
 import 'dart:async';
 
 class ExamsScreen extends StatefulWidget {
@@ -55,7 +57,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
         elevation: 0,
       ),
       body: provider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? SkeletonExamList()
           : provider.error != null
               ? _buildErrorState(provider)
               : Column(
@@ -507,13 +509,20 @@ class _ExamCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: () {
-          // TODO: Navigate based on tab
-          if (isActive) {
-            // Navigate to take exam
-          } else if (isCompleted) {
-            // Navigate to view results
-          } else {
-            // Navigate to exam details/preview
+          if (isCompleted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ExamResultScreen(examId: exam.id),
+              ),
+            );
+          } else if (isUpcoming) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ExamPreviewScreen(examId: exam.id),
+              ),
+            );
           }
         },
         borderRadius: BorderRadius.circular(12),
@@ -728,7 +737,12 @@ class _ExamCard extends StatelessWidget {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: () {
-            // TODO: Navigate to results
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ExamResultScreen(examId: exam.id),
+              ),
+            );
           },
           icon: const Icon(Icons.emoji_events),
           label: const Text('View Result'),

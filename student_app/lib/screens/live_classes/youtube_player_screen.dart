@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class YouTubePlayerScreen extends StatefulWidget {
   final String videoId;
@@ -22,6 +24,9 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
   late YoutubePlayerController _controller;
   bool _isPlayerReady = false;
   bool _isFullScreen = false;
+  bool _isLiked = false;
+  bool _isSaved = false;
+  double _volume = 100.0;
 
   @override
   void initState() {
@@ -198,13 +203,17 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
                             color: Colors.grey[600],
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            _controller.metadata.title.isNotEmpty
-                                ? _controller.metadata.title
-                                : 'Loading...',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
+                          Expanded(
+                            child: Text(
+                              _controller.metadata.title.isNotEmpty
+                                  ? _controller.metadata.title
+                                  : 'Loading...',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
                             ),
                           ),
                         ],
@@ -216,21 +225,22 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _buildActionButton(
-                            icon: Icons.thumb_up_outlined,
+                            icon: _isLiked ? Icons.thumb_up : Icons.thumb_up_outlined,
                             label: 'Like',
-                            onTap: () {},
+                            isActive: _isLiked,
+                            onTap: _handleLike,
                           ),
                           _buildActionButton(
                             icon: Icons.share_outlined,
                             label: 'Share',
-                            onTap: () {
-                              // Share functionality
-                            },
+                            isActive: false,
+                            onTap: _handleShare,
                           ),
                           _buildActionButton(
-                            icon: Icons.playlist_add,
+                            icon: _isSaved ? Icons.playlist_add_check : Icons.playlist_add,
                             label: 'Save',
-                            onTap: () {},
+                            isActive: _isSaved,
+                            onTap: _handleSave,
                           ),
                         ],
                       ),
@@ -290,22 +300,175 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
-                              _buildControlRow(
-                                icon: Icons.play_arrow,
-                                title: 'Play/Pause',
-                                subtitle: 'Tap the video to play or pause',
+                              // Play/Pause Control
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      _controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
+                                      color: Theme.of(context).primaryColor,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Play/Pause',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          _controller.value.isPlaying ? 'Playing' : 'Paused',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        if (_controller.value.isPlaying) {
+                                          _controller.pause();
+                                        } else {
+                                          _controller.play();
+                                        }
+                                      });
+                                    },
+                                    icon: Icon(
+                                      _controller.value.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                                      size: 40,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                  ),
+                                ],
                               ),
                               const Divider(height: 24),
-                              _buildControlRow(
-                                icon: Icons.fullscreen,
-                                title: 'Fullscreen',
-                                subtitle: 'Tap the fullscreen button to expand',
+                              // Volume Control
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      _volume == 0 ? Icons.volume_off : _volume < 50 ? Icons.volume_down : Icons.volume_up,
+                                      color: Theme.of(context).primaryColor,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Volume',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Slider(
+                                                value: _volume,
+                                                min: 0,
+                                                max: 100,
+                                                divisions: 20,
+                                                label: '${_volume.round()}%',
+                                                onChanged: (value) {
+                                                  setState(() {
+                                                    _volume = value;
+                                                    _controller.setVolume(value.toInt());
+                                                  });
+                                                },
+                                              ),
+                                            ),
+                                            SizedBox(
+                                              width: 40,
+                                              child: Text(
+                                                '${_volume.round()}%',
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
                               const Divider(height: 24),
-                              _buildControlRow(
-                                icon: Icons.volume_up,
-                                title: 'Volume',
-                                subtitle: 'Use device volume controls',
+                              // Fullscreen Control
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    child: Icon(
+                                      Icons.fullscreen,
+                                      color: Theme.of(context).primaryColor,
+                                      size: 24,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Fullscreen',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 15,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Toggle fullscreen mode',
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 13,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    onPressed: () {
+                                      _controller.toggleFullScreenMode();
+                                    },
+                                    icon: Icon(
+                                      Icons.fullscreen,
+                                      size: 40,
+                                      color: Theme.of(context).primaryColor,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -322,10 +485,56 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
     );
   }
 
+  void _handleLike() {
+    setState(() {
+      _isLiked = !_isLiked;
+    });
+    Fluttertoast.showToast(
+      msg: _isLiked ? 'Added to liked videos' : 'Removed from liked videos',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+    );
+  }
+
+  void _handleShare() async {
+    final videoUrl = 'https://www.youtube.com/watch?v=${widget.videoId}';
+    try {
+      final uri = Uri.parse('sms:?body=Check out this video: ${widget.title} - $videoUrl');
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        // Fallback to just copying the URL
+        Fluttertoast.showToast(
+          msg: 'Share link: $videoUrl',
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+        );
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Unable to share. Link: $videoUrl',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+      );
+    }
+  }
+
+  void _handleSave() {
+    setState(() {
+      _isSaved = !_isSaved;
+    });
+    Fluttertoast.showToast(
+      msg: _isSaved ? 'Video saved to playlist' : 'Video removed from playlist',
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+    );
+  }
+
   Widget _buildActionButton({
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    required bool isActive,
   }) {
     return InkWell(
       onTap: onTap,
@@ -334,13 +543,18 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           children: [
-            Icon(icon, size: 28, color: Theme.of(context).primaryColor),
+            Icon(
+              icon,
+              size: 28,
+              color: isActive ? Colors.blue : Theme.of(context).primaryColor,
+            ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
+                color: isActive ? Colors.blue : Colors.black87,
               ),
             ),
           ],
@@ -349,49 +563,4 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
     );
   }
 
-  Widget _buildControlRow({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            icon,
-            color: Theme.of(context).primaryColor,
-            size: 24,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }

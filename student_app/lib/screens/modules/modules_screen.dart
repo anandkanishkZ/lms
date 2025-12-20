@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/module_provider.dart';
 import '../../models/module.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'module_detail_screen.dart';
 import 'module_detail_screen.dart';
 
@@ -39,7 +40,7 @@ class _MyModulesTab extends StatelessWidget {
     final provider = Provider.of<ModuleProvider>(context);
 
     if (provider.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return SkeletonModuleGrid();
     }
 
     if (provider.enrolledModules.isEmpty) {

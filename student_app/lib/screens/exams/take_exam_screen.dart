@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import '../../services/exam_service.dart';
 import '../../config/api_config.dart';
+import '../../widgets/skeleton_loader.dart';
 import 'exam_result_screen.dart';
 
 class TakeExamScreen extends StatefulWidget {
@@ -360,7 +361,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
           ],
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? SkeletonDetailContent()
             : _error != null
                 ? Center(
                     child: Column(

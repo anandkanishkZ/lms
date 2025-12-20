@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../services/exam_service.dart';
+import '../../widgets/skeleton_loader.dart';
 
 class ExamReviewScreen extends StatefulWidget {
   final String examId;
@@ -170,7 +171,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? SkeletonDetailContent()
           : _error != null
               ? Center(
                   child: Column(

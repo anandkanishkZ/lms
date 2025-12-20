@@ -5,6 +5,7 @@ import 'package:flutter_html/flutter_html.dart';
 import '../../models/topic.dart';
 import '../../services/lesson_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/skeleton_loader.dart';
 
 class LessonDetailScreen extends StatefulWidget {
   final String lessonId;
@@ -336,7 +337,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         title: const Text('Lesson Details'),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? SkeletonDetailContent()
           : _error != null
               ? Center(
                   child: Column(

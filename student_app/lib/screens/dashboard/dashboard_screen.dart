@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../providers/notice_provider.dart';
+import '../../widgets/skeleton_loader.dart';
 import '../modules/modules_screen.dart';
 import '../exams/exams_screen.dart';
 import '../profile/profile_screen.dart';
@@ -106,7 +107,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
               onTap: () {
                 final parentState = context.findAncestorStateOfType<_DashboardScreenState>();
                 parentState?.setState(() {
-                  parentState._selectedIndex = 3; // Navigate to Profile tab
+                  parentState._selectedIndex = 4; // Navigate to Profile tab
                 });
               },
               child: CircleAvatar(
@@ -219,12 +220,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                   child: dashboardProvider.isLoading
-                      ? const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(20.0),
-                            child: CircularProgressIndicator(color: Colors.white),
-                          ),
-                        )
+                      ? const SkeletonStatCards()
                       : Row(
                           children: [
                             Expanded(
@@ -329,14 +325,14 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: _MenuCard(
-                            icon: Icons.person,
-                            title: 'My Profile',
-                            subtitle: 'View Details',
+                            icon: Icons.live_tv,
+                            title: 'Live Classes',
+                            subtitle: 'Watch Now',
                             color: Colors.purple,
                             onTap: () {
                               final parentState = context.findAncestorStateOfType<_DashboardScreenState>();
                               parentState?.setState(() {
-                                parentState._selectedIndex = 3;
+                                parentState._selectedIndex = 2;
                               });
                             },
                           ),
@@ -349,7 +345,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
               
               const SizedBox(height: 24),
 
-              // Recent Activity Section
+              // Recent Activity Section - Enhanced
               if (dashboardProvider.recentActivity.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -359,49 +355,68 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            'Recent Activity',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.bold,
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[50],
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
+                                child: Icon(
+                                  Icons.access_time_filled,
+                                  color: Colors.blue[700],
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Recent Activity',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
                           ),
-                          TextButton(
+                          TextButton.icon(
                             onPressed: () {},
-                            child: const Text('View All'),
+                            icon: const Icon(Icons.arrow_forward, size: 16),
+                            label: const Text('View All'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: Theme.of(context).primaryColor,
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
-                      ...dashboardProvider.recentActivity.take(3).map((activity) {
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                              child: Icon(
-                                Icons.history,
-                                color: Theme.of(context).primaryColor,
-                                size: 20,
-                              ),
+                      const SizedBox(height: 16),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
-                            title: Text(
-                              activity['title'] ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              activity['description'] ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            trailing: Text(
-                              activity['date'] ?? '',
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: Colors.grey,
-                                  ),
-                            ),
+                          ],
+                        ),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(12),
+                          itemCount: dashboardProvider.recentActivity.take(5).length,
+                          separatorBuilder: (context, index) => Divider(
+                            height: 24,
+                            thickness: 1,
+                            color: Colors.grey[200],
                           ),
-                        );
-                      }),
+                          itemBuilder: (context, index) {
+                            final activity = dashboardProvider.recentActivity.take(5).elementAt(index);
+                            return _buildActivityItem(context, activity);
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -412,6 +427,162 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildActivityItem(BuildContext context, Map<String, dynamic> activity) {
+    // Determine activity type and icon
+    IconData activityIcon;
+    Color activityColor;
+    String activityType = (activity['type'] ?? 'general').toString().toLowerCase();
+    
+    switch (activityType) {
+      case 'exam':
+      case 'quiz':
+        activityIcon = Icons.quiz;
+        activityColor = Colors.orange;
+        break;
+      case 'module':
+      case 'course':
+        activityIcon = Icons.book;
+        activityColor = Colors.blue;
+        break;
+      case 'assignment':
+        activityIcon = Icons.assignment;
+        activityColor = Colors.purple;
+        break;
+      case 'video':
+      case 'class':
+        activityIcon = Icons.play_circle_fill;
+        activityColor = Colors.red;
+        break;
+      case 'completion':
+      case 'achievement':
+        activityIcon = Icons.check_circle;
+        activityColor = Colors.green;
+        break;
+      default:
+        activityIcon = Icons.article;
+        activityColor = Colors.grey;
+    }
+
+    return InkWell(
+      onTap: () {
+        // Handle activity tap - navigate to relevant screen
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icon container
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: activityColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: activityColor.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                activityIcon,
+                color: activityColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    activity['title'] ?? 'Activity',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (activity['description'] != null && activity['description'].toString().isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      activity['description'],
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Colors.grey[500],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        _formatActivityDate(activity['date'] ?? activity['createdAt'] ?? ''),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Chevron icon
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey[400],
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatActivityDate(String dateStr) {
+    if (dateStr.isEmpty) return 'Just now';
+    
+    try {
+      final date = DateTime.parse(dateStr);
+      final now = DateTime.now();
+      final difference = now.difference(date);
+
+      if (difference.inMinutes < 1) {
+        return 'Just now';
+      } else if (difference.inHours < 1) {
+        return '${difference.inMinutes}m ago';
+      } else if (difference.inDays < 1) {
+        return '${difference.inHours}h ago';
+      } else if (difference.inDays < 7) {
+        return '${difference.inDays}d ago';
+      } else if (difference.inDays < 30) {
+        final weeks = (difference.inDays / 7).floor();
+        return '$weeks week${weeks > 1 ? 's' : ''} ago';
+      } else {
+        final months = (difference.inDays / 30).floor();
+        return '$months month${months > 1 ? 's' : ''} ago';
+      }
+    } catch (e) {
+      return dateStr;
+    }
   }
 }
 
