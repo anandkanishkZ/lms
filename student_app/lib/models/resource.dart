@@ -2,8 +2,9 @@ class Resource {
   final String id;
   final String title;
   final String? description;
-  final String type; // FILE, LINK, VIDEO, DOCUMENT
+  final String type; // FILE, LINK, VIDEO, DOCUMENT, IMAGE
   final String? filePath;
+  final String? fileUrl; // Direct URL from API
   final String? externalUrl;
   final String? fileType; // pdf, doc, video, etc
   final int? fileSize;
@@ -23,6 +24,7 @@ class Resource {
     this.description,
     required this.type,
     this.filePath,
+    this.fileUrl,
     this.externalUrl,
     this.fileType,
     this.fileSize,
@@ -44,11 +46,12 @@ class Resource {
       description: json['description'],
       type: json['type'] ?? 'FILE',
       filePath: json['filePath'],
+      fileUrl: json['fileUrl'],
       externalUrl: json['externalUrl'],
-      fileType: json['fileType'],
+      fileType: json['fileType'] ?? json['mimeType']?.split('/').last,
       fileSize: json['fileSize'],
       isVisible: json['isVisible'] ?? true,
-      order: json['order'],
+      order: json['order'] ?? json['orderIndex'],
       moduleId: json['moduleId'],
       topicId: json['topicId'],
       lessonId: json['lessonId'],
@@ -58,7 +61,7 @@ class Resource {
       updatedAt: json['updatedAt'] != null 
           ? DateTime.parse(json['updatedAt']) 
           : DateTime.now(),
-      accessCount: json['accessCount'],
+      accessCount: json['accessCount'] ?? json['viewCount'],
       downloadCount: json['downloadCount'],
     );
   }
@@ -70,6 +73,7 @@ class Resource {
       'description': description,
       'type': type,
       'filePath': filePath,
+      'fileUrl': fileUrl,
       'externalUrl': externalUrl,
       'fileType': fileType,
       'fileSize': fileSize,

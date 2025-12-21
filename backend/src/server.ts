@@ -222,13 +222,21 @@ if (process.env.NODE_ENV !== 'production') {
 
 // SECURITY: Disable direct static file serving for editor uploads
 // Files should only be accessed through authenticated API endpoints
-// Only allow avatars to be served statically
+// Allow avatars and resources to be served statically with CORS headers
 app.use('/uploads/avatars', (req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Access-Control-Allow-Origin', process.env.ALLOWED_ORIGINS?.split(',')[0] || 'http://localhost:3000');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   next();
 }, express.static('uploads/avatars'));
+
+// Serve resource files with CORS headers
+app.use('/uploads/resources', (req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow all origins for public resources
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  next();
+}, express.static('uploads/resources'));
 
 // Health check route
 app.get('/api/health', (req: Request, res: Response) => {

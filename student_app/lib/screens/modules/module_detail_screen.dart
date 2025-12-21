@@ -16,6 +16,7 @@ import '../../widgets/skeleton_loader.dart';
 import 'package:intl/intl.dart';
 import '../lessons/lesson_detail_screen.dart';
 import '../live_classes/youtube_player_screen.dart';
+import '../resources/resource_detail_screen.dart';
 
 class ModuleDetailScreen extends StatefulWidget {
   final Module module;
@@ -155,12 +156,15 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
     });
 
     try {
+      print('Loading resources for module: ${widget.module.id}');
       final resources = await _resourceService!.getModuleResources(widget.module.id);
+      print('Successfully loaded ${resources.length} resources');
       setState(() {
         _resources = resources;
         _isLoadingResources = false;
       });
     } catch (e) {
+      print('Error in _loadResources: $e');
       setState(() {
         _resourcesError = e.toString();
         _isLoadingResources = false;
@@ -656,18 +660,51 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
 
     if (_resourcesError != null) {
       return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text('Error loading resources', style: TextStyle(color: Colors.red[700])),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _loadResources,
-              child: const Text('Retry'),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+              const SizedBox(height: 16),
+              Text(
+                'Error loading resources',
+                style: TextStyle(
+                  color: Colors.red[700],
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red[200]!),
+                ),
+                child: Text(
+                  _resourcesError!,
+                  style: TextStyle(
+                    color: Colors.red[900],
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _loadResources,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -868,40 +905,13 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
   }
 
   Future<void> _handleResourceTap(ResourceModel.Resource resource) async {
-    if (_resourceService == null) return;
-
-    // Track access
-    await _resourceService!.trackAccess(resource.id, 'VIEW');
-
-    if (resource.type.toUpperCase() == 'LINK' && resource.externalUrl != null) {
-      // Open external link
-      final url = Uri.parse(resource.externalUrl!);
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open link')),
-          );
-        }
-      }
-    } else if (resource.filePath != null) {
-      // Download/open file
-      final fileUrl = _resourceService!.getResourceUrl(resource.filePath);
-      final url = Uri.parse(fileUrl);
-      
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-        // Track download
-        await _resourceService!.trackAccess(resource.id, 'DOWNLOAD');
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open resource')),
-          );
-        }
-      }
-    }
+    // Navigate to resource detail screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ResourceDetailScreen(resource: resource),
+      ),
+    );
   }
 
   Widget _buildTopicsLessonsTab() {

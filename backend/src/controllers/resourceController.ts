@@ -15,8 +15,13 @@ export const createResource = asyncHandler(async (req: AuthRequest, res: Respons
   let fileData = {};
   if (req.file) {
     const baseUrl = `${req.protocol}://${req.get('host')}`;
+    // Extract only the relative path after 'uploads'
+    const filePath = req.file.path.replace(/\\/g, '/');
+    const uploadsIndex = filePath.indexOf('uploads/');
+    const relativePath = uploadsIndex !== -1 ? filePath.substring(uploadsIndex) : filePath;
+    
     fileData = {
-      fileUrl: `${baseUrl}/uploads/${req.file.path.split('uploads\\').pop()?.replace(/\\/g, '/')}`,
+      fileUrl: `${baseUrl}/${relativePath}`,
       fileName: req.file.originalname,
       fileSize: req.file.size,
       mimeType: req.file.mimetype,
