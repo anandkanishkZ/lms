@@ -147,15 +147,22 @@ class AuthService {
     if (token == null) throw Exception('Not authenticated');
 
     try {
-    final response = await http.put(
-      Uri.parse(ApiConfig.updateProfile),
+      final requestBody = {
+        'name': name,
+        if (phone != null) 'phone': phone,
+        if (symbolNo != null) 'symbolNo': symbolNo,
+      };
+      
+      print('Update profile request: $requestBody');
+      
+      final response = await http.put(
+        Uri.parse(ApiConfig.updateProfile),
         headers: ApiConfig.headers(token: token),
-        body: json.encode({
-          'name': name,
-          'phone': phone,
-          'symbolNo': symbolNo,
-        }),
+        body: json.encode(requestBody),
       ).timeout(ApiConfig.timeout);
+
+      print('Update profile response status: ${response.statusCode}');
+      print('Update profile response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -171,10 +178,10 @@ class AuthService {
         final error = json.decode(response.body);
         final errorMessage = error['message'] ?? error['error'] ?? 'Update failed';
         print('Profile update error (${response.statusCode}): $errorMessage');
-        print('Response body: ${response.body}');
         throw Exception(errorMessage);
       }
     } catch (e) {
+      print('Update profile exception: $e');
       throw Exception('Update error: $e');
     }
   }

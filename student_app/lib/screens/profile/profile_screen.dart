@@ -260,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           slivers: [
             // Modern App Bar with Profile Header
             SliverAppBar(
-              expandedHeight: 265,
+              expandedHeight: 300,
               pinned: true,
               backgroundColor: Theme.of(context).primaryColor,
               elevation: 0,
@@ -280,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 15),
+                        const SizedBox(height: 10),
                         // Profile Avatar with Edit Button
                         Stack(
                           children: [
@@ -367,7 +367,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 16),
                         // Name
                         Text(
                           user?.name ?? 'Student',
@@ -381,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         // Email with icon
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -413,7 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             ],
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 4),
                         // Account Status Badge
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -623,7 +623,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                     ),
                   ),
 
-                  const SizedBox(height: 100), // Extra padding for bottom navigation
+                  const SizedBox(height: 80), // Extra padding for bottom navigation
                 ],
               ),
             ),
@@ -867,19 +867,34 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
           FilledButton(
             onPressed: () async {
               if (formKey.currentState!.validate()) {
-                final success = await authProvider.updateProfile(
-                  name: nameController.text,
-                  phone: phoneController.text.isNotEmpty ? phoneController.text : null,
-                  symbolNo: symbolNoController.text.isNotEmpty ? symbolNoController.text : null,
-                );
-
-                if (context.mounted) {
-                  Navigator.pop(context);
-                  Fluttertoast.showToast(
-                    msg: success ? '✅ Profile updated!' : '❌ Update failed',
-                    backgroundColor: success ? Colors.green : Colors.red,
-                    textColor: Colors.white,
+                try {
+                  final success = await authProvider.updateProfile(
+                    name: nameController.text.trim(),
+                    phone: phoneController.text.trim().isNotEmpty ? phoneController.text.trim() : null,
+                    symbolNo: symbolNoController.text.trim().isNotEmpty ? symbolNoController.text.trim() : null,
                   );
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    Fluttertoast.showToast(
+                      msg: success 
+                        ? '✅ Profile updated successfully!' 
+                        : '❌ ${authProvider.errorMessage ?? "Update failed"}',
+                      backgroundColor: success ? Colors.green : Colors.red,
+                      textColor: Colors.white,
+                      toastLength: Toast.LENGTH_LONG,
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    Fluttertoast.showToast(
+                      msg: '❌ Error: ${e.toString()}',
+                      backgroundColor: Colors.red,
+                      textColor: Colors.white,
+                      toastLength: Toast.LENGTH_LONG,
+                    );
+                  }
                 }
               }
             },

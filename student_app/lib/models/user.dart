@@ -34,23 +34,29 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'],
-      name: json['name'],
-      firstName: json['firstName'],
-      middleName: json['middleName'],
-      lastName: json['lastName'],
-      email: json['email'],
-      phone: json['phone'],
-      symbolNo: json['symbolNo'],
-      role: json['role'],
-      profileImage: json['profileImage'],
-      verified: json['verified'] ?? false,
-      isActive: json['isActive'] ?? true,
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-      batchId: json['batchId'],
-    );
+    try {
+      return User(
+        id: json['id']?.toString() ?? '',
+        name: json['name']?.toString() ?? 'Unknown',
+        firstName: json['firstName']?.toString(),
+        middleName: json['middleName']?.toString(),
+        lastName: json['lastName']?.toString(),
+        email: json['email']?.toString() ?? '',
+        phone: json['phone']?.toString(),
+        symbolNo: json['symbolNo']?.toString(),
+        role: json['role']?.toString() ?? 'STUDENT',
+        profileImage: json['profileImage']?.toString(),
+        verified: json['verified'] == true || json['verified'] == 'true',
+        isActive: json['isActive'] == true || json['isActive'] == 'true' || json['isActive'] == null,
+        createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+        updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : DateTime.now(),
+        batchId: json['batchId']?.toString(),
+      );
+    } catch (e) {
+      print('Error parsing user JSON: $e');
+      print('JSON data: $json');
+      rethrow;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -89,9 +95,14 @@ class AuthResponse {
 
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
     // Backend returns single 'token' field, we'll use it for both access and refresh
-    final token = json['token'] as String;
+    final token = (json['token'] ?? json['accessToken'] ?? '') as String;
+    
+    if (token.isEmpty) {
+      throw Exception('No authentication token received');
+    }
+    
     return AuthResponse(
-      user: User.fromJson(json['user']),
+      user: User.fromJson(json['user'] ?? {}),
       accessToken: token,
       refreshToken: token, // Using same token for both
       expiresAt: DateTime.now().add(const Duration(hours: 2)), // JWT expires in 120m
