@@ -152,6 +152,7 @@ class _ModuleCard extends StatelessWidget {
                 LinearProgressIndicator(
                   value: module.progress! / 100,
                   backgroundColor: Colors.grey[200],
+                  valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                 ),
                 const SizedBox(height: 4),
                 Text(

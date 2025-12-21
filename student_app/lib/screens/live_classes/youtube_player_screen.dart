@@ -269,17 +269,17 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
                       ],
                       if (widget.isLive) ...[
                         Card(
-                          color: Colors.blue[50],
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Row(
                               children: [
-                                Icon(Icons.info_outline, color: Colors.blue[700]),
+                                Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
                                     'This is a live stream. The content is being broadcast in real-time.',
-                                    style: TextStyle(color: Colors.blue[700]),
+                                    style: TextStyle(color: Theme.of(context).colorScheme.primary),
                                   ),
                                 ),
                               ],
@@ -546,7 +546,7 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
             Icon(
               icon,
               size: 28,
-              color: isActive ? Colors.blue : Theme.of(context).primaryColor,
+              color: isActive ? Theme.of(context).colorScheme.primary : Theme.of(context).primaryColor,
             ),
             const SizedBox(height: 4),
             Text(
@@ -554,7 +554,7 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: isActive ? Colors.blue : Colors.black87,
+                color: isActive ? Theme.of(context).colorScheme.primary : Colors.black87,
               ),
             ),
           ],

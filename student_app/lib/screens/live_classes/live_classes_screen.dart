@@ -503,7 +503,7 @@ class _LiveClassesScreenState extends State<LiveClassesScreen> with SingleTicker
                       _buildInfoChip(
                         icon: Icons.subject,
                         label: liveClass.subjectName!,
-                        color: Colors.blue,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     if (liveClass.className != null)
                       _buildInfoChip(

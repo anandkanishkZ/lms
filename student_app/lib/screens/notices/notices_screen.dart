@@ -217,7 +217,7 @@ class _NoticeCard extends StatelessWidget {
   Color _getCategoryColor() {
     switch (notice.category) {
       case 'ACADEMIC':
-        return Colors.blue;
+        return const Color(0xFF2460E9);
       case 'EVENT':
         return Colors.green;
       case 'EXAM':
@@ -310,8 +310,8 @@ class _NoticeCard extends StatelessWidget {
                     Container(
                       width: 10,
                       height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.blue,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
                       ),
                     ),

@@ -121,7 +121,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
       case 'VIDEO':
         return Colors.red;
       case 'LINK':
-        return Colors.blue;
+        return Theme.of(context).colorScheme.primary;
       case 'IMAGE':
         return Colors.purple[700]!;
       case 'DOCUMENT':
@@ -129,7 +129,7 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
         if (widget.resource.fileType?.toLowerCase().contains('pdf') == true) {
           return Colors.red[700]!;
         } else if (widget.resource.fileType?.toLowerCase().contains('doc') == true) {
-          return Colors.blue[700]!;
+          return Theme.of(context).colorScheme.primary;
         } else if (widget.resource.fileType?.toLowerCase().contains('xls') == true ||
                    widget.resource.fileType?.toLowerCase().contains('sheet') == true) {
           return Colors.green[700]!;
@@ -210,110 +210,79 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Resource Details'),
+        title: Text(widget.resource.title),
         elevation: 0,
+        actions: [
+          // File type badge in app bar
+          if (widget.resource.fileType != null)
+            Center(
+              child: Container(
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(_getIcon(), size: 16, color: iconColor),
+                    const SizedBox(width: 6),
+                    Text(
+                      widget.resource.fileType!.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: iconColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header with icon
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    iconColor.withOpacity(0.1),
-                    iconColor.withOpacity(0.05),
-                  ],
-                ),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 120,
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: iconColor.withOpacity(0.3),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: Icon(_getIcon(), color: iconColor, size: 60),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    widget.resource.title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  if (widget.resource.fileType != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: iconColor.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        widget.resource.fileType!.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: iconColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+            // Preview Section - Main focus
+            if (_resourceUrl != null && _showPreview) ...[
+              _buildPreview(),
+              const SizedBox(height: 16),
+            ],
 
             // Details
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (widget.resource.description != null && widget.resource.description!.isNotEmpty) ...[
                     Text(
                       'Description',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Text(
                       widget.resource.description!,
-                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        height: 1.6,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        height: 1.5,
+                        color: Colors.grey[700],
                       ),
                     ),
-                    const SizedBox(height: 32),
-                  ],
-
-                  // Preview Section
-                  if (_resourceUrl != null && _showPreview) ...[
-                    _buildPreview(),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 24),
                   ],
 
                   Text(
-                    'Resource Information',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    'Details',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
 
                   _buildInfoRow(
                     icon: Icons.category_outlined,
@@ -453,35 +422,26 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
     required String value,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 20, color: Colors.grey[700]),
-          ),
-          const SizedBox(width: 16),
+          Icon(icon, size: 18, color: Colors.grey[600]),
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: 14,
                     color: Colors.grey[600],
                   ),
                 ),
-                const SizedBox(height: 2),
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -518,56 +478,38 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
   Widget _buildPreview() {
     final type = widget.resource.type.toUpperCase();
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Preview',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            IconButton(
-              icon: Icon(_showPreview ? Icons.visibility_off : Icons.visibility),
-              onPressed: () {
-                setState(() {
-                  _showPreview = !_showPreview;
-                });
-              },
-              tooltip: _showPreview ? 'Hide Preview' : 'Show Preview',
-            ),
-          ],
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(
+        minHeight: 300,
+        maxHeight: 600,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: Border(
+          bottom: BorderSide(color: Colors.grey[300]!, width: 1),
         ),
-        const SizedBox(height: 16),
-        
-        Container(
-          constraints: const BoxConstraints(
-            maxHeight: 500,
-            maxWidth: double.infinity,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: _buildPreviewContent(type),
-          ),
-        ),
-      ],
+      ),
+      child: _buildPreviewContent(type),
     );
   }
 
   Widget _buildPreviewContent(String type) {
     if (_resourceUrl == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(48.0),
-          child: Text('No preview available'),
+          padding: const EdgeInsets.all(48.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(_getIcon(), size: 64, color: Colors.white70),
+              const SizedBox(height: 16),
+              const Text(
+                'No preview available',
+                style: TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -580,27 +522,28 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(48.0),
-                child: CircularProgressIndicator(
-                  value: loadingProgress.expectedTotalBytes != null
-                      ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                      : null,
-                ),
+              child: CircularProgressIndicator(
+                color: Colors.white,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
               ),
             );
           },
           errorBuilder: (context, error, stackTrace) {
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(48.0),
+                padding: const EdgeInsets.all(48.0),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.error_outline, size: 48, color: Colors.red),
-                    SizedBox(height: 16),
-                    Text('Failed to load image'),
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Failed to load image',
+                      style: TextStyle(color: Colors.white70),
+                    ),
                   ],
                 ),
               ),
@@ -624,22 +567,24 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
             child: Padding(
               padding: const EdgeInsets.all(48.0),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     _getIcon(),
                     size: 64,
-                    color: _getIconColor(),
+                    color: _getIconColor().withOpacity(0.7),
                   ),
                   const SizedBox(height: 16),
                   Text(
                     'Preview not available',
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  const Text(
                     'Download to view this file',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: Colors.white70),
                   ),
                 ],
               ),
@@ -656,17 +601,19 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
           child: Padding(
             padding: const EdgeInsets.all(48.0),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   _getIcon(),
                   size: 64,
-                  color: _getIconColor(),
+                  color: _getIconColor().withOpacity(0.7),
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Preview not available for this type',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),

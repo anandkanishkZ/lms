@@ -6,11 +6,13 @@ import '../../models/module.dart';
 import '../../models/topic.dart';
 import '../../models/review.dart';
 import '../../models/resource.dart' as ResourceModel;
+import '../../models/featured_video.dart';
 import '../../services/topic_service.dart';
 import '../../services/lesson_service.dart';
 import '../../services/live_class_service.dart';
 import '../../services/review_service.dart';
 import '../../services/resource_service.dart';
+import '../../services/module_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/skeleton_loader.dart';
 import 'package:intl/intl.dart';
@@ -37,14 +39,17 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
   LiveClassService? _liveClassService;
   ReviewService? _reviewService;
   ResourceService? _resourceService;
+  ModuleService? _moduleService;
 
   List<Topic> _topics = [];
   List<LiveClass> _upcomingClasses = [];
   List<LiveClass> _pastClasses = [];
   List<ResourceModel.Resource> _resources = [];
+  FeaturedVideo? _featuredVideo;
   bool _isLoadingTopics = false;
   bool _isLoadingLiveClasses = false;
   bool _isLoadingResources = false;
+  bool _isLoadingFeaturedVideo = false;
   String? _topicsError;
   String? _liveClassesError;
   String? _resourcesError;
@@ -86,11 +91,13 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       _liveClassService = LiveClassService(authProvider.authService);
       _reviewService = ReviewService(authProvider.authService);
       _resourceService = ResourceService(authProvider.authService);
+      _moduleService = ModuleService();
 
       _loadTopics();
       _loadLiveClasses();
       _loadReviews();
       _loadResources();
+      _loadFeaturedVideo();
     }
   }
 
@@ -201,6 +208,28 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
     
     // Return original status if none of the above conditions match
     return liveClass.status;
+  }
+
+  Future<void> _loadFeaturedVideo() async {
+    if (_moduleService == null) return;
+    
+    setState(() {
+      _isLoadingFeaturedVideo = true;
+    });
+
+    try {
+      final featuredVideo = await _moduleService!.getModuleFeaturedVideo(widget.module.id);
+      setState(() {
+        _featuredVideo = featuredVideo;
+        _isLoadingFeaturedVideo = false;
+      });
+    } catch (e) {
+      print('Error loading featured video: $e');
+      setState(() {
+        _featuredVideo = null;
+        _isLoadingFeaturedVideo = false;
+      });
+    }
   }
 
   Future<void> _loadLiveClasses() async {
@@ -443,20 +472,32 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Featured Video Section
-          if (widget.module.featuredVideoUrl != null) ...[
+          // Featured Video Section - Only show if video URL exists and type is not 'none'
+          if (_isLoadingFeaturedVideo)
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.black,
+              ),
+              height: 200,
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            )
+          else if (_featuredVideo != null && 
+                   _featuredVideo!.videoUrl != null && 
+                   _featuredVideo!.type != 'none') ...[
             Text(
-              'Featured Video',
+              _featuredVideo!.isLive ? '🔴 Live Now' : 'Featured Video',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: _featuredVideo!.isLive ? Colors.red : null,
               ),
             ),
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () {
-                if (widget.module.featuredVideoUrl != null) {
-                  _playYouTubeVideo(widget.module.featuredVideoUrl!, widget.module.title);
-                }
+                _playYouTubeVideo(_featuredVideo!.videoUrl!, _featuredVideo!.title);
               },
               child: Container(
                 decoration: BoxDecoration(
@@ -469,9 +510,9 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                     alignment: Alignment.center,
                     children: [
                       // YouTube thumbnail
-                      if (_extractYouTubeVideoId(widget.module.featuredVideoUrl!) != null)
+                      if (_extractYouTubeVideoId(_featuredVideo!.videoUrl!) != null)
                         Image.network(
-                          'https://img.youtube.com/vi/${_extractYouTubeVideoId(widget.module.featuredVideoUrl!)}/maxresdefault.jpg',
+                          'https://img.youtube.com/vi/${_extractYouTubeVideoId(_featuredVideo!.videoUrl!)}/maxresdefault.jpg',
                           height: 200,
                           width: double.infinity,
                           fit: BoxFit.cover,
@@ -491,7 +532,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                       Container(
                         width: 60,
                         height: 60,
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
@@ -506,19 +547,17 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                 ),
               ),
             ),
-            if (widget.module.featuredVideoTitle != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                widget.module.featuredVideoTitle!,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            const SizedBox(height: 8),
+            Text(
+              _featuredVideo!.title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-            ],
-            if (widget.module.featuredVideoDescription != null) ...[
+            ),
+            if (_featuredVideo!.description.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
-                widget.module.featuredVideoDescription!,
+                _featuredVideo!.description,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[600],
                 ),
@@ -624,6 +663,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                       child: LinearProgressIndicator(
                         value: widget.module.progress! / 100,
                         backgroundColor: Colors.grey[200],
+                        valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
                         minHeight: 10,
                       ),
                     ),
@@ -763,7 +803,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
         break;
       case 'LINK':
         icon = Icons.link;
-        iconColor = Colors.blue;
+        iconColor = Theme.of(context).colorScheme.primary;
         break;
       case 'DOCUMENT':
       case 'FILE':
@@ -772,7 +812,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
           iconColor = Colors.red[700]!;
         } else if (resource.fileType?.toLowerCase().contains('doc') == true) {
           icon = Icons.description;
-          iconColor = Colors.blue[700]!;
+          iconColor = Theme.of(context).colorScheme.primary;
         } else if (resource.fileType?.toLowerCase().contains('xls') == true ||
                    resource.fileType?.toLowerCase().contains('sheet') == true) {
           icon = Icons.table_chart;
@@ -1019,14 +1059,14 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           '${topic.lessonsCount} lessons',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.blue,
+                            color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1239,7 +1279,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                       color: actualStatus == 'LIVE' 
                         ? Colors.red 
                         : actualStatus == 'SCHEDULED'
-                          ? Colors.blue
+                          ? Theme.of(context).colorScheme.primary
                           : Colors.grey,
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -1299,7 +1339,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                   children: [
                     Icon(
                       isUpcoming ? Icons.schedule : Icons.history,
-                      color: isUpcoming ? Colors.blue : Colors.grey,
+                      color: isUpcoming ? Theme.of(context).colorScheme.primary : Colors.grey,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -1351,7 +1391,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                           icon: const Icon(Icons.video_library),
                           label: Text(actualStatus == 'LIVE' ? 'Watch Live' : 'YouTube'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: actualStatus == 'LIVE' ? Colors.red : Colors.blue,
+                            backgroundColor: actualStatus == 'LIVE' ? Colors.red : Theme.of(context).colorScheme.primary,
                             foregroundColor: Colors.white,
                           ),
                         ),
@@ -1565,9 +1605,9 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.blue[50],
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue[100]!),
+          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

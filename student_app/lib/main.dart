@@ -42,9 +42,10 @@ class MyApp extends StatelessWidget {
         locale: const Locale('en', 'US'),
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.blue,
+            seedColor: const Color(0xFF2460E9),
             brightness: Brightness.light,
           ),
+          primaryColor: const Color(0xFF2460E9),
           useMaterial3: true,
           appBarTheme: const AppBarTheme(
             centerTitle: true,

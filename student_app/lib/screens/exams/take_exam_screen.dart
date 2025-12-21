@@ -329,7 +329,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
         child: Scaffold(
         appBar: AppBar(
           title: Text(_exam?['title'] ?? 'Taking Exam'),
-          backgroundColor: Colors.blue,
+          backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Colors.white,
           elevation: 0,
           automaticallyImplyLeading: false,
@@ -437,7 +437,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
             value: progress,
             backgroundColor: Colors.grey[300],
             valueColor: AlwaysStoppedAnimation<Color>(
-              progress == 1.0 ? Colors.green : Colors.blue,
+              progress == 1.0 ? Colors.green : Theme.of(context).colorScheme.primary,
             ),
             minHeight: 6,
           ),
@@ -469,13 +469,13 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
               margin: const EdgeInsets.symmetric(horizontal: 4),
               decoration: BoxDecoration(
                 color: isCurrent
-                    ? Colors.blue
+                    ? Theme.of(context).colorScheme.primary
                     : isAnswered
                         ? Colors.green
                         : Colors.grey[300],
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: isCurrent ? Colors.blue[700]! : Colors.transparent,
+                  color: isCurrent ? Theme.of(context).colorScheme.primary : Colors.transparent,
                   width: 2,
                 ),
               ),
@@ -517,9 +517,9 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.blue[50],
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue[200]!),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -528,7 +528,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
                   child: Text(
                     _formatQuestionType(questionType),
                     style: TextStyle(
-                      color: Colors.blue[700],
+                      color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -615,10 +615,10 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isSelected ? Colors.blue[50] : Colors.white,
+              color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.white,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? Colors.blue : Colors.grey[300]!,
+                color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey[300]!,
                 width: isSelected ? 2 : 1,
               ),
             ),
@@ -626,7 +626,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
               children: [
                 Icon(
                   isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
-                  color: isSelected ? Colors.blue : Colors.grey,
+                  color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -635,7 +635,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? Colors.blue[900] : Colors.black87,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : Colors.black87,
                     ),
                   ),
                 ),
@@ -788,23 +788,23 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.blue[50],
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue[200]!),
+            border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
+                  Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'File Upload Requirements',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue[700],
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -829,7 +829,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
           icon: const Icon(Icons.upload_file),
           label: Text(uploadedFiles.isEmpty ? 'Choose Files' : 'Add More Files'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           ),
@@ -859,7 +859,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
               child: ListTile(
                 leading: Icon(
                   _getFileIcon(fileName),
-                  color: Colors.blue,
+                  color: Theme.of(context).colorScheme.primary,
                   size: 32,
                 ),
                 title: Text(
@@ -1041,7 +1041,7 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
               icon: Icon(isLast ? Icons.check : Icons.arrow_forward),
               label: Text(isLast ? 'Submit Exam' : 'Next'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isLast ? Colors.green : Colors.blue,
+                backgroundColor: isLast ? Colors.green : Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),

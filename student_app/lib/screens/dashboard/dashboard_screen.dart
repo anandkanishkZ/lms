@@ -10,6 +10,7 @@ import '../exams/exams_screen.dart';
 import '../profile/profile_screen.dart';
 import '../notices/notices_screen.dart';
 import '../live_classes/live_classes_screen.dart';
+import 'recent_activity_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -276,7 +277,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                             icon: Icons.library_books,
                             title: 'My Modules',
                             subtitle: '${dashboardProvider.enrolledCount} Courses',
-                            color: Colors.blue,
+                            color: Theme.of(context).colorScheme.primary,
                             onTap: () {
                               // Navigate to modules - handled by parent
                               final parentState = context.findAncestorStateOfType<_DashboardScreenState>();
@@ -360,12 +361,12 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue[50],
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
                                   Icons.access_time_filled,
-                                  color: Colors.blue[700],
+                                  color: Theme.of(context).colorScheme.primary,
                                   size: 20,
                                 ),
                               ),
@@ -379,7 +380,14 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                             ],
                           ),
                           TextButton.icon(
-                            onPressed: () {},
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const RecentActivityScreen(),
+                                ),
+                              );
+                            },
                             icon: const Icon(Icons.arrow_forward, size: 16),
                             label: const Text('View All'),
                             style: TextButton.styleFrom(
@@ -444,7 +452,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
       case 'module':
       case 'course':
         activityIcon = Icons.book;
-        activityColor = Colors.blue;
+        activityColor = Theme.of(context).colorScheme.primary;
         break;
       case 'assignment':
         activityIcon = Icons.assignment;

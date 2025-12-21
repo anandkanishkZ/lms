@@ -140,7 +140,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Review Answers'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -218,15 +218,15 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
-        border: Border(bottom: BorderSide(color: Colors.blue[100]!)),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        border: Border(bottom: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.2))),
       ),
       child: Column(
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildStatItem('Score', '$obtainedMarks/$totalMarks', Colors.blue),
+              _buildStatItem('Score', '$obtainedMarks/$totalMarks', Theme.of(context).colorScheme.primary),
               _buildStatItem('Percentage', '$percentage%', Colors.purple),
               _buildStatItem('Correct', '${stats['correct']}', Colors.green),
               _buildStatItem('Wrong', '${stats['wrong']}', Colors.red),
@@ -420,15 +420,15 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.blue[100],
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
                         'Q${_currentQuestionIndex + 1}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
@@ -524,23 +524,23 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue[200]!),
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    children: const [
-                      Icon(Icons.lightbulb, color: Colors.blue, size: 20),
-                      SizedBox(width: 8),
+                    children: [
+                      Icon(Icons.lightbulb, color: Theme.of(context).colorScheme.primary, size: 20),
+                      const SizedBox(width: 8),
                       Text(
                         'Explanation',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ],
@@ -736,13 +736,13 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue[200]!),
+                border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.attach_file, color: Colors.blue, size: 20),
+                  Icon(Icons.attach_file, color: Theme.of(context).colorScheme.primary, size: 20),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -802,7 +802,7 @@ class _ExamReviewScreenState extends State<ExamReviewScreen> {
               icon: const Icon(Icons.arrow_forward),
               label: const Text('Next'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
             ),

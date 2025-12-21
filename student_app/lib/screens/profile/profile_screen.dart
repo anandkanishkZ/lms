@@ -170,7 +170,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                 context: context,
                 icon: Icons.photo_library_rounded,
                 title: 'Choose from Gallery',
-                color: Colors.blue,
+                color: Theme.of(context).colorScheme.primary,
                 onTap: () {
                   Navigator.pop(context);
                   _pickAndUploadAvatar(context, ImageSource.gallery);
@@ -538,7 +538,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           icon: Icons.person_rounded,
                           title: 'Full Name',
                           value: user?.name ?? 'N/A',
-                          color: Colors.blue,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                         if (user?.phone != null) ...[
                           const Divider(height: 32),
@@ -595,7 +595,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           title: 'Edit Profile',
                           subtitle: 'Update your personal information',
                           gradient: LinearGradient(
-                            colors: [Colors.blue.shade400, Colors.blue.shade600],
+                            colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withOpacity(0.7)],
                           ),
                           onTap: () => _showEditProfileDialog(context, authProvider),
                         ),
@@ -783,10 +783,10 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.edit_rounded, color: Colors.blue),
+              child: Icon(Icons.edit_rounded, color: Theme.of(context).colorScheme.primary),
             ),
             const SizedBox(width: 12),
             const Text('Edit Profile'),
@@ -899,7 +899,7 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
               }
             },
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.blue,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
             child: const Text('Save Changes'),

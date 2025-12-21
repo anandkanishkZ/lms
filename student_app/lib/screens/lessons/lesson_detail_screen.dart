@@ -266,7 +266,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           if (_lesson!.type == 'EXTERNAL_LINK' && _lesson!.videoUrl != null) ...[
             Card(
               child: ListTile(
-                leading: const Icon(Icons.link, color: Colors.blue, size: 40),
+                leading: Icon(Icons.link, color: Theme.of(context).colorScheme.primary, size: 40),
                 title: const Text('External Resource'),
                 subtitle: Text(_lesson!.videoUrl!),
                 trailing: const Icon(Icons.open_in_new),

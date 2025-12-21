@@ -14,7 +14,7 @@ class NoticeDetailScreen extends StatelessWidget {
   Color _getCategoryColor() {
     switch (notice.category) {
       case 'ACADEMIC':
-        return Colors.blue;
+        return const Color(0xFF2460E9);
       case 'EVENT':
         return Colors.green;
       case 'EXAM':

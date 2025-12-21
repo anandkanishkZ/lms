@@ -97,7 +97,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
       title = 'Exam Not Available Yet';
       message = 'This exam has not started yet. Please check back at the scheduled time.';
       icon = Icons.schedule;
-      iconColor = Colors.blue;
+      iconColor = Theme.of(context).colorScheme.primary;
     } else if (errorMessage.toLowerCase().contains('expired') || 
                errorMessage.toLowerCase().contains('after end time')) {
       title = 'Exam Has Ended';
@@ -236,7 +236,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
       case 'FINAL':
         return Colors.red;
       case 'ASSIGNMENT':
-        return Colors.blue;
+        return Theme.of(context).colorScheme.primary;
       case 'QUIZ':
         return Colors.purple;
       default:
@@ -337,7 +337,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
       appBar: AppBar(
         title: const Text('Exam Preview'),
         elevation: 0,
-        backgroundColor: Colors.blue,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
       ),
       body: _isLoading
@@ -448,7 +448,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
                                   'Duration',
                                   _formatDuration(_examPreview!['duration']),
                                   icon: Icons.timer,
-                                  color: Colors.blue,
+                                  color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -521,7 +521,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
                                             children: [
                                               Icon(
                                                 _getQuestionTypeIcon(entry.key),
-                                                color: Colors.blue,
+                                                color: Theme.of(context).colorScheme.primary,
                                                 size: 20,
                                               ),
                                               const SizedBox(width: 12),
@@ -540,7 +540,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
                                                   vertical: 4,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: Colors.blue[50],
+                                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                                                   borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: Text(
@@ -548,7 +548,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
                                                   style: TextStyle(
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.blue[700],
+                                                    color: Theme.of(context).colorScheme.primary,
                                                   ),
                                                 ),
                                               ),
@@ -717,7 +717,7 @@ class _ExamPreviewScreenState extends State<ExamPreviewScreen> {
                               child: ElevatedButton(
                                 onPressed: _isLoading ? null : _startExam,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
                                   foregroundColor: Colors.white,
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                   shape: RoundedRectangleBorder(

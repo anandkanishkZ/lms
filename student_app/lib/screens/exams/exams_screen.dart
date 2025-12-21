@@ -131,7 +131,7 @@ class _ExamsScreenState extends State<ExamsScreen> {
               title: 'Upcoming',
               count: categorized[ExamTab.upcoming]!.length,
               icon: Icons.calendar_today,
-              color: Colors.blue,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
           const SizedBox(width: 12),
@@ -451,8 +451,8 @@ class _TabButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
             gradient: isSelected
-                ? const LinearGradient(
-                    colors: [Colors.blue, Colors.purple],
+                ? LinearGradient(
+                    colors: [Theme.of(context).colorScheme.primary, Colors.purple],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   )
@@ -537,7 +537,7 @@ class _ExamCard extends StatelessWidget {
                   colors: isActive
                       ? [Colors.green[50]!, Colors.green[100]!]
                       : isUpcoming
-                          ? [Colors.blue[50]!, Colors.blue[100]!]
+                          ? [Theme.of(context).colorScheme.primary.withOpacity(0.1), Theme.of(context).colorScheme.primary.withOpacity(0.2)]
                           : [Colors.grey[50]!, Colors.grey[100]!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -747,7 +747,7 @@ class _ExamCard extends StatelessWidget {
           icon: const Icon(Icons.emoji_events),
           label: const Text('View Result'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
+            backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 12),
             shape: RoundedRectangleBorder(
@@ -797,7 +797,7 @@ class _TypeChip extends StatelessWidget {
       case 'QUIZ':
         return Colors.orange[800]!;
       case 'ASSIGNMENT':
-        return Colors.blue[800]!;
+        return const Color(0xFF2460E9);
       case 'PROJECT':
         return Colors.green[800]!;
       default:

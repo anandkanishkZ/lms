@@ -76,7 +76,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
     final percentage = total > 0 ? (obtained / total) * 100 : 0;
     
     if (percentage >= 80) return Colors.green;
-    if (percentage >= 60) return Colors.blue;
+    if (percentage >= 60) return Theme.of(context).colorScheme.primary;
     if (percentage >= 40) return Colors.orange;
     return Colors.red;
   }
@@ -254,7 +254,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                               'Passing Marks',
                               '${_getPassingMarks().toStringAsFixed(0)}',
                               Icons.rule,
-                              Colors.blue,
+                              Theme.of(context).colorScheme.primary,
                             ),
                             const SizedBox(height: 12),
                             _buildStatRow(
@@ -339,7 +339,7 @@ class _ExamResultScreenState extends State<ExamResultScreen> {
                                 icon: const Icon(Icons.home),
                                 label: const Text('Back to Dashboard'),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                 ),
                               ),

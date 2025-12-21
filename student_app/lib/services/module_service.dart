@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../models/module.dart';
+import '../models/featured_video.dart';
 import 'auth_service.dart';
 
 class ModuleService {
@@ -168,6 +169,39 @@ class ModuleService {
       }
     } catch (e) {
       throw Exception('Error enrolling in module: $e');
+    }
+  }
+
+  // Get featured video for a module (returns live class video if active, otherwise module's featured video)
+  Future<FeaturedVideo?> getModuleFeaturedVideo(String moduleId) async {
+    final token = await _authService.getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    try {
+      final url = '${ApiConfig.baseUrl}/modules/$moduleId/featured-video';
+      print('Fetching featured video from: $url');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: ApiConfig.headers(token: token),
+      ).timeout(ApiConfig.timeout);
+
+      print('Featured video response status: ${response.statusCode}');
+      print('Featured video response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          return FeaturedVideo.fromJson(data['data']);
+        } else {
+          return null;
+        }
+      } else {
+        throw Exception('Failed to load featured video');
+      }
+    } catch (e) {
+      print('Error loading featured video: $e');
+      return null;
     }
   }
 }
