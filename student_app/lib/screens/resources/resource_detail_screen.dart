@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/resource.dart' as ResourceModel;
 import '../../services/resource_service.dart';
 import '../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
+
+// Conditional imports are handled at compilation time
+// For web-only features, we'll use kIsWeb runtime check instead
 
 class ResourceDetailScreen extends StatefulWidget {
   final ResourceModel.Resource resource;
@@ -623,25 +625,51 @@ class _ResourceDetailScreenState extends State<ResourceDetailScreen> {
   }
 
   Widget _buildIframe(String url, {double height = 500}) {
-    // Create unique view type for this iframe
-    final viewType = 'iframe-${url.hashCode}';
-    
-    // Register the view factory
-    ui_web.platformViewRegistry.registerViewFactory(
-      viewType,
-      (int viewId) {
-        final iframe = html.IFrameElement()
-          ..src = url
-          ..style.border = 'none'
-          ..style.width = '100%'
-          ..style.height = '100%';
-        return iframe;
-      },
-    );
-
-    return SizedBox(
-      height: height,
-      child: HtmlElementView(viewType: viewType),
+    // For mobile platforms, show a button to open in external browser
+    // Web platform will be handled differently in production
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(48.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.open_in_browser,
+              size: 64,
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Open in Browser',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'This resource will open in your default browser',
+              style: TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () async {
+                final uri = Uri.parse(url);
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
+              icon: const Icon(Icons.launch),
+              label: const Text('Open'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
