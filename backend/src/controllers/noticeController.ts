@@ -552,6 +552,35 @@ export const updateNotice = async (req: AuthRequest, res: Response) => {
       },
     });
 
+    // Send push notification if:
+    // 1. Draft was just published, OR
+    // 2. Already published notice was updated
+    const shouldNotify = 
+      (updates.isPublished && !existingNotice.isPublished) || // Draft → Published
+      (existingNotice.isPublished && notice.isPublished);      // Published notice updated
+
+    if (shouldNotify) {
+      try {
+        await sendNoticeNotification({
+          id: notice.id,
+          title: notice.title,
+          content: notice.content,
+          category: notice.category,
+          priority: notice.priority,
+          targetRole: notice.targetRole || undefined,
+          classId: notice.classId || undefined,
+          batchId: notice.batchId || undefined,
+          moduleId: notice.moduleId || undefined,
+        });
+        const notifType = (updates.isPublished && !existingNotice.isPublished) 
+          ? 'published' 
+          : 'updated';
+        console.log(`📲 Push notification sent for ${notifType} notice: ${notice.id}`);
+      } catch (notifError) {
+        console.error('Failed to send push notification:', notifError);
+      }
+    }
+
     res.json({
       success: true,
       message: 'Notice updated successfully',
