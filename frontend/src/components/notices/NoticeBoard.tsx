@@ -23,6 +23,7 @@ interface NoticeBoardProps {
   limit?: number;
   title?: string;
   showActions?: boolean; // Show Edit/Delete buttons
+  autoRefresh?: boolean; // Auto-refresh when component becomes visible
 }
 
 export default function NoticeBoard({
@@ -34,6 +35,7 @@ export default function NoticeBoard({
   limit,
   title = 'Notices & Announcements',
   showActions = false,
+  autoRefresh = true,
 }: NoticeBoardProps) {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [filteredNotices, setFilteredNotices] = useState<Notice[]>([]);
@@ -63,6 +65,31 @@ export default function NoticeBoard({
       fetchNotices();
     }
   }, [classId, batchId, moduleId, unreadOnlyFilter, pinnedOnlyFilter]);
+
+  // Auto-refresh when page becomes visible (user navigates back)
+  useEffect(() => {
+    if (!autoRefresh) return;
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('📄 Page visible, refreshing notices...');
+        fetchNotices();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('🔄 Window focused, refreshing notices...');
+      fetchNotices();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [autoRefresh]);
 
   useEffect(() => {
     applyFilters();

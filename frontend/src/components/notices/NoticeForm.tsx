@@ -199,6 +199,9 @@ export default function NoticeForm({ notice, mode, onSuccess, onCancel }: Notice
         toast.success('Notice updated successfully');
       }
 
+      // Invalidate router cache to ensure fresh data on navigation
+      router.refresh();
+      
       if (onSuccess) {
         onSuccess();
       } else {

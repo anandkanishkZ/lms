@@ -10,6 +10,12 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminNotificationsPage() {
   const router = useRouter();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Force refresh when component mounts (e.g., after creating a notice)
+  useEffect(() => {
+    setRefreshKey((prev) => prev + 1);
+  }, []);
 
   return (
     <AdminLayout
@@ -31,10 +37,12 @@ export default function AdminNotificationsPage() {
         </div>
 
         <NoticeBoard 
+          key={refreshKey}
           showCreateButton={true}
           onCreateClick={() => router.push('/admin/notifications/create')}
           title="All Notices"
           showActions={true}
+          autoRefresh={true}
         />
       </div>
     </AdminLayout>
