@@ -1,5 +1,5 @@
-import axios from 'axios';
-import { getAuthHeaders } from '@/utils/auth';
+import axios, { AxiosInstance } from 'axios';
+import { getAuthHeaders, getCurrentToken } from '@/utils/auth';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1';
 
@@ -119,6 +119,44 @@ export interface NotificationPreferences {
 
 // API Service
 class NoticeApiService {
+  private axiosInstance: AxiosInstance;
+
+  constructor() {
+    this.axiosInstance = axios.create({
+      baseURL: API_BASE_URL,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    // Add request interceptor to include auth token
+    this.axiosInstance.interceptors.request.use(
+      (config) => {
+        const token = getCurrentToken();
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+          console.log('🔑 Token added to request');
+        } else {
+          console.warn('⚠️ No token available for request');
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+
+    // Add response interceptor for global error handling
+    this.axiosInstance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        console.error('❌ API Error:', error.response?.status, error.response?.data);
+        
+        // Don't auto-redirect on 401, let the component handle it
+        // This prevents logout loops
+        return Promise.reject(error);
+      }
+    );
+  }
+
   /**
    * Get all notices with optional filters
    */
@@ -133,11 +171,7 @@ class NoticeApiService {
         });
       }
 
-      const headers = getAuthHeaders();
-      console.log('🔑 Auth headers:', { hasAuth: !!headers.Authorization });
-
-      const response = await axios.get(`${API_BASE_URL}/notices`, {
-        headers,
+      const response = await this.axiosInstance.get('/notices', {
         params,
       });
 
@@ -161,9 +195,8 @@ class NoticeApiService {
    */
   async getNoticeById(id: string): Promise<Notice> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/${id}`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get(`/notices/${id}`);
+
 
       return response.data.data;
     } catch (error: any) {
@@ -177,9 +210,7 @@ class NoticeApiService {
    */
   async createNotice(data: CreateNoticeData): Promise<Notice> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/notices`, data, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.post('/notices', data);
 
       return response.data.data;
     } catch (error: any) {
@@ -193,9 +224,7 @@ class NoticeApiService {
    */
   async updateNotice(id: string, data: Partial<CreateNoticeData>): Promise<Notice> {
     try {
-      const response = await axios.put(`${API_BASE_URL}/notices/${id}`, data, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.put(`/notices/${id}`, data);
 
       return response.data.data;
     } catch (error: any) {
@@ -209,9 +238,7 @@ class NoticeApiService {
    */
   async deleteNotice(id: string): Promise<void> {
     try {
-      await axios.delete(`${API_BASE_URL}/notices/${id}`, {
-        headers: getAuthHeaders(),
-      });
+      await this.axiosInstance.delete(`/notices/${id}`);
     } catch (error: any) {
       console.error('Error deleting notice:', error);
       throw new Error(error.response?.data?.message || 'Failed to delete notice');
@@ -223,13 +250,7 @@ class NoticeApiService {
    */
   async markAsRead(id: string): Promise<void> {
     try {
-      await axios.post(
-        `${API_BASE_URL}/notices/${id}/read`,
-        {},
-        {
-          headers: getAuthHeaders(),
-        }
-      );
+      await this.axiosInstance.post(`/notices/${id}/read`);
     } catch (error: any) {
       console.error('Error marking notice as read:', error);
       throw new Error(error.response?.data?.message || 'Failed to mark notice as read');
@@ -241,9 +262,7 @@ class NoticeApiService {
    */
   async getUnreadCount(): Promise<UnreadCountResponse> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/unread/count`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get('/notices/unread/count');
 
       return response.data.data;
     } catch (error: any) {
@@ -257,9 +276,7 @@ class NoticeApiService {
    */
   async getTeacherClasses(): Promise<Array<{ id: string; name: string; subjectName: string }>> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/teacher/classes`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get('/notices/teacher/classes');
 
       return response.data.data;
     } catch (error: any) {
@@ -273,9 +290,7 @@ class NoticeApiService {
    */
   async getTeacherModules(): Promise<Array<{ id: string; title: string; slug: string; isPublished: boolean }>> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/teacher/modules`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get('/notices/teacher/modules');
 
       return response.data.data;
     } catch (error: any) {
@@ -289,12 +304,9 @@ class NoticeApiService {
    */
   async bulkMarkAsRead(noticeIds: string[]): Promise<{ count: number }> {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/notices/bulk/mark-read`,
-        { noticeIds },
-        {
-          headers: getAuthHeaders(),
-        }
+      const response = await this.axiosInstance.post(
+        '/notices/bulk/mark-read',
+        { noticeIds }
       );
 
       return response.data.data;
@@ -309,13 +321,7 @@ class NoticeApiService {
    */
   async markAllAsRead(): Promise<{ count: number }> {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/notices/bulk/mark-all-read`,
-        {},
-        {
-          headers: getAuthHeaders(),
-        }
-      );
+      const response = await this.axiosInstance.post('/notices/bulk/mark-all-read', {});
 
       return response.data.data;
     } catch (error: any) {
@@ -329,9 +335,7 @@ class NoticeApiService {
    */
   async getNotificationPreferences(): Promise<NotificationPreferences> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/preferences`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get('/notices/preferences');
 
       return response.data.data;
     } catch (error: any) {
@@ -345,12 +349,9 @@ class NoticeApiService {
    */
   async updateNotificationPreferences(preferences: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
     try {
-      const response = await axios.put(
-        `${API_BASE_URL}/notices/preferences`,
-        preferences,
-        {
-          headers: getAuthHeaders(),
-        }
+      const response = await this.axiosInstance.put(
+        '/notices/preferences',
+        preferences
       );
 
       return response.data.data;
@@ -365,9 +366,7 @@ class NoticeApiService {
    */
   async getNotificationStats(): Promise<NotificationStats> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/stats`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get('/notices/stats');
 
       return response.data.data;
     } catch (error: any) {
@@ -381,12 +380,9 @@ class NoticeApiService {
    */
   async bulkDeleteNotices(noticeIds: string[]): Promise<{ count: number }> {
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/notices/bulk/delete`,
-        { noticeIds },
-        {
-          headers: getAuthHeaders(),
-        }
+      const response = await this.axiosInstance.post(
+        '/notices/bulk/delete',
+        { noticeIds }
       );
 
       return response.data.data;
@@ -401,9 +397,7 @@ class NoticeApiService {
    */
   async getAllBatches(): Promise<Array<{ id: string; name: string }>> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/batches`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get('/notices/batches');
 
       return response.data.data;
     } catch (error: any) {
@@ -417,9 +411,7 @@ class NoticeApiService {
    */
   async getAllClasses(): Promise<Array<{ id: string; name: string }>> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/admin/classes`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get('/notices/admin/classes');
 
       return response.data.data;
     } catch (error: any) {
@@ -433,9 +425,7 @@ class NoticeApiService {
    */
   async getAllModules(): Promise<Array<{ id: string; title: string }>> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notices/admin/modules`, {
-        headers: getAuthHeaders(),
-      });
+      const response = await this.axiosInstance.get('/notices/admin/modules');
 
       return response.data.data;
     } catch (error: any) {

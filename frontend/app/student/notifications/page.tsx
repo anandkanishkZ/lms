@@ -21,33 +21,12 @@ export default function StudentNotificationsPage() {
   const fetchNotices = async () => {
     try {
       setLoading(true);
-      
-      // Debug: Check if token exists
-      const token = localStorage.getItem('student_token');
-      if (!token) {
-        console.error('❌ No student token found in localStorage');
-        toast.error('Please log in again');
-        // Redirect to login if no token
-        window.location.href = '/student/login';
-        return;
-      }
-      
-      console.log('✅ Student token exists, fetching notices...');
       const data = await noticeApi.getAllNotices({ unreadOnly: false });
       console.log('✅ Notices fetched successfully:', data.length);
       setNotices(data);
     } catch (error: any) {
       console.error('❌ Failed to fetch notices:', error);
-      
-      // If unauthorized, redirect to login
-      if (error.message?.includes('log in')) {
-        toast.error('Your session has expired. Please log in again.');
-        setTimeout(() => {
-          window.location.href = '/student/login';
-        }, 2000);
-      } else {
-        toast.error('Failed to load notices');
-      }
+      toast.error(error.message || 'Failed to load notices');
     } finally {
       setLoading(false);
     }

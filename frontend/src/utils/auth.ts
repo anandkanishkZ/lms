@@ -235,17 +235,6 @@ export const getCurrentUser = (): { userId: string; role: UserRole; email?: stri
 export const getAuthHeaders = (): Record<string, string> => {
   const token = getCurrentToken();
   
-  if (typeof window !== 'undefined') {
-    console.log('🔐 Getting auth headers:', {
-      hasToken: !!token,
-      tokenLength: token?.length,
-      role: getCurrentUserRole(),
-      adminToken: !!localStorage.getItem(TOKEN_KEYS.ADMIN),
-      teacherToken: !!localStorage.getItem(TOKEN_KEYS.TEACHER),
-      studentToken: !!localStorage.getItem(TOKEN_KEYS.STUDENT),
-    });
-  }
-  
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
@@ -253,8 +242,6 @@ export const getAuthHeaders = (): Record<string, string> => {
   // Only include Authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
-  } else {
-    console.warn('⚠️ No token available for auth headers');
   }
   
   return headers;
