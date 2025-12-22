@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { PrismaClient, NoticeCategory, Priority, Role } from '@prisma/client';
 import { AuthRequest } from '../types';
+import { sendNoticeNotification } from '../services/firebaseService';
 
 const prisma = new PrismaClient();
 
@@ -119,6 +120,27 @@ export const createNotice = async (req: AuthRequest, res: Response) => {
         module: { select: { id: true, title: true } },
       },
     });
+
+    // Send push notification if notice is published
+    if (isPublished) {
+      try {
+        await sendNoticeNotification({
+          id: notice.id,
+          title: notice.title,
+          content: notice.content,
+          category: notice.category,
+          priority: notice.priority,
+          targetRole: notice.targetRole || undefined,
+          classId: notice.classId || undefined,
+          batchId: notice.batchId || undefined,
+          moduleId: notice.moduleId || undefined,
+        });
+        console.log(`📲 Push notification sent for notice: ${notice.id}`);
+      } catch (notifError) {
+        // Log error but don't fail the notice creation
+        console.error('Failed to send push notification:', notifError);
+      }
+    }
 
     res.status(201).json({
       success: true,

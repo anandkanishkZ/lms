@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:firebase_core/firebase_core.dart';
 import 'providers/auth_provider.dart';
 import 'providers/module_provider.dart';
 import 'providers/exam_provider.dart';
@@ -9,15 +10,31 @@ import 'providers/notice_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/dashboard/dashboard_screen.dart';
 import 'services/notification_service.dart';
+import 'services/fcm_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  try {
+    await Firebase.initializeApp();
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print('❌ Firebase initialization error: $e');
+  }
   
   // Initialize timezone data for notifications
   tz.initializeTimeZones();
   
   // Initialize notification service
   await NotificationService().initialize();
+  
+  // Initialize FCM service
+  try {
+    await FCMService().initialize();
+  } catch (e) {
+    print('❌ FCM initialization error: $e');
+  }
   
   runApp(const MyApp());
 }

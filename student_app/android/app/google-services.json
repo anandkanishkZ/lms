@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "682586024558",
+    "project_id": "lms-nepal-aac53",
+    "storage_bucket": "lms-nepal-aac53.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:682586024558:android:04b24bec85d4f7dde1947f",
+        "android_client_info": {
+          "package_name": "com.nepallms.student"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDX9D6WIKOeKFj-10QYMF8riuIESt0nPVI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

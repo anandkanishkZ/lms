@@ -88,3 +88,7 @@ Thumbs.db
 # Uploads
 /backend/uploads/*
 !/backend/uploads/.gitkeep
+
+# Firebase service account (NEVER commit this!)
+firebase-service-account.json
+*firebase-adminsdk*.json

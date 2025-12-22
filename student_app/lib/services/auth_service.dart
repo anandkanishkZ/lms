@@ -5,6 +5,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/user.dart';
+import 'fcm_service.dart';
 
 class AuthService {
   static const String _tokenKey = 'auth_token';
@@ -28,6 +29,14 @@ class AuthService {
         if (data['success'] == true) {
           final authResponse = AuthResponse.fromJson(data['data']);
           await _saveAuthData(authResponse);
+          
+          // Register FCM token after successful login
+          try {
+            await FCMService().registerTokenAfterLogin();
+          } catch (e) {
+            print('⚠️ FCM registration error (non-critical): $e');
+          }
+          
           return authResponse;
         } else {
           throw Exception(data['message'] ?? 'Login failed');
@@ -84,6 +93,13 @@ class AuthService {
   // Logout
   Future<void> logout() async {
     try {
+      // Unregister FCM token before logout
+      try {
+        await FCMService().unregisterToken();
+      } catch (e) {
+        print('⚠️ FCM unregistration error (non-critical): $e');
+      }
+      
       final token = await getToken();
       if (token != null) {
         await http.post(
@@ -113,6 +129,11 @@ class AuthService {
   Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
+  }
+  
+  // Get access token (alias for getToken for FCM service compatibility)
+  Future<String?> getAccessToken() async {
+    return await getToken();
   }
 
   // Check if logged in

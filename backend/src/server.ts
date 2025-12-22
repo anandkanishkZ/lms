@@ -50,7 +50,14 @@ import { errorHandler } from './middlewares/errorHandler';
 import { auditLog } from './middlewares/auditLog';
 import { secureLog } from './utils/logger';
 
+// Import Firebase service
+import { initializeFirebase } from './services/firebaseService';
+import fcmRoutes from './routes/fcm';
+
 dotenv.config();
+
+// Initialize Firebase Admin SDK
+initializeFirebase();
 
 const app: Application = express();
 
@@ -287,6 +294,7 @@ app.use('/api/v1/certificates', authenticateToken, certificateRoutes);
 app.use('/api/v1/notifications', authenticateToken, notificationRoutes);
 app.use('/api/v1/messages', authenticateToken, messageRoutes);
 app.use('/api/v1/analytics', authenticateToken, analyticsRoutes);
+app.use('/api/v1/fcm', authenticateToken, fcmRoutes);
 app.use('/api/v1/students', studentRoutes);
 app.use('/api/v1/teacher/dashboard', teacherDashboardRoutes);
 app.use('/api/v1/admin/modules/approval', moduleApprovalRoutes);
