@@ -133,14 +133,19 @@ class NoticeApiService {
         });
       }
 
+      const headers = getAuthHeaders();
+      console.log('🔑 Auth headers:', { hasAuth: !!headers.Authorization });
+
       const response = await axios.get(`${API_BASE_URL}/notices`, {
-        headers: getAuthHeaders(),
+        headers,
         params,
       });
 
       return response.data.data;
     } catch (error: any) {
-      console.error('Error fetching notices:', error);
+      console.error('❌ Error fetching notices:', error);
+      console.error('📋 Response data:', error.response?.data);
+      console.error('📊 Response status:', error.response?.status);
       
       // Handle 401 Unauthorized specifically
       if (error.response?.status === 401) {
