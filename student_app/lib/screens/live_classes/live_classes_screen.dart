@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -349,7 +350,11 @@ class _LiveClassesScreenState extends State<LiveClassesScreen> with SingleTicker
     // Extract YouTube video ID
     String? videoId;
     if (liveClass.youtubeUrl != null) {
+      print('YouTube URL: ${liveClass.youtubeUrl}');
       videoId = _extractYouTubeVideoId(liveClass.youtubeUrl!);
+      print('Extracted Video ID: $videoId');
+    } else {
+      print('No YouTube URL for class: ${liveClass.title}');
     }
     
     final thumbnailUrl = videoId != null
@@ -597,17 +602,27 @@ class _LiveClassesScreenState extends State<LiveClassesScreen> with SingleTicker
                     if (videoId != null)
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => YouTubePlayerScreen(
-                                  videoId: videoId!,
-                                  title: liveClass.title,
-                                  isLive: isLive,
+                          onPressed: () async {
+                            // On web, open YouTube directly in a new tab
+                            if (kIsWeb) {
+                              final youtubeUrl = 'https://www.youtube.com/watch?v=$videoId';
+                              final Uri url = Uri.parse(youtubeUrl);
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              }
+                            } else {
+                              // On mobile, use the in-app player
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => YouTubePlayerScreen(
+                                    videoId: videoId!,
+                                    title: liveClass.title,
+                                    isLive: isLive,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            }
                           },
                           icon: Icon(isLive ? Icons.live_tv : Icons.play_circle_filled),
                           label: Text(isLive ? 'Watch Live' : 'Watch Recording'),
@@ -621,7 +636,31 @@ class _LiveClassesScreenState extends State<LiveClassesScreen> with SingleTicker
                           ),
                         ),
                       ),
+                    // Fallback for YouTube URL when video ID extraction fails
+                    if (videoId == null && liveClass.youtubeUrl != null)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            final Uri url = Uri.parse(liveClass.youtubeUrl!);
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          icon: const Icon(Icons.play_circle_outline),
+                          label: const Text('Open in Browser'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ),
                     if (videoId != null && liveClass.meetingLink != null)
+                      const SizedBox(width: 8),
+                    if ((videoId == null && liveClass.youtubeUrl != null) && liveClass.meetingLink != null)
                       const SizedBox(width: 8),
                     if (liveClass.meetingLink != null)
                       Expanded(
@@ -757,11 +796,33 @@ class _LiveClassesScreenState extends State<LiveClassesScreen> with SingleTicker
   }
 
   String? _extractYouTubeVideoId(String url) {
-    final regExp = RegExp(
-      r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})',
-      caseSensitive: false,
-    );
-    final match = regExp.firstMatch(url);
-    return match?.group(1);
+    // Handle various YouTube URL formats
+    try {
+      final patterns = [
+        // Standard watch URL
+        RegExp(r'(?:youtube\.com\/watch\?v=)([^&\s]+)'),
+        // Shortened youtu.be URL
+        RegExp(r'(?:youtu\.be\/)([^?\s]+)'),
+        // Embed URL
+        RegExp(r'(?:youtube\.com\/embed\/)([^?\s]+)'),
+        // Live URL
+        RegExp(r'(?:youtube\.com\/live\/)([^?\s]+)'),
+        // General pattern (fallback)
+        RegExp(r'(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})'),
+      ];
+      
+      for (var pattern in patterns) {
+        final match = pattern.firstMatch(url);
+        if (match != null && match.group(1) != null) {
+          return match.group(1);
+        }
+      }
+      
+      print('Could not extract video ID from URL: $url');
+      return null;
+    } catch (e) {
+      print('Error extracting video ID: $e');
+      return null;
+    }
   }
 }

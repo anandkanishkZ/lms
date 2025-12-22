@@ -45,13 +45,24 @@ export function LiveClassFormModal({
   useEffect(() => {
     if (isOpen) {
       if (liveClass) {
-        // Edit mode
+        // Edit mode - format datetime preserving the original time
+        const formatDateTimeLocal = (dateString: string) => {
+          const date = new Date(dateString);
+          // Get the date in local timezone
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          return `${year}-${month}-${day}T${hours}:${minutes}`;
+        };
+        
         setFormData({
           title: liveClass.title,
           description: liveClass.description || '',
           youtubeUrl: liveClass.youtubeUrl || '',
-          startTime: liveClass.startTime ? new Date(liveClass.startTime).toISOString().slice(0, 16) : '',
-          endTime: liveClass.endTime ? new Date(liveClass.endTime).toISOString().slice(0, 16) : '',
+          startTime: liveClass.startTime ? formatDateTimeLocal(liveClass.startTime) : '',
+          endTime: liveClass.endTime ? formatDateTimeLocal(liveClass.endTime) : '',
         });
       } else {
         // Create mode - set default time (start: now, end: now + 1 hour)

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../auth/login_screen.dart';
 
@@ -618,6 +619,109 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             colors: [Colors.red.shade400, Colors.red.shade600],
                           ),
                           onTap: () => _handleLogout(context, authProvider),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 50),
+
+                  // Professional Developer Info Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Column(
+                      children: [
+                        // Subtle Divider
+                        Container(
+                          width: 60,
+                          height: 1,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.grey.shade300,
+                                Colors.grey.shade400,
+                                Colors.grey.shade300,
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        // Developer Info
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Developed By ',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade700,
+                                fontWeight: FontWeight.w400,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () async {
+                                final url = Uri.parse('https://zwickytechnology.com');
+                                try {
+                                  if (await canLaunchUrl(url)) {
+                                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                                  } else {
+                                    Fluttertoast.showToast(
+                                      msg: '❌ Could not open website',
+                                      backgroundColor: Colors.red,
+                                      textColor: Colors.white,
+                                    );
+                                  }
+                                } catch (e) {
+                                  Fluttertoast.showToast(
+                                    msg: '❌ Could not open website',
+                                    backgroundColor: Colors.red,
+                                    textColor: Colors.white,
+                                  );
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(4),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                child: Text(
+                                  'Zwicky Technology',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.2,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: Colors.blue.shade700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        // App Version
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.grey.shade300,
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            'App Version: 1.0.0',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                              fontWeight: FontWeight.w500,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
                         ),
                       ],
                     ),

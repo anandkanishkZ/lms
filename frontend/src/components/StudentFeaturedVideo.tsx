@@ -72,27 +72,11 @@ export function StudentFeaturedVideo({ moduleId }: StudentFeaturedVideoProps) {
   };
 
   if (loading) {
-    return (
-      <div className="rounded-xl overflow-hidden shadow-sm border-2 border-red-500">
-        <div className="aspect-video bg-gray-900 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-white"></div>
-        </div>
-      </div>
-    );
+    return null; // Don't show loading state
   }
 
   if (!featuredVideo || featuredVideo.type === 'none' || !featuredVideo.videoUrl) {
-    return (
-      <div className="rounded-xl overflow-hidden shadow-sm border-2 border-red-500">
-        <div className="aspect-video bg-gray-900 flex items-center justify-center">
-          <div className="text-center text-white">
-            <Video className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">No Featured Video</p>
-            <p className="text-sm opacity-75">No video set for this module</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null; // Hide the section completely when no video is set
   }
 
   return (

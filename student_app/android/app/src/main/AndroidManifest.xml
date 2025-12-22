@@ -4,7 +4,7 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
     <application
-        android:label="Nepal LMS"
+        android:label="Free Education In Nepal"
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config"
         android:name="${applicationName}"

@@ -104,10 +104,21 @@ export function LiveClassTab({ moduleId, moduleName, subjectId, classId }: LiveC
 
   const handleSubmit = async (formData: LiveClassFormData) => {
     try {
+      // Convert datetime-local strings to ISO strings with local timezone preserved
+      const convertToLocalISO = (datetimeLocal: string): string => {
+        // Create date from the local datetime string
+        // datetime-local format: "YYYY-MM-DDTHH:mm"
+        // We append seconds and treat it as local time
+        const date = new Date(datetimeLocal + ':00');
+        return date.toISOString();
+      };
+      
       const submitData = {
-        ...formData,
-        startTime: new Date(formData.startTime).toISOString(),
-        endTime: formData.endTime ? new Date(formData.endTime).toISOString() : undefined,
+        title: formData.title,
+        description: formData.description,
+        youtubeUrl: formData.youtubeUrl,
+        startTime: convertToLocalISO(formData.startTime),
+        endTime: formData.endTime ? convertToLocalISO(formData.endTime) : '',
       };
 
       if (editingClass) {

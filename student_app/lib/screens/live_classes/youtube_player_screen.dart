@@ -27,6 +27,8 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
   bool _isLiked = false;
   bool _isSaved = false;
   double _volume = 100.0;
+  bool _hasError = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -39,8 +41,22 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
         isLive: widget.isLive,
         enableCaption: true,
         hideControls: false,
+        forceHD: false,
+        disableDragSeek: widget.isLive,
       ),
     )..addListener(_listener);
+    
+    // For live streams, add error detection
+    if (widget.isLive) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && !_isPlayerReady && _controller.value.errorCode != 0) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = 'Unable to play live stream. Please open in YouTube app.';
+          });
+        }
+      });
+    }
   }
 
   void _listener() {
@@ -180,7 +196,54 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
                 ),
           body: Column(
             children: [
-              player,
+              // Show error message for live streams that can't be embedded
+              if (_hasError && widget.isLive) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  color: Colors.orange[50],
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.orange[800]),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _errorMessage ?? 'This live stream cannot be played in the app.',
+                          style: TextStyle(color: Colors.orange[900], fontSize: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      final youtubeUrl = 'https://www.youtube.com/watch?v=${widget.videoId}';
+                      final Uri url = Uri.parse(youtubeUrl);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      } else {
+                        Fluttertoast.showToast(
+                          msg: 'Could not open YouTube',
+                          backgroundColor: Colors.red,
+                          textColor: Colors.white,
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('Open in YouTube App'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+              if (!_hasError || !widget.isLive) player,
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
@@ -218,9 +281,39 @@ class _YouTubePlayerScreenState extends State<YouTubePlayerScreen> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      const Divider(),
                       const SizedBox(height: 16),
+                      // Add "Open in YouTube" button for live streams
+                      if (widget.isLive) ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final youtubeUrl = 'https://www.youtube.com/watch?v=${widget.videoId}';
+                              final Uri url = Uri.parse(youtubeUrl);
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              } else {
+                                Fluttertoast.showToast(
+                                  msg: 'Could not open YouTube',
+                                  backgroundColor: Colors.red,
+                                  textColor: Colors.white,
+                                );
+                              }
+                            },
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('Watch in YouTube App (Recommended)'),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.red,
+                              side: const BorderSide(color: Colors.red, width: 2),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        const Divider(),
+                        const SizedBox(height: 16),
+                      ],
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
