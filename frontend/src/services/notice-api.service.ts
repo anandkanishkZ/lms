@@ -74,6 +74,7 @@ export interface NoticeFilters {
   moduleId?: string;
   includeExpired?: boolean;
   unreadOnly?: boolean;
+  includeDrafts?: 'true' | 'all' | 'false'; // 'true' = drafts only, 'all' = both, 'false'/undefined = published only
 }
 
 export interface CreateNoticeData {

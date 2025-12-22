@@ -26,7 +26,7 @@ android {
         applicationId = "com.nepallms.student"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21  // Changed from flutter.minSdkVersion for Firebase compatibility
+        minSdk = flutter.minSdkVersion  // Changed from flutter.minSdkVersion for Firebase compatibility
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

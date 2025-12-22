@@ -175,12 +175,22 @@ export const getAllNotices = async (req: AuthRequest, res: Response) => {
       moduleId,
       includeExpired,
       unreadOnly,
+      includeDrafts,
     } = req.query;
 
     // Build filter conditions
-    const where: any = {
-      isPublished: true,
-    };
+    const where: any = {};
+
+    // Handle draft/published filtering
+    // Only admins and teachers can see drafts
+    if (includeDrafts === 'true' && (userRole === 'ADMIN' || userRole === 'TEACHER')) {
+      where.isPublished = false; // Show only drafts
+    } else if (includeDrafts === 'all' && (userRole === 'ADMIN' || userRole === 'TEACHER')) {
+      // Show both published and drafts - no filter
+    } else {
+      // Default: only show published notices
+      where.isPublished = true;
+    }
 
     // Filter by expiration (exclude expired by default)
     if (includeExpired !== 'true') {

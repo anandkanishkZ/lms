@@ -143,6 +143,11 @@ export default function NoticeCard({
               <Badge className={`text-xs ${priorityBadgeColors[notice.priority]} text-white`}>
                 {notice.priority}
               </Badge>
+              {!notice.isPublished && (
+                <Badge variant="outline" className="text-xs bg-gray-100 text-gray-700 border-gray-400">
+                  📝 DRAFT
+                </Badge>
+              )}
             </div>
             <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">{notice.title}</h3>
           </div>

@@ -24,6 +24,7 @@ interface NoticeBoardProps {
   title?: string;
   showActions?: boolean; // Show Edit/Delete buttons
   autoRefresh?: boolean; // Auto-refresh when component becomes visible
+  includeDrafts?: 'true' | 'all' | 'false'; // Draft filter mode
 }
 
 export default function NoticeBoard({
@@ -36,6 +37,7 @@ export default function NoticeBoard({
   title = 'Notices & Announcements',
   showActions = false,
   autoRefresh = true,
+  includeDrafts = 'false',
 }: NoticeBoardProps) {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [filteredNotices, setFilteredNotices] = useState<Notice[]>([]);
@@ -64,7 +66,7 @@ export default function NoticeBoard({
       
       fetchNotices();
     }
-  }, [classId, batchId, moduleId, unreadOnlyFilter, pinnedOnlyFilter]);
+  }, [classId, batchId, moduleId, unreadOnlyFilter, pinnedOnlyFilter, includeDrafts]);
 
   // Auto-refresh when page becomes visible (user navigates back)
   useEffect(() => {
@@ -110,6 +112,7 @@ export default function NoticeBoard({
         moduleId,
         unreadOnly: unreadOnlyFilter,
         isPinned: pinnedOnlyFilter || undefined,
+        includeDrafts: includeDrafts,
       };
 
       const data = await noticeApi.getAllNotices(filters);
