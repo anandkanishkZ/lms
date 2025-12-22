@@ -140,7 +140,7 @@ export default function NoticeBell({ onViewAll, noticesPagePath }: NoticeBellPro
   const fetchRecentNotices = async () => {
     // Skip if not authenticated
     if (!isAuthenticated()) {
-      toast.error('Please log in to view notices');
+      console.log('Not authenticated, skipping notice fetch');
       return;
     }
     
@@ -149,11 +149,10 @@ export default function NoticeBell({ onViewAll, noticesPagePath }: NoticeBellPro
       const notices = await noticeApi.getAllNotices({ unreadOnly: true });
       setRecentNotices(notices.slice(0, 5)); // Show only 5 most recent
     } catch (error: any) {
-      // Handle 401 errors gracefully
-      if (error.response?.status === 401) {
-        toast.error('Session expired. Please log in again.');
-      } else {
-        toast.error(error.message || 'Failed to fetch notices');
+      console.error('Error fetching recent notices:', error);
+      // Only show error for non-auth issues
+      if (error.response?.status !== 401) {
+        toast.error('Failed to load notices');
       }
     } finally {
       setLoading(false);

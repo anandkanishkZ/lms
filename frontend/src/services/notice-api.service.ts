@@ -135,9 +135,13 @@ class NoticeApiService {
         const token = getCurrentToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
-          console.log('🔑 Token added to request');
+          console.log('🔑 Notice API: Token added to request:', {
+            url: config.url,
+            tokenPreview: token.substring(0, 20) + '...',
+            hasToken: true,
+          });
         } else {
-          console.warn('⚠️ No token available for request');
+          console.error('❌ Notice API: No token available for request:', config.url);
         }
         return config;
       },

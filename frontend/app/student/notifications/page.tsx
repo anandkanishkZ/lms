@@ -16,11 +16,48 @@ export default function StudentNotificationsPage() {
 
   useEffect(() => {
     fetchNotices();
+    
+    // Diagnostic logging
+    console.log('🔍 Notifications Page Diagnostic:', {
+      hasStudentToken: !!localStorage.getItem('student_token'),
+      hasTeacherToken: !!localStorage.getItem('teacher_token'),
+      hasAdminToken: !!localStorage.getItem('adminToken'),
+      studentTokenPreview: localStorage.getItem('student_token')?.substring(0, 30) + '...',
+    });
   }, []);
 
   const fetchNotices = async () => {
     try {
       setLoading(true);
+      
+      // Enhanced diagnostic logging
+      const studentToken = localStorage.getItem('student_token');
+      console.log('📊 Token Diagnostic:', {
+        hasToken: !!studentToken,
+        tokenLength: studentToken?.length,
+        tokenPreview: studentToken?.substring(0, 40) + '...',
+        tokenParts: studentToken?.split('.').length,
+      });
+      
+      if (studentToken) {
+        try {
+          const parts = studentToken.split('.');
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            console.log('🔐 Token Payload:', {
+              userId: payload.userId,
+              role: payload.role,
+              exp: payload.exp,
+              expiresAt: new Date(payload.exp * 1000).toISOString(),
+              isExpired: Date.now() >= payload.exp * 1000,
+              timeUntilExpiry: Math.floor((payload.exp * 1000 - Date.now()) / 1000 / 60) + ' minutes',
+            });
+          }
+        } catch (e) {
+          console.error('❌ Failed to decode token:', e);
+        }
+      }
+      
       const data = await noticeApi.getAllNotices({ unreadOnly: false });
       console.log('✅ Notices fetched successfully:', data.length);
       setNotices(data);
