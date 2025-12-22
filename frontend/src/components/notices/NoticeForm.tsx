@@ -104,7 +104,7 @@ export default function NoticeForm({ notice, mode, onSuccess, onCancel }: Notice
       priority: notice?.priority || NoticePriority.MEDIUM,
       attachmentUrl: notice?.attachmentUrl || '',
       isPinned: notice?.isPinned || false,
-      isPublished: notice?.isPublished || false,
+      isPublished: notice?.isPublished ?? true, // Default to published (true)
       expiresAt: notice?.expiresAt ? new Date(notice.expiresAt).toISOString().slice(0, 16) : '',
       classId: notice?.classId || '',
       batchId: notice?.batchId || '',
