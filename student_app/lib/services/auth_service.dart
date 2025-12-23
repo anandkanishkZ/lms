@@ -345,7 +345,8 @@ class AuthService {
       final user = User.fromJson(data['data']);
       
       // Update stored user
-      await _saveUser(user);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_userKey, json.encode(user.toJson()));
       
       return user;
     } catch (e) {
