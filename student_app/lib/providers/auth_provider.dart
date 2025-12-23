@@ -136,6 +136,38 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<void> requestVerificationOTP() async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      await _authService.requestVerificationOTP();
+    } catch (e) {
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      _setError(errorMessage);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> verifyPhone(String otp) async {
+    _setLoading(true);
+    _clearError();
+    
+    try {
+      final updatedUser = await _authService.verifyPhoneWithOTP(otp);
+      _currentUser = updatedUser;
+      notifyListeners();
+    } catch (e) {
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      _setError(errorMessage);
+      rethrow;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

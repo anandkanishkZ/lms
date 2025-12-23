@@ -30,20 +30,21 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Nepal LMS',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#059669' },
-    { media: '(prefers-color-scheme: dark)', color: '#047857' },
-  ],
   icons: {
     icon: '/icons/icon-192x192.png',
     apple: '/icons/icon-192x192.png',
   },
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#059669' },
+    { media: '(prefers-color-scheme: dark)', color: '#047857' },
+  ],
 }
 
 export default function RootLayout({

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
 import { AuthRequest, LoginCredentials, RegisterData } from '../types';
 import { asyncHandler } from '../middlewares/errorHandler';
+import { otpService } from '../services/otp.service';
 
 const prisma = new PrismaClient();
 
@@ -174,42 +175,113 @@ export const logout = asyncHandler(async (req: AuthRequest, res: Response) => {
   });
 });
 
-// @desc    Forgot password
+// @desc    Forgot password - Request OTP
 // @route   POST /api/auth/forgot-password
 // @access  Public
 export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
-  const { email } = req.body;
+  const { phone } = req.body;
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-  });
-
-  if (!user) {
-    res.status(404).json({
+  if (!phone) {
+    res.status(400).json({
       success: false,
-      message: 'User not found with this email',
+      message: 'Phone number is required',
     });
     return;
   }
 
-  // TODO: Implement email sending with reset token
-  // For now, just return success
+  // Request OTP
+  const result = await otpService.requestOTP(phone, 'PASSWORD_RESET');
+
+  if (!result.success) {
+    res.status(400).json({
+      success: false,
+      message: result.message,
+    });
+    return;
+  }
+
   res.json({
     success: true,
-    message: 'Password reset instructions sent to your email',
+    message: result.message,
   });
 });
 
-// @desc    Reset password
+// @desc    Verify OTP for password reset
+// @route   POST /api/auth/verify-otp
+// @access  Public
+export const verifyOTP = asyncHandler(async (req: Request, res: Response) => {
+  const { phone, otp } = req.body;
+
+  if (!phone || !otp) {
+    res.status(400).json({
+      success: false,
+      message: 'Phone number and OTP are required',
+    });
+    return;
+  }
+
+  // Verify OTP
+  const result = await otpService.verifyOTP(phone, otp, 'PASSWORD_RESET');
+
+  if (!result.success) {
+    res.status(400).json({
+      success: false,
+      message: result.message,
+    });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: result.message,
+    data: {
+      userId: result.userId
+    }
+  });
+});
+
+// @desc    Reset password with verified OTP
 // @route   POST /api/auth/reset-password
 // @access  Public
 export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
-  const { token, newPassword } = req.body;
+  const { phone, otp, newPassword } = req.body;
 
-  // TODO: Implement token verification and password reset
+  if (!phone || !otp || !newPassword) {
+    res.status(400).json({
+      success: false,
+      message: 'Phone number, OTP, and new password are required',
+    });
+    return;
+  }
+
+  // Check if OTP was recently verified (allows verified OTPs within 5 minutes)
+  const verifyResult = await otpService.checkRecentlyVerifiedOTP(phone, otp, 'PASSWORD_RESET');
+
+  if (!verifyResult.success) {
+    res.status(400).json({
+      success: false,
+      message: verifyResult.message,
+    });
+    return;
+  }
+
+  // Hash new password
+  const salt = await bcrypt.genSalt(12);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  // Update user password
+  await prisma.user.update({
+    where: { id: verifyResult.userId },
+    data: {
+      password: hashedPassword,
+    },
+  });
+
+  console.log(`✅ Password reset successful for user ${verifyResult.userId}`);
+
   res.json({
     success: true,
-    message: 'Password reset successful',
+    message: 'Password reset successful. You can now login with your new password.',
   });
 });
 
@@ -219,10 +291,157 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
 export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   const { token } = req.params;
 
-  // TODO: Implement email verification
+  // TODO: Implement email verification with proper token validation
+  // For now, this is a placeholder
   res.json({
     success: true,
-    message: 'Email verified successfully',
+    message: 'Email verification is not yet implemented. Please use phone verification.',
+  });
+});
+
+// @desc    Request phone verification OTP
+// @route   POST /api/auth/request-verification-otp
+// @access  Private
+export const requestVerificationOTP = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'Not authenticated',
+    });
+    return;
+  }
+
+  // Get user
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+    select: { id: true, name: true, phone: true, verified: true },
+  });
+
+  if (!user) {
+    res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+    return;
+  }
+
+  if (user.verified) {
+    res.status(400).json({
+      success: false,
+      message: 'Account is already verified',
+    });
+    return;
+  }
+
+  if (!user.phone) {
+    res.status(400).json({
+      success: false,
+      message: 'Phone number is required for verification',
+    });
+    return;
+  }
+
+  // Request OTP for account verification
+  const result = await otpService.requestOTP(user.phone, 'LOGIN');
+
+  if (!result.success) {
+    res.status(400).json({
+      success: false,
+      message: result.message,
+    });
+    return;
+  }
+
+  res.json({
+    success: true,
+    message: 'Verification OTP sent to your phone number',
+  });
+});
+
+// @desc    Verify phone with OTP
+// @route   POST /api/auth/verify-phone
+// @access  Private
+export const verifyPhone = asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (!req.user) {
+    res.status(401).json({
+      success: false,
+      message: 'Not authenticated',
+    });
+    return;
+  }
+
+  const { otp } = req.body;
+
+  if (!otp) {
+    res.status(400).json({
+      success: false,
+      message: 'OTP is required',
+    });
+    return;
+  }
+
+  // Get user
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.userId },
+    select: { id: true, phone: true, verified: true },
+  });
+
+  if (!user) {
+    res.status(404).json({
+      success: false,
+      message: 'User not found',
+    });
+    return;
+  }
+
+  if (user.verified) {
+    res.status(400).json({
+      success: false,
+      message: 'Account is already verified',
+    });
+    return;
+  }
+
+  if (!user.phone) {
+    res.status(400).json({
+      success: false,
+      message: 'Phone number not found',
+    });
+    return;
+  }
+
+  // Verify OTP
+  const verifyResult = await otpService.verifyOTP(user.phone, otp, 'LOGIN');
+
+  if (!verifyResult.success) {
+    res.status(400).json({
+      success: false,
+      message: verifyResult.message,
+    });
+    return;
+  }
+
+  // Mark user as verified
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: { verified: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      verified: true,
+      profileImage: true,
+    },
+  });
+
+  console.log(`✅ User ${user.id} verified successfully`);
+
+  res.json({
+    success: true,
+    message: 'Phone number verified successfully. Your account is now verified!',
+    data: updatedUser,
   });
 });
 

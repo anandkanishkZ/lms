@@ -234,6 +234,125 @@ class AuthService {
     }
   }
 
+  // Forgot password - Request OTP
+  Future<void> forgotPassword({required String phone}) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.forgotPassword),
+        headers: ApiConfig.headers(),
+        body: json.encode({'phone': phone}),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Failed to send OTP');
+      }
+    } catch (e) {
+      throw Exception('Forgot password error: $e');
+    }
+  }
+
+  // Verify OTP
+  Future<void> verifyOTP({
+    required String phone,
+    required String otp,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.apiUrl}/auth/verify-otp'),
+        headers: ApiConfig.headers(),
+        body: json.encode({
+          'phone': phone,
+          'otp': otp,
+        }),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Invalid OTP');
+      }
+    } catch (e) {
+      throw Exception('OTP verification error: $e');
+    }
+  }
+
+  // Reset password with OTP
+  Future<void> resetPassword({
+    required String phone,
+    required String otp,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.resetPassword),
+        headers: ApiConfig.headers(),
+        body: json.encode({
+          'phone': phone,
+          'otp': otp,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        }),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Password reset failed');
+      }
+    } catch (e) {
+      throw Exception('Password reset error: $e');
+    }
+  }
+
+  // Request verification OTP
+  Future<void> requestVerificationOTP() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.requestVerificationOTP),
+        headers: ApiConfig.headers(token: token),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Failed to request verification OTP');
+      }
+    } catch (e) {
+      throw Exception('Request verification OTP error: $e');
+    }
+  }
+
+  // Verify phone with OTP
+  Future<User> verifyPhoneWithOTP(String otp) async {
+    final token = await getToken();
+    if (token == null) throw Exception('Not authenticated');
+
+    try {
+      final response = await http.post(
+        Uri.parse(ApiConfig.verifyPhone),
+        headers: ApiConfig.headers(token: token),
+        body: json.encode({'otp': otp}),
+      ).timeout(ApiConfig.timeout);
+
+      if (response.statusCode != 200) {
+        final error = json.decode(response.body);
+        throw Exception(error['message'] ?? 'Verification failed');
+      }
+
+      final data = json.decode(response.body);
+      final user = User.fromJson(data['data']);
+      
+      // Update stored user
+      await _saveUser(user);
+      
+      return user;
+    } catch (e) {
+      throw Exception('Phone verification error: $e');
+    }
+  }
+
   // Upload avatar
   Future<User> uploadAvatar(File imageFile) async {
     final token = await getToken();

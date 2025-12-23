@@ -134,21 +134,40 @@ export const validateRegistration = [
 
 // Password reset request validation
 export const validatePasswordResetRequest = [
-  body('email')
+  body('phone')
     .trim()
-    .notEmpty().withMessage('Email is required')
-    .isEmail().withMessage('Invalid email format')
-    .normalizeEmail(),
+    .notEmpty().withMessage('Phone number is required')
+    .matches(/^[0-9]{10}$/).withMessage('Phone number must be exactly 10 digits'),
+  
+  handleValidationErrors
+];
+
+// OTP verification validation
+export const validateOTPVerification = [
+  body('phone')
+    .trim()
+    .notEmpty().withMessage('Phone number is required')
+    .matches(/^[0-9]{10}$/).withMessage('Phone number must be exactly 10 digits'),
+  
+  body('otp')
+    .trim()
+    .notEmpty().withMessage('OTP is required')
+    .matches(/^[0-9]{6}$/).withMessage('OTP must be exactly 6 digits'),
   
   handleValidationErrors
 ];
 
 // Password reset validation
 export const validatePasswordReset = [
-  body('token')
+  body('phone')
     .trim()
-    .notEmpty().withMessage('Reset token is required')
-    .isLength({ min: 64, max: 64 }).withMessage('Invalid reset token format'),
+    .notEmpty().withMessage('Phone number is required')
+    .matches(/^[0-9]{10}$/).withMessage('Phone number must be exactly 10 digits'),
+  
+  body('otp')
+    .trim()
+    .notEmpty().withMessage('OTP is required')
+    .matches(/^[0-9]{6}$/).withMessage('OTP must be exactly 6 digits'),
   
   body('newPassword')
     .notEmpty().withMessage('New password is required')

@@ -15,7 +15,10 @@ class ApiConfig {
   static const String updateProfile = '$apiUrl/auth/profile';
   static const String changePassword = '$apiUrl/auth/change-password';
   static const String forgotPassword = '$apiUrl/auth/forgot-password';
+  static const String verifyOTP = '$apiUrl/auth/verify-otp';
   static const String resetPassword = '$apiUrl/auth/reset-password';
+  static const String requestVerificationOTP = '$apiUrl/auth/request-verification-otp';
+  static const String verifyPhone = '$apiUrl/auth/verify-phone';
   
   // Module Endpoints
   static const String modules = '$apiUrl/modules';

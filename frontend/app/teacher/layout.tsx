@@ -74,11 +74,11 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const [isLoading, setIsLoading] = useState(true);
   const [teacher, setTeacher] = useState<any>(null);
 
-  // Don't apply layout to login page
-  const isLoginPage = pathname === '/teacher/login';
+  // Don't apply layout to login and forgot-password pages
+  const isPublicPage = pathname === '/teacher/login' || pathname === '/teacher/forgot-password';
 
   useEffect(() => {
-    if (isLoginPage) {
+    if (isPublicPage) {
       setIsLoading(false);
       return;
     }
@@ -104,7 +104,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     };
 
     checkAuth();
-  }, [router, isLoginPage, pathname]);
+  }, [router, isPublicPage, pathname]);
 
   const handleLogout = async () => {
     try {
@@ -118,8 +118,8 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     }
   };
 
-  // Return login page without layout
-  if (isLoginPage) {
+  // Return public pages without layout
+  if (isPublicPage) {
     return <>{children}</>;
   }
 

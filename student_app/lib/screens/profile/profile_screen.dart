@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -129,6 +130,186 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
     } finally {
       if (mounted) setState(() => _isUploadingAvatar = false);
     }
+  }
+
+  void _showVerificationDialog() {
+    final otpController = TextEditingController();
+    bool isRequestingOTP = false;
+    bool isVerifying = false;
+    bool otpRequested = false;
+    int resendCooldown = 0;
+    Timer? cooldownTimer;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.verified_user, color: Colors.blue),
+                SizedBox(width: 8),
+                Text('Verify Your Account'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Verify your phone number to activate your account',
+                  style: TextStyle(fontSize: 14, color: Colors.black87),
+                ),
+                const SizedBox(height: 16),
+                if (!otpRequested) ...[
+                  const Text(
+                    'We will send a 6-digit OTP to your registered phone number.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ] else ...[
+                  TextField(
+                    controller: otpController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                    decoration: const InputDecoration(
+                      labelText: 'Enter OTP',
+                      hintText: '6-digit code',
+                      border: OutlineInputBorder(),
+                      counterText: '',
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (resendCooldown > 0)
+                    Text(
+                      'Resend OTP in ${resendCooldown}s',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    )
+                  else
+                    TextButton(
+                      onPressed: isRequestingOTP ? null : () async {
+                        setState(() => isRequestingOTP = true);
+                        try {
+                          final authProvider = Provider.of<AuthProvider>(this.context, listen: false);
+                          await authProvider.requestVerificationOTP();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(content: Text('OTP sent successfully')),
+                            );
+                            setState(() {
+                              resendCooldown = 60;
+                              cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                                if (resendCooldown > 0) {
+                                  setState(() => resendCooldown--);
+                                } else {
+                                  timer.cancel();
+                                }
+                              });
+                            });
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              SnackBar(content: Text(e.toString())),
+                            );
+                          }
+                        } finally {
+                          setState(() => isRequestingOTP = false);
+                        }
+                      },
+                      child: const Text('Resend OTP'),
+                    ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  cooldownTimer?.cancel();
+                  Navigator.pop(context);
+                },
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: (isRequestingOTP || isVerifying)
+                    ? null
+                    : () async {
+                        if (!otpRequested) {
+                          // Request OTP
+                          setState(() => isRequestingOTP = true);
+                          try {
+                            final authProvider = Provider.of<AuthProvider>(this.context, listen: false);
+                            await authProvider.requestVerificationOTP();
+                            if (context.mounted) {
+                              setState(() {
+                                otpRequested = true;
+                                resendCooldown = 60;
+                                cooldownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                                  if (resendCooldown > 0) {
+                                    setState(() => resendCooldown--);
+                                  } else {
+                                    timer.cancel();
+                                  }
+                                });
+                              });
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(content: Text('OTP sent to your phone')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                SnackBar(content: Text(e.toString())),
+                              );
+                            }
+                          } finally {
+                            setState(() => isRequestingOTP = false);
+                          }
+                        } else {
+                          // Verify OTP
+                          if (otpController.text.length != 6) {
+                            ScaffoldMessenger.of(this.context).showSnackBar(
+                              const SnackBar(content: Text('Please enter a 6-digit OTP')),
+                            );
+                            return;
+                          }
+                          setState(() => isVerifying = true);
+                          try {
+                            final authProvider = Provider.of<AuthProvider>(this.context, listen: false);
+                            await authProvider.verifyPhone(otpController.text);
+                            if (context.mounted) {
+                              cooldownTimer?.cancel();
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Account verified successfully!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              // Refresh profile
+                              this.setState(() {});
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                SnackBar(content: Text(e.toString())),
+                              );
+                            }
+                          } finally {
+                            setState(() => isVerifying = false);
+                          }
+                        }
+                      },
+                child: Text(
+                  !otpRequested
+                      ? (isRequestingOTP ? 'Sending...' : 'Send OTP')
+                      : (isVerifying ? 'Verifying...' : 'Verify'),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ).then((_) => cooldownTimer?.cancel());
   }
 
   void _showAvatarOptions(BuildContext context) {
@@ -415,31 +596,42 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           ),
                         ),
                         const SizedBox(height: 4),
-                        // Account Status Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: user?.verified == true ? Colors.green : Colors.orange,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                user?.verified == true ? Icons.verified : Icons.pending,
-                                color: Colors.white,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                user?.verified == true ? 'Verified Account' : 'Pending Verification',
-                                style: const TextStyle(
-                                  fontSize: 12,
+                        // Account Status Badge with Verification Button
+                        GestureDetector(
+                          onTap: user?.verified == true ? null : _showVerificationDialog,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: user?.verified == true ? Colors.green : Colors.orange,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  user?.verified == true ? Icons.verified : Icons.pending,
                                   color: Colors.white,
-                                  fontWeight: FontWeight.w600,
+                                  size: 14,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Text(
+                                  user?.verified == true ? 'Verified Account' : 'Tap to Verify',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                if (user?.verified == false) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.touch_app,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         ),
                       ],

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import Link from 'next/link';
 import { 
   GraduationCap, 
   Mail, 
@@ -253,12 +254,12 @@ export default function StudentLoginPage() {
                   />
                   <span className="ml-2 text-sm text-gray-600">Remember me</span>
                 </label>
-                <button
-                  type="button"
+                <Link
+                  href="/student/forgot-password"
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Forgot Password?
-                </button>
+                </Link>
               </div>
 
               {/* Login Button */}

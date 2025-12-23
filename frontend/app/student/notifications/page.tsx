@@ -44,14 +44,23 @@ export default function StudentNotificationsPage() {
           const parts = studentToken.split('.');
           if (parts.length === 3) {
             const payload = JSON.parse(atob(parts[1]));
-            console.log('🔐 Token Payload:', {
+            const tokenInfo: any = {
               userId: payload.userId,
               role: payload.role,
               exp: payload.exp,
-              expiresAt: new Date(payload.exp * 1000).toISOString(),
-              isExpired: Date.now() >= payload.exp * 1000,
-              timeUntilExpiry: Math.floor((payload.exp * 1000 - Date.now()) / 1000 / 60) + ' minutes',
-            });
+            };
+            
+            // Only add date-related fields if exp is valid
+            if (payload.exp && !isNaN(payload.exp)) {
+              const expiryDate = new Date(payload.exp * 1000);
+              if (!isNaN(expiryDate.getTime())) {
+                tokenInfo.expiresAt = expiryDate.toISOString();
+                tokenInfo.isExpired = Date.now() >= payload.exp * 1000;
+                tokenInfo.timeUntilExpiry = Math.floor((payload.exp * 1000 - Date.now()) / 1000 / 60) + ' minutes';
+              }
+            }
+            
+            console.log('🔐 Token Payload:', tokenInfo);
           }
         } catch (e) {
           console.error('❌ Failed to decode token:', e);

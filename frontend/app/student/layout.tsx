@@ -19,17 +19,17 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     avgProgress: 0
   });
 
-  // Don't apply layout to login page
-  const isLoginPage = pathname === '/student/login';
+  // Don't apply layout to login and forgot-password pages
+  const isPublicPage = pathname === '/student/login' || pathname === '/student/forgot-password';
 
   useEffect(() => {
-    if (isLoginPage) {
+    if (isPublicPage) {
       setLoading(false);
       return;
     }
 
     checkAuth();
-  }, [isLoginPage]);
+  }, [isPublicPage]);
 
   const checkAuth = async () => {
     try {
@@ -78,8 +78,8 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
     }
   };
 
-  // Return login page without layout
-  if (isLoginPage) {
+  // Return public pages without layout
+  if (isPublicPage) {
     return <>{children}</>;
   }
 

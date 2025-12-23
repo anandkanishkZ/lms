@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, logout, forgotPassword, resetPassword, verifyEmail, getProfile, updateProfile, changePassword } from '../controllers/authController';
+import { register, login, logout, forgotPassword, verifyOTP, resetPassword, verifyEmail, requestVerificationOTP, verifyPhone, getProfile, updateProfile, changePassword } from '../controllers/authController';
 import { uploadAvatar, deleteAvatar } from '../controllers/avatarController';
 import { getAvatar, getMyAvatar } from '../controllers/avatarViewController';
 import { optionalAuth, authenticate } from '../middlewares/auth';
@@ -9,7 +9,8 @@ import {
   validateRegistration, 
   validatePasswordResetRequest,
   validatePasswordReset,
-  validateUserUpdate
+  validateUserUpdate,
+  validateOTPVerification
 } from '../middlewares/validator';
 
 const router = express.Router();
@@ -18,8 +19,13 @@ const router = express.Router();
 router.post('/register', validateRegistration, register);
 router.post('/login', validateLogin, login);
 router.post('/forgot-password', validatePasswordResetRequest, forgotPassword);
+router.post('/verify-otp', validateOTPVerification, verifyOTP);
 router.post('/reset-password', validatePasswordReset, resetPassword);
 router.get('/verify-email/:token', verifyEmail);
+
+// Account verification routes (protected)
+router.post('/request-verification-otp', authenticate, requestVerificationOTP);
+router.post('/verify-phone', authenticate, validateOTPVerification, verifyPhone);
 
 // Protected routes
 router.post('/logout', optionalAuth, logout);
