@@ -10,11 +10,13 @@ import '../../widgets/skeleton_loader.dart';
 class LessonDetailScreen extends StatefulWidget {
   final String lessonId;
   final String moduleId;
+  final String? enrollmentId;
 
   const LessonDetailScreen({
     super.key,
     required this.lessonId,
     required this.moduleId,
+    this.enrollmentId,
   });
 
   @override
@@ -27,6 +29,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   bool _isLoading = true;
   String? _error;
   bool _isCompleted = false;
+  bool _isMarkingComplete = false;
 
   @override
   void didChangeDependencies() {
@@ -306,19 +309,65 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: _isCompleted ? null : () {
+              onPressed: (_isCompleted || _isMarkingComplete || widget.enrollmentId == null) 
+                  ? null 
+                  : () async {
                 setState(() {
-                  _isCompleted = true;
+                  _isMarkingComplete = true;
                 });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Lesson marked as complete!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                
+                try {
+                  await _lessonService!.markLessonComplete(
+                    widget.lessonId,
+                    widget.enrollmentId!,
+                  );
+                  
+                  if (mounted) {
+                    setState(() {
+                      _isCompleted = true;
+                      _isMarkingComplete = false;
+                    });
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Lesson marked as complete!'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    setState(() {
+                      _isMarkingComplete = false;
+                    });
+                    
+                    final errorMessage = e.toString()
+                        .replaceAll('Exception: ', '');
+                    
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(errorMessage),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
               },
-              icon: Icon(_isCompleted ? Icons.check_circle : Icons.check_circle_outline),
-              label: Text(_isCompleted ? 'Completed' : 'Mark as Complete'),
+              icon: _isMarkingComplete 
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Icon(_isCompleted ? Icons.check_circle : Icons.check_circle_outline),
+              label: Text(
+                _isMarkingComplete 
+                    ? 'Marking...' 
+                    : (_isCompleted ? 'Completed' : 'Mark as Complete')
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _isCompleted ? Colors.green : Theme.of(context).primaryColor,
                 padding: const EdgeInsets.symmetric(vertical: 16),

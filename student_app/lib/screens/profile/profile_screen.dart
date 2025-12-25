@@ -208,8 +208,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                           }
                         } catch (e) {
                           if (context.mounted) {
+                            final errorMessage = e.toString()
+                                .replaceAll('Exception: ', '')
+                                .replaceAll('Request verification OTP error: ', '');
                             ScaffoldMessenger.of(this.context).showSnackBar(
-                              SnackBar(content: Text(e.toString())),
+                              SnackBar(
+                                content: Text(errorMessage),
+                                backgroundColor: Colors.red,
+                              ),
                             );
                           }
                         } finally {
@@ -257,8 +263,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             }
                           } catch (e) {
                             if (context.mounted) {
+                              final errorMessage = e.toString()
+                                  .replaceAll('Exception: ', '')
+                                  .replaceAll('Request verification OTP error: ', '');
                               ScaffoldMessenger.of(this.context).showSnackBar(
-                                SnackBar(content: Text(e.toString())),
+                                SnackBar(
+                                  content: Text(errorMessage),
+                                  backgroundColor: Colors.red,
+                                ),
                               );
                             }
                           } finally {
@@ -290,8 +302,14 @@ class _ProfileScreenState extends State<ProfileScreen> with SingleTickerProvider
                             }
                           } catch (e) {
                             if (context.mounted) {
+                              final errorMessage = e.toString()
+                                  .replaceAll('Exception: ', '')
+                                  .replaceAll('Phone verification error: ', '');
                               ScaffoldMessenger.of(this.context).showSnackBar(
-                                SnackBar(content: Text(e.toString())),
+                                SnackBar(
+                                  content: Text(errorMessage),
+                                  backgroundColor: Colors.red,
+                                ),
                               );
                             }
                           } finally {

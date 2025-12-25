@@ -1116,6 +1116,7 @@ class _ModuleDetailScreenState extends State<ModuleDetailScreen> with SingleTick
                               builder: (context) => LessonDetailScreen(
                                 lessonId: lesson.id,
                                 moduleId: widget.module.id,
+                                enrollmentId: widget.module.enrollmentId,
                               ),
                             ),
                           );

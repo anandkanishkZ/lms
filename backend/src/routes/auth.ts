@@ -10,7 +10,8 @@ import {
   validatePasswordResetRequest,
   validatePasswordReset,
   validateUserUpdate,
-  validateOTPVerification
+  validateOTPVerification,
+  validatePhoneVerification
 } from '../middlewares/validator';
 
 const router = express.Router();
@@ -25,7 +26,7 @@ router.get('/verify-email/:token', verifyEmail);
 
 // Account verification routes (protected)
 router.post('/request-verification-otp', authenticate, requestVerificationOTP);
-router.post('/verify-phone', authenticate, validateOTPVerification, verifyPhone);
+router.post('/verify-phone', authenticate, validatePhoneVerification, verifyPhone);
 
 // Protected routes
 router.post('/logout', optionalAuth, logout);

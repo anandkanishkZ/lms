@@ -297,7 +297,7 @@ class _DashboardHomeScreenState extends State<DashboardHomeScreen> {
                             onTap: () {
                               final parentState = context.findAncestorStateOfType<_DashboardScreenState>();
                               parentState?.setState(() {
-                                parentState._selectedIndex = 2;
+                                parentState._selectedIndex = 3;
                               });
                             },
                           ),

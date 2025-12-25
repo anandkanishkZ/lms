@@ -52,7 +52,7 @@ class LessonService {
     }
   }
 
-  Future<void> markLessonComplete(String lessonId) async {
+  Future<void> markLessonComplete(String lessonId, String enrollmentId) async {
     final token = await _authService.getToken();
     if (token == null) throw Exception('No token found');
 
@@ -62,10 +62,14 @@ class LessonService {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
+      body: json.encode({
+        'enrollmentId': enrollmentId,
+      }),
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Failed to mark lesson complete: ${response.statusCode}');
+      final error = json.decode(response.body);
+      throw Exception(error['message'] ?? 'Failed to mark lesson complete');
     }
   }
 }

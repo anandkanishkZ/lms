@@ -157,6 +157,16 @@ export const validateOTPVerification = [
   handleValidationErrors
 ];
 
+// Phone verification validation (for authenticated users)
+export const validatePhoneVerification = [
+  body('otp')
+    .trim()
+    .notEmpty().withMessage('OTP is required')
+    .matches(/^[0-9]{6}$/).withMessage('OTP must be exactly 6 digits'),
+  
+  handleValidationErrors
+];
+
 // Password reset validation
 export const validatePasswordReset = [
   body('phone')

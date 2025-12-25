@@ -27,6 +27,7 @@ class Module {
   final int? progress;
   final bool? isEnrolled;
   final DateTime? enrolledAt;
+  final String? enrollmentId;
 
   Module({
     required this.id,
@@ -51,6 +52,7 @@ class Module {
     this.progress,
     this.isEnrolled,
     this.enrolledAt,
+    this.enrollmentId,
   });
 
   factory Module.fromJson(Map<String, dynamic> json) {
@@ -78,6 +80,7 @@ class Module {
         teacher: json['teacher'] != null ? Teacher.fromJson(json['teacher']) : null,
         progress: json['progress'] as int?,
         isEnrolled: json['isEnrolled'] as bool?,
+        enrollmentId: json['enrollmentId'] as String?,
         enrolledAt: json['enrolledAt'] != null ? DateTime.parse(json['enrolledAt']) : null,
       );
     } catch (e, stackTrace) {

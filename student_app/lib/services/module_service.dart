@@ -129,10 +129,11 @@ class ModuleService {
         // Extract module from each enrollment and add progress
         return enrollmentsJson.map((enrollment) {
           final moduleJson = Map<String, dynamic>.from(enrollment['module'] as Map<String, dynamic>);
-          // Add progress from enrollment to module
+          // Add progress and enrollment info from enrollment to module
           moduleJson['progress'] = enrollment['progress'] as int?;
           moduleJson['isEnrolled'] = true;
           moduleJson['enrolledAt'] = enrollment['enrolledAt'] as String?;
+          moduleJson['enrollmentId'] = enrollment['id'] as String?;
           return Module.fromJson(moduleJson);
         }).toList();
       } else {
